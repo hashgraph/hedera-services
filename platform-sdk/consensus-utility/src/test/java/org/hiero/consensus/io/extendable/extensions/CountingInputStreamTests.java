@@ -3,13 +3,13 @@ package org.hiero.consensus.io.extendable.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.test.fixtures.io.extendable.StreamSanityChecks;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import org.hiero.base.utility.test.fixtures.io.StreamSanityChecks;
 import org.hiero.base.utility.test.fixtures.tags.TestComponentTags;
 import org.hiero.consensus.io.counting.ByteCounter;
 import org.hiero.consensus.io.counting.CounterType;
@@ -71,11 +71,19 @@ class CountingInputStreamTests {
         assertEquals(writeBytes, byteCounterOut.getCount(), "incorrect count");
 
         countIn.read(new byte[readBytes * 2]);
-        assertEquals(writeBytes, byteCounterIn.getCount(), "incorrect count");
-        assertEquals(writeBytes, byteCounterOut.getCount(), "incorrect count");
+        assertEquals(writeBytes, byteCounterIn.getAndReset(), "incorrect count");
+        assertEquals(writeBytes, byteCounterOut.getAndReset(), "incorrect count");
 
-        byteCounterIn.getAndReset();
         assertEquals(0, byteCounterIn.getCount(), "no additional bytes written");
+
+        assertEquals(writeBytes, byteCounterIn.getTotalCount(), "incorrect count");
+        assertEquals(writeBytes, byteCounterOut.getTotalCount(), "incorrect count");
+
+        countOut.write(new byte[writeBytes]);
+        countIn.read(new byte[readBytes]);
+
+        assertEquals(writeBytes + readBytes, byteCounterIn.getTotalCount(), "incorrect count");
+        assertEquals(writeBytes + writeBytes, byteCounterOut.getTotalCount(), "incorrect count");
 
         countIn.close();
         countOut.close();

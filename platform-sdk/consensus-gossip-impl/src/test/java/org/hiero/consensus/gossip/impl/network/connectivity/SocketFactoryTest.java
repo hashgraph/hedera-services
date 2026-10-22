@@ -6,15 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -25,42 +26,43 @@ import org.hiero.consensus.gossip.config.NetworkEndpoint;
 import org.hiero.consensus.gossip.impl.gossip.Utilities;
 import org.hiero.consensus.gossip.impl.network.NetworkUtils;
 import org.hiero.consensus.gossip.impl.network.PeerInfo;
+import org.hiero.consensus.gossip.impl.test.fixtures.network.FreePortExtension;
+import org.hiero.consensus.gossip.impl.test.fixtures.network.FreePortExtension.FreePort;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.node.NodeId;
+import org.hiero.consensus.model.roster.RosterWrapper;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@ExtendWith(FreePortExtension.class)
 class SocketFactoryTest extends ConnectivityTestBase {
-    private static final int PORT = 30_000;
 
     private static final InetAddress ALL_INTERFACES_ADDRESS;
     private static final InetAddress LOCALHOST_ADDRESS;
     private static final InetAddress ADDRESS_127_0_0_1;
-    private static final NetworkEndpoint DEFAULT_ENDPOINT;
 
     static {
         try {
             ALL_INTERFACES_ADDRESS = InetAddress.getByAddress(ALL_INTERFACES);
             LOCALHOST_ADDRESS = InetAddress.getLocalHost();
             ADDRESS_127_0_0_1 = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
-            DEFAULT_ENDPOINT = new NetworkEndpoint(0L, ALL_INTERFACES_ADDRESS, PORT);
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+        } catch (final UnknownHostException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     /**
-     * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
+     * Calls {@link #testSockets(SocketFactory, SocketFactory, int)} twice, to test both factories as server and as client
      *
-     * @param socketFactory1
-     * 		a factory for both server and client sockets
-     * @param socketFactory2
-     * 		a factory for both server and client sockets
+     * @param socketFactory1 a factory for both server and client sockets
+     * @param socketFactory2 a factory for both server and client sockets
+     * @param port           the port to bind the server socket to
      */
-    private static void testSocketsBoth(final SocketFactory socketFactory1, final SocketFactory socketFactory2)
-            throws Throwable {
-        testSockets(socketFactory1, socketFactory2);
-        testSockets(socketFactory2, socketFactory1);
+    private static void testSocketsBoth(
+            final SocketFactory socketFactory1, final SocketFactory socketFactory2, final int port) throws Throwable {
+        testSockets(socketFactory1, socketFactory2, port);
+        testSockets(socketFactory2, socketFactory1, port);
     }
 
     /**
@@ -69,22 +71,21 @@ class SocketFactoryTest extends ConnectivityTestBase {
      * - verifies the transferred data is correct
      * - closes the sockets
      *
-     * @param serverFactory
-     * 		factory to create the server socket
-     * @param clientFactory
-     * 		factory to create the client socket
+     * @param serverFactory factory to create the server socket
+     * @param clientFactory factory to create the client socket
+     * @param port          the port to bind the server socket to
      */
-    private static void testSockets(final SocketFactory serverFactory, final SocketFactory clientFactory)
-            throws Throwable {
+    private static void testSockets(
+            final SocketFactory serverFactory, final SocketFactory clientFactory, final int port) throws Throwable {
 
-        final ServerSocket serverSocket = serverFactory.createServerSocket(PORT);
+        final ServerSocket serverSocket = serverFactory.createServerSocket(port);
 
         final Thread serverThread = createSocketThread(serverSocket);
         serverThread.start();
         final AtomicReference<Throwable> threadException = new AtomicReference<>();
-        serverThread.setUncaughtExceptionHandler((t, e) -> threadException.set(e));
+        serverThread.setUncaughtExceptionHandler((_, e) -> threadException.set(e));
 
-        final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, PORT);
+        final Socket clientSocket = clientFactory.createClientSocket(STRING_IP, port);
         clientSocket.getOutputStream().write(TEST_DATA);
 
         serverThread.join();
@@ -98,16 +99,16 @@ class SocketFactoryTest extends ConnectivityTestBase {
     /**
      * Tests the functionality {@link KeysAndCerts} are currently used for, signing and establishing TLS connections.
      *
-     * @param roster
-     * 		the roster of the network
-     * @param keysAndCerts
-     * 		keys and certificates to use for testing
-     * @throws Throwable
-     * 		if anything goes wrong
+     * @param roster       the roster of the network
+     * @param keysAndCerts keys and certificates to use for testing
+     * @param port         the port to bind the server socket to
      */
     @ParameterizedTest
-    @MethodSource({"org.hiero.consensus.roster.test.fixtures.CryptoArgsProvider#basicTestArgs"})
-    void tlsFactoryTest(@NonNull final Roster roster, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
+    @MethodSource({"org.hiero.consensus.gossip.impl.network.connectivity.CryptoArgsProvider#basicTestArgs"})
+    void tlsFactoryTest(
+            @NonNull final RosterWrapper roster,
+            @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts,
+            @FreePort final int port)
             throws Throwable {
         assertTrue(roster.rosterEntries().size() > 1, "Address book must contain at least 2 nodes");
         // choose 2 random nodes to test
@@ -117,10 +118,8 @@ class SocketFactoryTest extends ConnectivityTestBase {
                 .limit(2)
                 .boxed()
                 .toList();
-        final NodeId node1 =
-                NodeId.of(roster.rosterEntries().get(nodeIndexes.get(0)).nodeId());
-        final NodeId node2 =
-                NodeId.of(roster.rosterEntries().get(nodeIndexes.get(1)).nodeId());
+        final NodeId node1 = roster.nodeIdAtIndex(nodeIndexes.get(0));
+        final NodeId node2 = roster.nodeIdAtIndex(nodeIndexes.get(1));
         final KeysAndCerts keysAndCerts1 = keysAndCerts.get(node1);
         final KeysAndCerts keysAndCerts2 = keysAndCerts.get(node2);
         final List<PeerInfo> node1Peers = Utilities.createPeerInfoList(roster, node1);
@@ -128,10 +127,12 @@ class SocketFactoryTest extends ConnectivityTestBase {
 
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_NO_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG));
+                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_NO_IP_TOS_CONFIG),
+                port);
         testSocketsBoth(
                 NetworkUtils.createSocketFactory(node1, node1Peers, keysAndCerts1, TLS_IP_TOS_CONFIG),
-                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_IP_TOS_CONFIG));
+                NetworkUtils.createSocketFactory(node2, node2Peers, keysAndCerts2, TLS_IP_TOS_CONFIG),
+                port);
     }
 
     /**
@@ -139,21 +140,25 @@ class SocketFactoryTest extends ConnectivityTestBase {
      *
      * @param roster       the roster of the network
      * @param keysAndCerts keys and certificates to use for testing
+     * @param port         the port to bind the server socket to
      * @throws IOException if the server socket cannot be created
      */
     @ParameterizedTest
-    @MethodSource({"org.hiero.consensus.roster.test.fixtures.CryptoArgsProvider#basicTestArgs"})
-    void bindInterfaceTest(@NonNull final Roster roster, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts)
+    @MethodSource({"org.hiero.consensus.gossip.impl.network.connectivity.CryptoArgsProvider#basicTestArgs"})
+    void bindInterfaceTest(
+            @NonNull final RosterWrapper roster,
+            @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts,
+            @FreePort final int port)
             throws IOException {
         assertTrue(roster.rosterEntries().size() > 1, "Address book must contain at least 2 nodes");
-        final NodeId node0 = NodeId.of(roster.rosterEntries().getFirst().nodeId());
+        final NodeId node0 = roster.nodeIdAtIndex(0);
 
         final Configuration config = new TestConfigBuilder()
                 .withValues(
                         GossipConfig_.INTERFACE_BINDINGS,
                         List.of("{ \"nodeId\": 0, \"hostname\": \"localhost\", \"port\": 1234 }"))
                 .getOrCreateConfig();
-        testInterfaceBinding(node0, roster, keysAndCerts, config);
+        testInterfaceBinding(node0, roster, keysAndCerts, config, port);
     }
 
     /**
@@ -161,17 +166,21 @@ class SocketFactoryTest extends ConnectivityTestBase {
      *
      * @param roster       the roster of the network
      * @param keysAndCerts keys and certificates to use for testing
+     * @param port         the port to bind the server socket to
      * @throws IOException if the server socket cannot be created
      */
     @ParameterizedTest
-    @MethodSource({"org.hiero.consensus.roster.test.fixtures.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"org.hiero.consensus.gossip.impl.network.connectivity.CryptoArgsProvider#basicTestArgs"})
     void bindInterfaceTestWithDefaultConfig(
-            @NonNull final Roster roster, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) throws IOException {
+            @NonNull final RosterWrapper roster,
+            @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts,
+            @FreePort final int port)
+            throws IOException {
         assertTrue(roster.rosterEntries().size() > 1, "Address book must contain at least 2 nodes");
-        final NodeId node0 = NodeId.of(roster.rosterEntries().getFirst().nodeId());
+        final NodeId node0 = roster.nodeIdAtIndex(0);
 
         final Configuration config = new TestConfigBuilder().getOrCreateConfig();
-        testInterfaceBinding(node0, roster, keysAndCerts, config);
+        testInterfaceBinding(node0, roster, keysAndCerts, config, port);
     }
 
     /**
@@ -181,14 +190,16 @@ class SocketFactoryTest extends ConnectivityTestBase {
      *
      * @param roster       the roster of the network
      * @param keysAndCerts keys and certificates to use for testing
-     * @throws IOException if the server socket cannot be created
+     * @param port         the port to bind the server socket to
      */
     @ParameterizedTest
-    @MethodSource({"org.hiero.consensus.roster.test.fixtures.CryptoArgsProvider#basicTestArgs"})
+    @MethodSource({"org.hiero.consensus.gossip.impl.network.connectivity.CryptoArgsProvider#basicTestArgs"})
     void bindInterfaceTestWithFailingClaimingIp(
-            @NonNull final Roster roster, @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts) throws IOException {
+            @NonNull final RosterWrapper roster,
+            @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts,
+            @FreePort final int port) {
         assertTrue(roster.rosterEntries().size() > 1, "Address book must contain at least 2 nodes");
-        final NodeId node0 = NodeId.of(roster.rosterEntries().getFirst().nodeId());
+        final NodeId node0 = roster.nodeIdAtIndex(0);
 
         final Configuration config = new TestConfigBuilder()
                 .withValues(
@@ -196,7 +207,7 @@ class SocketFactoryTest extends ConnectivityTestBase {
                         List.of("{ \"nodeId\": 0, \"hostname\": \"10.123.123.123\", \"port\": 1234 }"))
                 .getOrCreateConfig();
 
-        assertThrows(BindException.class, () -> testInterfaceBinding(node0, roster, keysAndCerts, config));
+        assertThrows(BindException.class, () -> testInterfaceBinding(node0, roster, keysAndCerts, config, port));
     }
 
     /**
@@ -210,16 +221,19 @@ class SocketFactoryTest extends ConnectivityTestBase {
      */
     private void testInterfaceBinding(
             @NonNull final NodeId selfId,
-            @NonNull final Roster roster,
+            @NonNull final RosterWrapper roster,
             @NonNull final Map<NodeId, KeysAndCerts> keysAndCerts,
-            @NonNull final Configuration configuration)
+            @NonNull final Configuration configuration,
+            final int port)
             throws IOException {
 
         final List<PeerInfo> peers = Utilities.createPeerInfoList(roster, selfId);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts.get(selfId), configuration);
         final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);
-        final var endpoint = gossipConfig.getInterfaceBindings(selfId.id()).orElse(DEFAULT_ENDPOINT);
+        final NetworkEndpoint defaultEndpoint = new NetworkEndpoint(0L, ALL_INTERFACES_ADDRESS, port);
+        final NetworkEndpoint endpoint =
+                gossipConfig.getInterfaceBindings(selfId.id()).orElse(defaultEndpoint);
 
         try (final ServerSocket serverSocket = socketFactory.createServerSocket(endpoint.port())) {
 

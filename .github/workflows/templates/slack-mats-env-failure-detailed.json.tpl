@@ -1,10 +1,3 @@
-{{- $tests := getenv "FLAKY_TESTS_JSON" | default "[]" | data.JSONArray -}}
-{{- $flaky_lines := coll.Slice -}}
-{{- range $test := $tests -}}
-  {{- $status := "" -}}
-  {{- if eq (conv.ToString $test.is_new) "true" -}}{{- $status = " (New)" -}}{{- end -}}
-  {{- $flaky_lines = coll.Append (printf "• `%s#%s` — <%s|#%v>%s" $test.class $test.method $test.issue_url $test.issue_number $status) $flaky_lines -}}
-{{- end -}}
 {
   "attachments": [
     {
@@ -25,7 +18,7 @@
           "type": "section",
           "text": {
             "type": "mrkdwn",
-            "text": "*Environment issue detected on `main`.*"
+            "text": {{ printf "*Environment issue detected on `%s`. See status below.* " (getenv "REF_NAME" | required "REF_NAME must be set") | data.ToJSON }}
           },
           "fields": [
             {
@@ -37,19 +30,7 @@
               "text": {{ printf "*Deploy CI Triggers*: %s" (getenv "DEPLOY_CI_TRIGGER_RESULT") | data.ToJSON }}
             }
           ]
-        }
-{{- if gt (len $tests) 0 }},
-        {
-          "type": "divider"
         },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": {{ conv.Join $flaky_lines "\n" | data.ToJSON }}
-          }
-        }
-{{- end }},
         {
           "type": "divider"
         },
@@ -60,6 +41,10 @@
             "text": "*Workflow run URL*:"
           },
           "fields": [
+            {
+              "type": "mrkdwn",
+              "text": {{ printf "*Run attempt*: %s" (getenv "RUN_ATTEMPT") | data.ToJSON }}
+            },
             {
               "type": "mrkdwn",
               "text": {{ printf "<%s>" (getenv "WORKFLOW_RUN_URL" | required "WORKFLOW_RUN_URL must be set") | data.ToJSON }}

@@ -6,67 +6,63 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
-import static com.swirlds.virtualmap.internal.Path.FIRST_LEFT_PATH;
-import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
-import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
-import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
-import static com.swirlds.virtualmap.internal.Path.getParentPath;
-import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
-import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
-import static com.swirlds.virtualmap.internal.Path.isLeft;
+import static com.swirlds.virtualmap.MerklePathUtils.FIRST_LEFT_PATH;
+import static com.swirlds.virtualmap.MerklePathUtils.INVALID_PATH;
+import static com.swirlds.virtualmap.MerklePathUtils.ROOT_PATH;
+import static com.swirlds.virtualmap.MerklePathUtils.getLeftChildPath;
+import static com.swirlds.virtualmap.MerklePathUtils.getParentPath;
+import static com.swirlds.virtualmap.MerklePathUtils.getRightChildPath;
+import static com.swirlds.virtualmap.MerklePathUtils.getSiblingPath;
+import static com.swirlds.virtualmap.MerklePathUtils.isLeft;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
-import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
-import com.swirlds.virtualmap.config.VirtualMapReconnectMode;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashChunk;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.AbstractVirtualRoot;
-import com.swirlds.virtualmap.internal.RecordAccessor;
+import com.swirlds.virtualmap.internal.VirtualMapStatistics;
 import com.swirlds.virtualmap.internal.VirtualRoot;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.hash.FullLeafRehashHashListener;
+import com.swirlds.virtualmap.internal.hash.HashChunkCollector;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapMetadata;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import com.swirlds.virtualmap.internal.pipeline.VirtualPipeline;
-import com.swirlds.virtualmap.internal.reconnect.ConcurrentBlockingIterator;
-import com.swirlds.virtualmap.internal.reconnect.TeacherPullVirtualTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.ValueReference;
+import org.hiero.base.concurrent.ExecutorFactory;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
-import org.hiero.consensus.reconnect.config.ReconnectConfig;
+import org.hiero.base.file.FileUtils;
 
 /**
  * A Merkle tree that virtualizes all of its children, such that the child nodes
@@ -132,12 +128,13 @@ import org.hiero.consensus.reconnect.config.ReconnectConfig;
  */
 public final class VirtualMap extends AbstractVirtualRoot implements Labeled, VirtualRoot {
 
-    /**
-     * The number of elements to have in the buffer used during rehashing on start.
-     */
-    private static final int MAX_REHASHING_BUFFER_SIZE = 10_000_000;
-
-    private static final int MAX_PBJ_RECORD_SIZE = 33554432;
+    /// Flush interval for full rehash, in hash slots (~96MB of heap). The listener flushes collected
+    /// chunks once `number of chunks * 2 ^ chunkHeight` reaches this value. Every flush has a fixed
+    /// cost (a new data file, metadata update, etc.) and creates a data file to compact later. Note
+    /// that the listener doesn't apply backpressure: while a flush is in progress, hashing threads
+    /// keep collecting chunks, and the next batch may exceed the interval, if flushes are slower
+    /// than hashing.
+    private static final int FULL_REHASH_FLUSH_INTERVAL = 2_000_000;
 
     /**
      * Hardcoded virtual map label
@@ -226,9 +223,9 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
     private final VirtualNodeCache cache;
 
     /**
-     * A reference to the map metadata, such as the first leaf path, last leaf path, name ({@link VirtualMapMetadata}).
+     * A reference to the map metadata, such as the first leaf path, last leaf path.
      */
-    private final VirtualMapMetadata metadata;
+    private final Metadata metadata;
 
     /**
      * An interface through which the {@link VirtualMap} can access record data from the cache and the
@@ -307,43 +304,28 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      */
     public VirtualMap(
             final @NonNull VirtualDataSourceBuilder dataSourceBuilder, final @NonNull Configuration configuration) {
-        this.fastCopyVersion = 0L;
-        this.virtualMapConfig = requireNonNull(configuration.getConfigData(VirtualMapConfig.class));
-        this.flushCandidateThreshold.set(virtualMapConfig.copyFlushCandidateThreshold());
-
-        this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
-        this.dataSource = dataSourceBuilder.build(LABEL, null, true, false);
-        this.metadata = new VirtualMapMetadata();
-        this.statistics = new VirtualMapStatistics(LABEL);
-        this.statistics.setSize(size());
-
-        final int hashChunkHeight = this.dataSource.getHashChunkHeight();
-        this.hasher = new VirtualHasher(virtualMapConfig);
-        this.cache = new VirtualNodeCache(virtualMapConfig, hashChunkHeight, this.dataSource::loadHashChunk);
-        this.records = new RecordAccessor(this.metadata, hashChunkHeight, this.cache, this.dataSource);
-        this.pipeline = new VirtualPipeline(virtualMapConfig, LABEL);
-        this.pipeline.registerCopy(this);
+        this(dataSourceBuilder, configuration, null);
     }
 
     /**
-     * Create a virtual map from a snapshot
+     * Create a new virtual map or from a snapshot if snapshot path is not null.
+     *
      * @param dataSourceBuilder the data source builder. Must not be null.
      * @param configuration platform configuration
-     * @param snapshotPath path to the snapshot directory. Must not be null.
+     * @param snapshotPath path to the snapshot directory.
+     *                     If {@code null}, new data source will be created, otherwise restored from a snapshot.
      */
     private VirtualMap(
             final @NonNull VirtualDataSourceBuilder dataSourceBuilder,
             final @NonNull Configuration configuration,
-            final @NonNull Path snapshotPath) {
-        requireNonNull(snapshotPath);
-
+            final @Nullable Path snapshotPath) {
         this.fastCopyVersion = 0L;
         this.virtualMapConfig = requireNonNull(configuration.getConfigData(VirtualMapConfig.class));
         this.flushCandidateThreshold.set(virtualMapConfig.copyFlushCandidateThreshold());
 
         this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
         this.dataSource = dataSourceBuilder.build(LABEL, snapshotPath, true, false);
-        this.metadata = new VirtualMapMetadata(this.dataSource.getFirstLeafPath(), this.dataSource.getLastLeafPath());
+        this.metadata = new Metadata(this.dataSource.getFirstLeafPath(), this.dataSource.getLastLeafPath());
         this.statistics = new VirtualMapStatistics(LABEL);
         this.statistics.setSize(size());
 
@@ -377,10 +359,6 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         this.cache = source.cache.copy();
         this.records = new RecordAccessor(this.metadata, hashChunkHeight, this.cache, this.dataSource);
         this.pipeline = source.pipeline;
-
-        if (this.pipeline.isTerminated()) {
-            throw new IllegalStateException("A fast-copy was made of a VirtualMap with a terminated pipeline!");
-        }
         this.pipeline.registerCopy(this);
     }
 
@@ -394,7 +372,6 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * @param virtualMapConfig  the virtual map configuration
      * @param dataSourceBuilder the data source builder
      * @param dataSource        the data source containing the reconnected state
-     * @param metadata          metadata describing the reconnected tree (size, first/last leaf paths)
      * @param statistics        statistics object carried over from the original map
      * @param hasher            the virtual hasher instance
      * @param reconnectHash     the root hash produced by the reconnect hashing process; may be
@@ -404,7 +381,6 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             @NonNull final VirtualMapConfig virtualMapConfig,
             @NonNull final VirtualDataSourceBuilder dataSourceBuilder,
             @NonNull final VirtualDataSource dataSource,
-            @NonNull final VirtualMapMetadata metadata,
             @NonNull final VirtualMapStatistics statistics,
             @NonNull final VirtualHasher hasher,
             @Nullable final Hash reconnectHash) {
@@ -414,7 +390,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
 
         this.dataSourceBuilder = requireNonNull(dataSourceBuilder);
         this.dataSource = requireNonNull(dataSource);
-        this.metadata = requireNonNull(metadata);
+        this.metadata = new Metadata(this.dataSource.getFirstLeafPath(), this.dataSource.getLastLeafPath());
         this.statistics = requireNonNull(statistics);
         this.statistics.setSize(size());
 
@@ -439,7 +415,9 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * the two values.
      * <p>
      * If the hashes differ, the method iterates over every leaf node directly from disk
-     * and rehashes them.
+     * and rehashes them. All new hashes are written to the data source before the new
+     * root hash is set and this method returns. If rehashing or any flush fails, times out,
+     * or the current thread is interrupted, an exception is thrown, and the root hash isn't set.
      * <p>
      * The main difference from {@link #computeHash()} is that {@code computeHash()}
      * only updates hashes for dirty leaves that are already in the in-memory cache,
@@ -458,110 +436,79 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         assert firstLeafPath == metadata.getFirstLeafPath();
         assert lastLeafPath == metadata.getLastLeafPath();
 
-        final ConcurrentBlockingIterator<VirtualLeafBytes> rehashIterator =
-                new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE);
-
         if (firstLeafPath < 0 || lastLeafPath < 0) {
             logger.info(STARTUP.getMarker(), "VirtualMap is empty, skipping full rehash.");
             return;
         }
         try {
-            final Hash loadedHash = records.findHash(firstLeafPath);
-            final VirtualLeafBytes<?> virtualLeafBytes = dataSource.loadLeafRecord(firstLeafPath);
-            if (virtualLeafBytes == null || loadedHash == null) {
-                logger.error(
-                        STARTUP.getMarker(),
-                        "Loaded leaf bytes or hash for the first leaf path {} is null, skipping full rehash",
-                        firstLeafPath);
-                return;
-            }
-            final WritableMessageDigest wmd = new WritableMessageDigest(Cryptography.DEFAULT_DIGEST_TYPE.buildDigest());
-            virtualLeafBytes.writeToForHashing(wmd);
-            final Hash recaclulatedHash = new Hash(wmd.digest(), Cryptography.DEFAULT_DIGEST_TYPE);
-            if (loadedHash.equals(recaclulatedHash)) {
-                logger.info(
-                        STARTUP.getMarker(),
-                        "Recalculated hash for the first leaf path is equal to loaded hash, skipping full rehash");
-                return;
+            final boolean digestTypeChanged = Cryptography.DEFAULT_DIGEST_TYPE != dataSource.getLoadedHashDigestType();
+            if (!digestTypeChanged) {
+                final Hash loadedHash = records.findHash(firstLeafPath);
+                final VirtualLeafBytes<?> virtualLeafBytes = dataSource.loadLeafRecord(firstLeafPath);
+                if (virtualLeafBytes == null || loadedHash == null) {
+                    logger.error(
+                            STARTUP.getMarker(),
+                            "Loaded leaf bytes or hash for the first leaf path {} is null, skipping full rehash",
+                            firstLeafPath);
+                    return;
+                }
+                final Hash recaclulatedHash = new MerkleHasher().leafNodeHash(virtualLeafBytes);
+                if (loadedHash.equals(recaclulatedHash)) {
+                    logger.info(
+                            STARTUP.getMarker(),
+                            "Recalculated hash for the first leaf path is equal to loaded hash, skipping full rehash");
+                    return;
+                }
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         logger.info(STARTUP.getMarker(), "Doing full rehash for the path range: {} - {}", firstLeafPath, lastLeafPath);
-        final FullLeafRehashHashListener hashListener = new FullLeafRehashHashListener(
-                firstLeafPath,
-                lastLeafPath,
-                dataSource,
-                statistics,
-                // even though this listener has nothing to do with the reconnect, reconnect flush interval value
-                // is appropriate to use here.
-                virtualMapConfig.reconnectFlushInterval());
+        final int hashChunkHeight = dataSource.getHashChunkHeight();
+        final FullLeafRehashHashListener chunkListener =
+                new FullLeafRehashHashListener(dataSource, statistics, FULL_REHASH_FLUSH_INTERVAL);
+        final HashChunkCollector hashListener =
+                new HashChunkCollector(hashChunkHeight, firstLeafPath, lastLeafPath, chunkListener);
 
-        // This background thread will be responsible for hashing the tree and sending the
-        // data to the hash listener to flush.
-        final CompletableFuture<Hash> fullRehashFuture = CompletableFuture.supplyAsync(() -> hasher.hash(
-                        dataSource.getHashChunkHeight(),
-                        cache::preloadHashChunk,
-                        rehashIterator,
-                        firstLeafPath,
-                        lastLeafPath,
-                        hashListener))
-                .exceptionally((exception) -> {
-                    // Shut down the iterator.
-                    rehashIterator.close();
-                    final var message = "Full rehash failed";
-                    logger.error(EXCEPTION.getMarker(), message, exception);
-                    throw new MerkleSynchronizationException(message, exception);
-                });
-
-        final long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
-        final long start = System.currentTimeMillis();
-        try {
-            for (long i = firstLeafPath; i <= lastLeafPath; i++) {
-                try {
-                    final VirtualLeafBytes<?> leafBytes = dataSource.loadLeafRecord(i);
-                    assert leafBytes != null : "Leaf record should not be null";
-                    try {
-                        rehashIterator.supply(leafBytes);
-                    } catch (final MerkleSynchronizationException e) {
-                        throw e;
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new MerkleSynchronizationException(
-                                "Interrupted while waiting to supply a new leaf to the hashing iterator buffer", e);
-                    } catch (final Exception e) {
-                        throw new MerkleSynchronizationException("Failed to handle a leaf during full rehashing", e);
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-                if (i % onePercent == 0) {
-                    logger.info(STARTUP.getMarker(), "Full rehash progress: {}%", (i - firstLeafPath) / onePercent + 1);
-                }
+        final LongFunction<VirtualLeafBytes<?>> leafReader = path -> {
+            try {
+                return dataSource.loadLeafRecord(path);
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
             }
-        } finally {
-            rehashIterator.close();
-        }
+        };
+
+        // Thread pool to run full rehash tasks, shut down as soon as the rehash is complete.
+        // It must not be in async mode, see TaskPerNodeFullRehasher javadoc for details
+        // Use one less than the number of available processors to avoid saturating the CPU and leaving no room for
+        // other tasks.
+        final ForkJoinPool rehashPool = ExecutorFactory.create(
+                        "VirtualMapFullRehash",
+                        (_, e) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during full rehash", e))
+                .createForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), false);
 
         try {
-            final long millisSpent = System.currentTimeMillis() - start;
-            logger.info(STARTUP.getMarker(), "It took {} seconds to feed all leaves to the hasher", millisSpent / 1000);
-            setHashPrivate(fullRehashFuture.get(virtualMapConfig.fullRehashTimeoutMs() - millisSpent, MILLISECONDS));
-        } catch (ExecutionException e) {
-            final var message = "Failed to get hash during full rehashing";
-            throw new MerkleSynchronizationException(message, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            final var message = "Interrupted while full rehashing";
-            throw new MerkleSynchronizationException(message, e);
-        } catch (TimeoutException e) {
-            final var message = "Wasn't able to finish full rehashing in time";
-            throw new MerkleSynchronizationException(message, e);
+            final long start = System.currentTimeMillis();
+            final Hash rootHash = TaskPerNodeFullRehasher.hash(
+                    rehashPool,
+                    firstLeafPath,
+                    lastLeafPath,
+                    leafReader,
+                    hashListener,
+                    virtualMapConfig.fullRehashTimeoutMs());
+            setHashPrivate(rootHash);
+            logger.info(
+                    STARTUP.getMarker(), "Full rehash took {} seconds", (System.currentTimeMillis() - start) / 1000);
+        } finally {
+            // On success, all rehash tasks are already complete. On failure, tasks that are still running, e.g.
+            // hash chunk flushes, are left to finish on their own, and the pool terminates after that
+            rehashPool.shutdown();
         }
     }
 
-    public VirtualNodeCache getCache() {
+    // Test only
+    VirtualNodeCache getCache() {
         return cache;
     }
 
@@ -569,9 +516,18 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         return records;
     }
 
-    // Exposed for tests only.
-    public VirtualPipeline getPipeline() {
-        return pipeline;
+    /**
+     * Waits until all copies in the same family as current instance are destroyed
+     * (with possible hash/flush/merge) or until the given timeout expires.
+     * It can be called on any copy in the family, even released ones.
+     *
+     * @param timeout timeout to wait until all copies in the same family as current instance are destroyed
+     * @return {@code true} if all copies are destroyed and finally processed if needed.
+     *
+     * @throws InterruptedException if current thread was interrupted
+     */
+    public boolean waitUntilFamilyDestroyed(final Duration timeout) throws InterruptedException {
+        return pipeline.awaitTermination(timeout.toMillis(), MILLISECONDS);
     }
 
     // ---- Package-private accessors for VirtualMapReconnect ----
@@ -596,16 +552,8 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
 
     /** Returns the virtual map configuration. */
     @NonNull
-    VirtualMapConfig getVirtualMapConfig() {
+    public VirtualMapConfig getVirtualMapConfig() {
         return virtualMapConfig;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isRegisteredToPipeline(final VirtualPipeline pipeline) {
-        return pipeline == this.pipeline;
     }
 
     /**
@@ -648,7 +596,16 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
         final VirtualLeafBytes<V> rec = records.findLeafRecord(key);
         statistics.countReadEntities();
-        return rec == null ? null : rec.value(valueCodec);
+        return rec == null ? null : rec.value(valueCodec, virtualMapConfig.valueParseMaxSizeBytes());
+    }
+
+    /**
+     * Gets the configured maximum size (in bytes) for parsing a virtual map value payload.
+     *
+     * @return the max parse size in bytes
+     */
+    public int valueParseMaxSizeBytes() {
+        return virtualMapConfig.valueParseMaxSizeBytes();
     }
 
     /**
@@ -753,7 +710,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
                             false,
                             false,
                             DEFAULT_MAX_DEPTH,
-                            MAX_PBJ_RECORD_SIZE);
+                            virtualMapConfig.valueParseMaxSizeBytes());
         } catch (final ParseException e) {
             throw new RuntimeException("Failed to deserialize a value from bytes", e);
         }
@@ -802,8 +759,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             if (lastLeafParent == ROOT_PATH) {
                 if (firstLeafPath == lastLeafPath) {
                     // We just removed the very last leaf, so set these paths to be invalid
-                    metadata.setFirstLeafPath(INVALID_PATH);
-                    metadata.setLastLeafPath(INVALID_PATH);
+                    metadata.clear();
                 } else {
                     // We removed the second to last leaf, so the first & last leaf paths are now the same.
                     metadata.setLastLeafPath(FIRST_LEFT_PATH);
@@ -823,8 +779,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
                 cache.putLeaf(sibling.withPath(lastLeafParent));
 
                 // Update the first & last leaf paths
-                metadata.setFirstLeafPath(lastLeafParent); // replaced by the sibling, it is now first
-                metadata.setLastLeafPath(lastLeafSibling - 1); // One left of the last leaf sibling
+                metadata.setPaths(lastLeafParent, lastLeafSibling - 1);
             }
             statistics.setSize(metadata.getSize());
 
@@ -994,7 +949,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         }
 
         final long start = System.currentTimeMillis();
-        flush(cache, metadata, dataSource);
+        flush(cache, dataSource);
         cache.release();
         final long end = System.currentTimeMillis();
         flushed.set(true);
@@ -1038,18 +993,18 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
                 end - start);
     }
 
-    private void flush(VirtualNodeCache cacheToFlush, VirtualMapMetadata stateToUse, VirtualDataSource ds) {
+    private void flush(VirtualNodeCache cacheToFlush, VirtualDataSource ds) {
         try {
             // Get the leaves that were changed and sort them by path so that lower paths come first
             final Stream<VirtualLeafBytes> dirtyLeaves =
-                    cacheToFlush.dirtyLeavesForFlush(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
+                    cacheToFlush.dirtyLeavesForFlush(metadata.getFirstLeafPath(), metadata.getLastLeafPath());
             // Get the deleted leaves
             final Stream<VirtualLeafBytes> deletedLeaves = cacheToFlush.deletedLeaves();
             // Save the dirty hashes
-            final Stream<VirtualHashChunk> dirtyHashes = cacheToFlush.dirtyHashesForFlush(stateToUse.getLastLeafPath());
+            final Stream<VirtualHashChunk> dirtyHashes = cacheToFlush.dirtyHashesForFlush(metadata.getLastLeafPath());
             ds.saveRecords(
-                    stateToUse.getFirstLeafPath(),
-                    stateToUse.getLastLeafPath(),
+                    metadata.getFirstLeafPath(),
+                    metadata.getLastLeafPath(),
                     dirtyHashes,
                     dirtyLeaves,
                     deletedLeaves,
@@ -1080,11 +1035,11 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
     }
 
     /**
-     * Gets the current state.
+     * Gets the current metadata of the map.
      *
      * @return The current state
      */
-    public VirtualMapMetadata getMetadata() {
+    public Metadata getMetadata() {
         return metadata;
     }
 
@@ -1207,7 +1162,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
 
         if (virtualHash == null) {
             final Hash rootHash = (metadata.getSize() == 0) ? null : records.rootHash();
-            virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
+            virtualHash = (rootHash != null) ? rootHash : MerkleHasher.emptyRootHash(Cryptography.DEFAULT_DIGEST_TYPE);
         }
 
         // There are no remaining changes to be made to the cache, so we can seal it.
@@ -1225,12 +1180,21 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * @return copy of underlying datasource with cache copy flushed into it, and running compaction
      */
     VirtualDataSource detachAsDataSourceCopy() {
-        return pipeline.pausePipelineAndRun("detach", () -> {
+        return pipeline.pausePipelineAndExecute("detach", () -> {
             final Path snapshotPath = dataSourceBuilder.snapshot(null, dataSource);
-            VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, true, false);
-
-            flush(cache.snapshot(), metadata, dataSourceCopy);
-            return dataSourceCopy;
+            try {
+                VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, true, false);
+                flush(cache.snapshot(), dataSourceCopy);
+                return dataSourceCopy;
+            } finally {
+                try {
+                    // Delete the snapshot directory
+                    FileUtils.deleteDirectory(snapshotPath);
+                } catch (IOException e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new UncheckedIOException("Unable to delete snapshot directory", e);
+                }
+            }
         });
     }
 
@@ -1241,12 +1205,23 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * @return a reference to the detached state of virtual map at some moment
      */
     public RecordAccessor detach() {
-        return pipeline.pausePipelineAndRun("detach", () -> {
+        return pipeline.pausePipelineAndExecute("detach", () -> {
             final Path snapshotPath = dataSourceSnapshot();
-            final VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, false, false);
-            final VirtualNodeCache cacheSnapshot = cache.snapshot();
-            final int hashChunkHeight = dataSource.getHashChunkHeight();
-            return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot, dataSourceCopy);
+            try {
+                final VirtualDataSource dataSourceCopy =
+                        dataSourceBuilder.build(getLabel(), snapshotPath, false, false);
+                final VirtualNodeCache cacheSnapshot = cache.snapshot();
+                final int hashChunkHeight = dataSource.getHashChunkHeight();
+                return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot, dataSourceCopy);
+            } finally {
+                try {
+                    // Delete the snapshot directory
+                    FileUtils.deleteDirectory(snapshotPath);
+                } catch (IOException e) {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new UncheckedIOException("Unable to delete snapshot directory", e);
+                }
+            }
         });
     }
 
@@ -1267,28 +1242,6 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         }
 
         return dataSourceBuilder.snapshot(null, dataSource);
-    }
-
-    /*
-     * Reconnect Implementation
-     **/
-
-    /**
-     * Creates a virtual view for this map to use by reconnect teacher. The view is used
-     * to access all nodes and hashes in the virtual tree. The view must not share any
-     * data with this map, so if any changes are made to the map, they aren't reflected
-     * in the view.
-     *
-     * <p>The view will be closed by reconnect teacher, when reconnect is complete or failed.
-     */
-    public TeacherTreeView buildTeacherView(@NonNull final ReconnectConfig reconnectConfig) {
-        return switch (virtualMapConfig.reconnectMode()) {
-            case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM,
-                    VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC,
-                    VirtualMapReconnectMode.PULL_PARALLEL_SYNC -> new TeacherPullVirtualTreeView(reconnectConfig, this);
-            default ->
-                throw new UnsupportedOperationException("Unknown reconnect mode: " + virtualMapConfig.reconnectMode());
-        };
     }
 
     /**
@@ -1351,8 +1304,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         if (lastLeafPath == INVALID_PATH) {
             // There are no leaves! So this one will just go left on the root
             leafPath = getLeftChildPath(ROOT_PATH);
-            metadata.setLastLeafPath(leafPath);
-            metadata.setFirstLeafPath(leafPath);
+            metadata.setPaths(leafPath, leafPath);
         } else if (isLeft(lastLeafPath)) {
             // The only time that lastLeafPath is a left node is if the parent is root.
             // In all other cases, it will be a right node. So we can just add this
@@ -1380,8 +1332,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             leafPath = getRightChildPath(firstLeafPath);
 
             // Save the first and last leaf paths
-            metadata.setLastLeafPath(leafPath);
-            metadata.setFirstLeafPath(nextFirstLeafPath);
+            metadata.setPaths(nextFirstLeafPath, leafPath);
         }
         statistics.setSize(metadata.getSize());
 
@@ -1424,7 +1375,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      */
     public void createSnapshot(@NonNull final Path outputDirectory) throws IOException {
         final ValueReference<VirtualNodeCache> cacheSnapshot = new ValueReference<>();
-        final Path snapshotPath = pipeline.pausePipelineAndRun("detach", () -> {
+        final Path snapshotPath = pipeline.pausePipelineAndExecute("detach", () -> {
             // Lifecycle thread is paused, no cache flushes/merges, it's safe to take cache snapshot
             cacheSnapshot.setValue(cache.snapshot());
             // And make a data source snapshot. The snapshot is not loaded here, though, it is
@@ -1432,7 +1383,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             return dataSourceSnapshot();
         });
 
-        // build(), flush() and snapshot() below are called outside pausePipelineAndRun() to
+        // build(), flush() and snapshot() below are called outside pausePipelineAndExecute() to
         // unpause the lifecycle thread as quickly as possible. If the lifecycle thread is paused
         // for too long, unhandled copies pile up in the virtual pipeline, which triggers size
         // backpressure mechanism
@@ -1442,7 +1393,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             // to store data files
             dataSourceCopy = dataSourceBuilder.build(LABEL, snapshotPath, false, true);
             // Then flush the cache snapshot to the data source copy
-            flush(cacheSnapshot.getValue(), metadata, dataSourceCopy);
+            flush(cacheSnapshot.getValue(), dataSourceCopy);
             // And finally snapshot the copy to the target dir
             dataSourceBuilder.snapshot(outputDirectory, dataSourceCopy);
         } finally {
@@ -1491,11 +1442,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         return virtualMap;
     }
 
-    /*
-     * Implementation of Map-like methods
-     **/
-
-    /*
+    /**
      * Gets the number of elements in this map.
      *
      * @return The number of key/value pairs in the map.
@@ -1504,12 +1451,152 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
         return metadata.getSize();
     }
 
-    /*
+    /**
      * Gets whether this map is empty.
      *
      * @return True if the map is empty
      */
     public boolean isEmpty() {
         return size() == 0;
+    }
+
+    /**
+     * Metadata about the virtual map, including the first and last leaf paths.
+     */
+    public static final class Metadata {
+
+        private long firstLeafPath;
+
+        private long lastLeafPath;
+
+        public Metadata() {
+            this(VirtualDataSource.INVALID_PATH, VirtualDataSource.INVALID_PATH);
+        }
+
+        public Metadata(long firstLeafPath, long lastLeafPath) {
+            setPaths(firstLeafPath, lastLeafPath);
+        }
+
+        public Metadata copy() {
+            return new Metadata(firstLeafPath, lastLeafPath);
+        }
+
+        /**
+         * @return the path of the very first leaf in the tree. Can be {@value MerklePathUtils#INVALID_PATH} if there are no leaves.
+         */
+        public long getFirstLeafPath() {
+            return firstLeafPath;
+        }
+
+        /**
+         * @return the path of the very last leaf in the tree. Can be {@value MerklePathUtils#INVALID_PATH} if there are no leaves.
+         */
+        public long getLastLeafPath() {
+            return lastLeafPath;
+        }
+
+        /**
+         * @return size of current range (number of leaves).
+         */
+        public long getSize() {
+            if (getFirstLeafPath() == INVALID_PATH) {
+                return 0;
+            }
+
+            return getLastLeafPath() - getFirstLeafPath() + 1;
+        }
+
+        /**
+         * Determines if a given path refers to a leaf
+         *
+         * @param path the virtual path
+         * @return {@code true} if the path is within the leaf range
+         */
+        public boolean isLeaf(final long path) {
+            return (path >= firstLeafPath) && (path <= lastLeafPath) && (firstLeafPath != INVALID_PATH);
+        }
+
+        /**
+         * Set the first leaf path.
+         *
+         * @param path The new path. Can be {@value MerklePathUtils#INVALID_PATH}, or positive. Cannot be 0 or any other negative value.
+         * @throws IllegalArgumentException If the path is not valid
+         */
+        void setFirstLeafPath(final long path) {
+            if (path < 1 && path != INVALID_PATH) {
+                throw new IllegalArgumentException("The path must be positive, or INVALID_PATH, but was " + path);
+            }
+            if (path > lastLeafPath) {
+                throw new IllegalArgumentException("The firstLeafPath must be less than or equal to the lastLeafPath");
+            }
+            firstLeafPath = path;
+        }
+
+        /**
+         * Set the last leaf path.
+         *
+         * @param path The new path. Can be {@value MerklePathUtils#INVALID_PATH}, or positive. Cannot be 0 or any other negative value.
+         * @throws IllegalArgumentException If the path is not valid
+         */
+        void setLastLeafPath(final long path) {
+            if (path < 1 && path != INVALID_PATH) {
+                throw new IllegalArgumentException("The path must be positive, or INVALID_PATH, but was " + path);
+            }
+            if (path < firstLeafPath && path != INVALID_PATH) {
+                throw new IllegalArgumentException(
+                        "The lastLeafPath must be greater than or equal to the firstLeafPath");
+            }
+            this.lastLeafPath = path;
+        }
+
+        void clear() {
+            firstLeafPath = INVALID_PATH;
+            lastLeafPath = INVALID_PATH;
+        }
+
+        void setPaths(final long firstLeafPath, final long lastLeafPath) {
+            if (lastLeafPath == firstLeafPath) {
+                if ((firstLeafPath != VirtualDataSource.INVALID_PATH) && (firstLeafPath != 1)) {
+                    throw new IllegalArgumentException("Invalid paths: " + firstLeafPath + "/" + lastLeafPath);
+                }
+            } else if (lastLeafPath < firstLeafPath) {
+                throw new IllegalArgumentException(
+                        "The lastLeafPath must be greater than or equal to the firstLeafPath");
+            }
+            this.firstLeafPath = firstLeafPath;
+            this.lastLeafPath = lastLeafPath;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this)
+                    .append("firstLeafPath", firstLeafPath)
+                    .append("lastLeafPath", lastLeafPath)
+                    .append("size", getSize())
+                    .toString();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (o instanceof Metadata other) {
+                return firstLeafPath == other.getFirstLeafPath() && lastLeafPath == other.getLastLeafPath();
+            }
+            return false;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public int hashCode() {
+            return Objects.hash(firstLeafPath, lastLeafPath);
+        }
     }
 }

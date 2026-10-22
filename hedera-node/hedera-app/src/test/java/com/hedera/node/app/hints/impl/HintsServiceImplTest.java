@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.hapi.node.state.hints.CRSStage.COMPLETED;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +20,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsKeySet;
+import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -31,10 +35,15 @@ import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeTssMetadata;
+import com.hedera.node.internal.network.TssMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
@@ -45,6 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -109,6 +120,9 @@ class HintsServiceImplTest {
 
     @Mock
     private WritableSingletonState<CRSState> crsState;
+
+    @Mock
+    private WritableKVState<HintsPartyId, HintsKeySet> hintsKeys;
 
     @Mock
     private Configuration configuration;
@@ -193,21 +207,25 @@ class HintsServiceImplTest {
     @Test
     void signCreatesSigningSubmitsPartialSignatureAndRemovesFromMapOnCompletion() {
         final var blockHash = Bytes.wrap("block-hash".getBytes());
-        final var signings = new ConcurrentHashMap<Bytes, HintsContext.Signing>();
+        final var signings = new ConcurrentHashMap<Bytes, BlockHashSigning>();
         given(component.signingContext()).willReturn(context);
         given(context.isReady()).willReturn(true);
         given(component.signings()).willReturn(signings);
         given(component.submissions()).willReturn(submissions);
-        given(submissions.submitPartialSignature(blockHash)).willReturn(CompletableFuture.completedFuture(null));
-        given(context.newSigning(eq(blockHash), any(Runnable.class))).willReturn(signing);
+        final var submissionFuture = CompletableFuture.<Void>completedFuture(null);
+        given(signing.constructionId()).willReturn(123L);
+        given(submissions.submitPartialSignature(123L, blockHash)).willReturn(submissionFuture);
+        given(context.newSigningForActiveConstruction(eq(blockHash), any(Runnable.class)))
+                .willReturn(signing);
 
         final var returned = subject.sign(blockHash);
 
-        assertSame(signing, returned);
+        assertSame(signing, returned.signing());
+        assertSame(submissionFuture, returned.submissionFuture());
         assertSame(signing, signings.get(blockHash));
         final var onCompletion = ArgumentCaptor.forClass(Runnable.class);
-        verify(context).newSigning(eq(blockHash), onCompletion.capture());
-        verify(submissions).submitPartialSignature(blockHash);
+        verify(context).newSigningForActiveConstruction(eq(blockHash), onCompletion.capture());
+        verify(submissions).submitPartialSignature(123L, blockHash);
 
         onCompletion.getValue().run();
 
@@ -217,19 +235,22 @@ class HintsServiceImplTest {
     @Test
     void signReusesExistingSigningForSameBlockHash() {
         final var blockHash = Bytes.wrap("same-hash".getBytes());
-        final var signings = new ConcurrentHashMap<Bytes, HintsContext.Signing>();
+        final var signings = new ConcurrentHashMap<Bytes, BlockHashSigning>();
         signings.put(blockHash, signing);
         given(component.signingContext()).willReturn(context);
         given(context.isReady()).willReturn(true);
         given(component.signings()).willReturn(signings);
         given(component.submissions()).willReturn(submissions);
-        given(submissions.submitPartialSignature(blockHash)).willReturn(CompletableFuture.completedFuture(null));
+        final var submissionFuture = CompletableFuture.<Void>completedFuture(null);
+        given(signing.constructionId()).willReturn(123L);
+        given(submissions.submitPartialSignature(123L, blockHash)).willReturn(submissionFuture);
 
         final var returned = subject.sign(blockHash);
 
-        assertSame(signing, returned);
-        verify(context, never()).newSigning(any(), any(Runnable.class));
-        verify(submissions).submitPartialSignature(blockHash);
+        assertSame(signing, returned.signing());
+        assertSame(submissionFuture, returned.submissionFuture());
+        verify(context, never()).newSigningForActiveConstruction(any(), any(Runnable.class));
+        verify(submissions).submitPartialSignature(123L, blockHash);
     }
 
     @Test
@@ -267,7 +288,7 @@ class HintsServiceImplTest {
         given(hintsStore.handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false))
                 .willReturn(false);
 
-        subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false);
+        assertFalse(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false));
 
         verify(hintsStore).handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false);
         verify(component, never()).signingContext();
@@ -284,7 +305,7 @@ class HintsServiceImplTest {
         given(hintsStore.getActiveConstruction()).willReturn(construction);
         given(component.signingContext()).willReturn(context);
 
-        subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, true);
+        assertTrue(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, true));
 
         verify(context).setConstruction(construction);
     }
@@ -375,6 +396,69 @@ class HintsServiceImplTest {
         verify(activeConstructionState).put(HintsConstruction.DEFAULT);
         verify(nextConstructionState).put(HintsConstruction.DEFAULT);
         verify(crsState).put(CRSState.DEFAULT);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"DEV", "TEST", "PROD"})
+    void respectsProfileWhenInitializingGenesisFromStartupNetworkTssMetadata(final String profile) {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("hedera.profiles.active", profile)
+                .withValue("tss.hintsEnabled", true)
+                .getOrCreateConfig();
+        final var activeConstruction = HintsConstruction.newBuilder()
+                .constructionId(123L)
+                .hintsScheme(HintsScheme.DEFAULT)
+                .build();
+        final var startupCrsState = CRSState.newBuilder().stage(COMPLETED).build();
+        final var hintsKey = Bytes.wrap("startup-hints-key");
+        final var network = Network.newBuilder()
+                .tssMetadata(TssMetadata.newBuilder()
+                        .activeHintsConstruction(activeConstruction)
+                        .crsState(startupCrsState))
+                .nodeTssMetadata(NodeTssMetadata.newBuilder().hintsKey(hintsKey).build())
+                .build();
+        subject = new HintsServiceImpl(component, library, () -> network);
+        given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID))
+                .willReturn(activeConstructionState);
+        given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID))
+                .willReturn(nextConstructionState);
+        given(writableStates.<CRSState>getSingleton(V060HintsSchema.CRS_STATE_STATE_ID))
+                .willReturn(crsState);
+        final var newCrs = Bytes.wrap("new-crs");
+        if (profile.equals("PROD")) {
+            given(library.newCrs((short) partySizeForRosterNodeCount(7))).willReturn(newCrs);
+        } else {
+            given(writableStates.<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID))
+                    .willReturn(hintsKeys);
+            given(component.signingContext()).willReturn(context);
+        }
+
+        assertTrue(subject.doGenesisSetup(writableStates, config, 7));
+
+        verify(nextConstructionState).put(HintsConstruction.DEFAULT);
+        if (profile.equals("PROD")) {
+            verify(activeConstructionState).put(HintsConstruction.DEFAULT);
+            verify(crsState)
+                    .put(CRSState.newBuilder()
+                            .stage(com.hedera.hapi.node.state.hints.CRSStage.GATHERING_CONTRIBUTIONS)
+                            .nextContributingNodeId(0L)
+                            .crs(newCrs)
+                            .build());
+            verify(writableStates, never()).get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID);
+            verifyNoInteractions(hintsKeys, component, context);
+        } else {
+            verify(activeConstructionState).put(activeConstruction);
+            verify(crsState).put(startupCrsState);
+            verify(context).setConstruction(activeConstruction);
+            verify(hintsKeys)
+                    .put(
+                            new HintsPartyId(0, partySizeForRosterNodeCount(1)),
+                            HintsKeySet.newBuilder()
+                                    .nodeId(0L)
+                                    .adoptionTime(asTimestamp(Instant.EPOCH))
+                                    .key(hintsKey)
+                                    .build());
+        }
     }
 
     @Test

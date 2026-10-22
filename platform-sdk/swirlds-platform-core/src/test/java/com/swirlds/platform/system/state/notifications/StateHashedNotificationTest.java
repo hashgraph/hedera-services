@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.system.state.notifications;
 
+import static org.hiero.base.crypto.Cryptography.DEFAULT_DIGEST_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.state.merkle.VirtualMapState;
-import java.util.Queue;
 import org.hiero.base.crypto.Hash;
-import org.hiero.consensus.model.hashgraph.ConsensusRound;
-import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 import org.hiero.consensus.state.signed.SignedState;
 import org.junit.jupiter.api.Test;
@@ -20,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StateHashedNotificationTest {
     private static final long ROUND = 123L;
-    private static final Hash HASH = new Hash(new byte[48]);
+    private static final Hash HASH = new Hash(new byte[DEFAULT_DIGEST_TYPE.digestLength()], DEFAULT_DIGEST_TYPE);
 
     @Mock
     private VirtualMapState merkleRoot;
@@ -29,13 +26,7 @@ class StateHashedNotificationTest {
     private SignedState signedState;
 
     @Mock
-    private ConsensusRound round;
-
-    @Mock
     private ReservedSignedState reservedSignedState;
-
-    @Mock
-    private Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions;
 
     @Test
     void factoryWorksAsExpected() {

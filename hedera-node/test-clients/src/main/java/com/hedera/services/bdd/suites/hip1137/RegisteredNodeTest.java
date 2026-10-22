@@ -188,7 +188,7 @@ public class RegisteredNodeTest {
                 registeredNodeUpdate(() -> NON_EXISTENT_ID)
                         .description("ghost")
                         .signedBy(DEFAULT_PAYER)
-                        .hasPrecheck(INVALID_REGISTERED_NODE_ID));
+                        .hasKnownStatus(INVALID_REGISTERED_NODE_ID));
     }
 
     @HapiTest
@@ -340,7 +340,7 @@ public class RegisteredNodeTest {
                 newKeyNamed(ADMIN_KEY),
                 registeredNodeDelete(() -> NON_EXISTENT_ID)
                         .signedBy(DEFAULT_PAYER)
-                        .hasPrecheck(INVALID_REGISTERED_NODE_ID));
+                        .hasKnownStatus(INVALID_REGISTERED_NODE_ID));
     }
 
     @HapiTest
@@ -678,12 +678,11 @@ public class RegisteredNodeTest {
                         .hasPrecheck(NOT_SUPPORTED));
     }
 
-    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled", "fees.simpleFeesEnabled"})
+    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled"})
     @DisplayName("create fails with NOT_SUPPORTED when registeredNodesEnabled is false and simple fees enabled")
     final Stream<DynamicTest> createFailsWhenFeatureDisabledWithSimpleFees() {
         return hapiTest(
                 overriding("nodes.registeredNodesEnabled", "false"),
-                overriding("fees.simpleFeesEnabled", "true"),
                 newKeyNamed(ADMIN_KEY),
                 registeredNodeCreate(REGISTERED_NODE)
                         .adminKey(ADMIN_KEY)
@@ -691,7 +690,7 @@ public class RegisteredNodeTest {
                         .hasPrecheck(NOT_SUPPORTED));
     }
 
-    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled", "fees.simpleFeesEnabled"})
+    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled"})
     @DisplayName("update fails with NOT_SUPPORTED when registeredNodesEnabled is false and simple fees enabled")
     final Stream<DynamicTest> updateFailsWhenFeatureDisabledWithSimpleFees() {
         return hapiTest(
@@ -701,14 +700,13 @@ public class RegisteredNodeTest {
                         .serviceEndpoints(DEFAULT_ENDPOINTS)
                         .hasKnownStatus(SUCCESS),
                 overriding("nodes.registeredNodesEnabled", "false"),
-                overriding("fees.simpleFeesEnabled", "true"),
                 registeredNodeUpdate(REGISTERED_NODE)
                         .description("updated")
                         .signedBy(DEFAULT_PAYER, ADMIN_KEY)
                         .hasPrecheck(NOT_SUPPORTED));
     }
 
-    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled", "fees.simpleFeesEnabled"})
+    @LeakyHapiTest(overrides = {"nodes.registeredNodesEnabled"})
     @DisplayName("delete fails with NOT_SUPPORTED when registeredNodesEnabled is false and simple fees enabled")
     final Stream<DynamicTest> deleteFailsWhenFeatureDisabledWithSimpleFees() {
         return hapiTest(
@@ -718,7 +716,6 @@ public class RegisteredNodeTest {
                         .serviceEndpoints(DEFAULT_ENDPOINTS)
                         .hasKnownStatus(SUCCESS),
                 overriding("nodes.registeredNodesEnabled", "false"),
-                overriding("fees.simpleFeesEnabled", "true"),
                 registeredNodeDelete(REGISTERED_NODE)
                         .signedBy(DEFAULT_PAYER, ADMIN_KEY)
                         .hasPrecheck(NOT_SUPPORTED));

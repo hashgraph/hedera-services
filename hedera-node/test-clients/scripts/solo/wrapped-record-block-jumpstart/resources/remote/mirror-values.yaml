@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Mirror-node Helm chart (hedera-mirror umbrella) value overrides for the REMOTE multi-tenant
+# cluster (e.g. solo-sdlt-n6), passed via `solo mirror node add --values-file` (remote only).
+#
+# The hedera-mirror sub-charts ship no scheduling constraints, so without this each component
+# (importer/grpc/rest/restjava/web3/monitor/pinger) lands FailedScheduling: it tolerates none of the
+# Chewie allocation's taints. Each sub-chart names the allocation group it runs on with a
+# "chewie-group" placeholder, which 103-user-solo-tests-adhoc renders into the auxiliary group's
+# labels (nodeSelector) and tolerations via .github/workflows/support/chewie/apply-allocation-scheduling.sh.
+#
+# IMPORTANT — the rendered nodeSelector and tolerations are deliberately exactly the aux group's, to
+# MATCH the remote toleration patcher (start_remote_toleration_patcher in solo-wrb-jumpstart.sh),
+# which patches every non-consensus Deployment template to those same values. Matching it makes the
+# patcher a no-op for the mirror: it neither re-patches the template (so no Deployment rollover) nor
+# deletes the pods (they already carry the aux nodeSelector). That removes the rollover-vs-Solo race
+# that otherwise crashes `solo mirror node add` at "Check pods are ready" with
+# "Cannot read properties of undefined (reading 'labels')". Add no other tolerations here.
+#
+# Keys are the hedera-mirror umbrella chart's sub-chart aliases; each maps to that sub-chart's
+# .Values.nodeSelector/.Values.tolerations. Setting an alias whose component is disabled is harmless
+# (ignored).
+grpc:
+  nodeSelector:
+    chewie-group: aux
+importer:
+  nodeSelector:
+    chewie-group: aux
+rest:
+  nodeSelector:
+    chewie-group: aux
+  monitor:
+    nodeSelector:
+      chewie-group: aux
+restjava:
+  nodeSelector:
+    chewie-group: aux
+web3:
+  nodeSelector:
+    chewie-group: aux
+monitor:
+  nodeSelector:
+    chewie-group: aux
+pinger:
+  nodeSelector:
+    chewie-group: aux

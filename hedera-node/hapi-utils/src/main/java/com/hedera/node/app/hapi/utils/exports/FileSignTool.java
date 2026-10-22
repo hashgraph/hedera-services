@@ -3,7 +3,7 @@ package com.hedera.node.app.hapi.utils.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static org.hiero.base.file.FileUtils.getAbsolutePath;
 import static org.hiero.base.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,10 +14,6 @@ import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SignatureFile;
 import com.hedera.services.stream.proto.SignatureObject;
-import com.swirlds.common.constructable.ConstructableRegistration;
-import com.swirlds.common.stream.EventStreamType;
-import com.swirlds.common.stream.StreamType;
-import com.swirlds.common.stream.internal.StreamTypeFromJson;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -51,11 +47,14 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.hiero.base.constructable.ConstructableRegistryException;
-import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.HashingOutputStream;
 import org.hiero.base.crypto.SignatureType;
 import org.hiero.base.io.streams.SerializableDataOutputStream;
+import org.hiero.consensus.constructable.ConstructableRegistration;
+import org.hiero.consensus.event.stream.EventStreamType;
+import org.hiero.consensus.event.stream.StreamType;
+import org.hiero.consensus.event.stream.StreamTypeFromJson;
 
 /**
  * This is a standalone utility tool to generate signature files for event/record stream, and
@@ -100,7 +99,8 @@ public class FileSignTool {
      */
     private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
-    private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
+    // Stream files are signed over SHA-384 hashes, whatever the platform's default digest
+    private static final DigestType STREAM_FILE_DIGEST_TYPE = DigestType.SHA_384;
 
     /**
      * a messageDigest object for digesting entire stream file and generating entire record stream
@@ -253,7 +253,7 @@ public class FileSignTool {
     private static HashObject toProto(final byte[] hash) {
         return HashObject.newBuilder()
                 .setAlgorithm(HashAlgorithm.SHA_384)
-                .setLength(currentDigestType.digestLength())
+                .setLength(STREAM_FILE_DIGEST_TYPE.digestLength())
                 .setHash(wrapUnsafely(hash))
                 .build();
     }
@@ -389,8 +389,8 @@ public class FileSignTool {
 
     private static void initRecordDigest() {
         try {
-            streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
-            metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
+            streamDigest = MessageDigest.getInstance(STREAM_FILE_DIGEST_TYPE.algorithmName());
+            metadataStreamDigest = MessageDigest.getInstance(STREAM_FILE_DIGEST_TYPE.algorithmName());
         } catch (final NoSuchAlgorithmException e) {
             LOGGER.error(MARKER, "Failed to create message digest", e);
         }

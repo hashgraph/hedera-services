@@ -11,8 +11,7 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.test.fixtures.resource.ResourceLoader;
-import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.platform.config.ConfigurationSetupUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +23,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.hiero.base.crypto.SigningSchema;
 import org.hiero.base.crypto.config.CryptoConfig_;
+import org.hiero.base.utility.test.fixtures.io.ResourceExtractor;
+import org.hiero.consensus.fakes.crypto.KeysAndCertsGenerator;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.roster.ReadableRosterStore;
@@ -58,8 +60,8 @@ class EnhancedKeyStoreLoaderTest {
 
     @BeforeEach
     void testSetup() throws IOException {
-        final ResourceLoader<EnhancedKeyStoreLoaderTest> loader =
-                new ResourceLoader<>(EnhancedKeyStoreLoaderTest.class);
+        final ResourceExtractor<EnhancedKeyStoreLoaderTest> loader =
+                new ResourceExtractor<>(EnhancedKeyStoreLoaderTest.class);
         final Path tempDir = loader.loadDirectory("com/swirlds/platform/crypto/EnhancedKeyStoreLoader");
 
         Files.move(tempDir, testDataDirectory, REPLACE_EXISTING);
@@ -138,6 +140,76 @@ class EnhancedKeyStoreLoaderTest {
     }
 
     /**
+     * Covers the Ed25519 branch introduced by the ed-keys change at
+     * {@code EnhancedKeyStoreLoader.generate()}, where the agreement certificate's signature algorithm is
+     * derived from the signing key via {@code SigningSchema.fromKeyType(privateSigningKey).getSigningAlgorithm()}
+     * instead of the hard-coded {@code CryptoConstants.SIG_TYPE2} (SHA384withRSA). With an Ed25519 signing key,
+     * the previous code would throw inside the JCA signer; the new code must dispatch to {@code "Ed25519"}
+     * so the agreement cert is self-consistent.
+     *
+     * <p>Build-your-own fixture: unlike the static PEM directories the parameterized positive test relies on,
+     * this test generates Ed25519 signing keys in-memory, writes only the signing private keys to a temp
+     * directory (mimicking the {@code enhanced-valid-no-agreement-key} shape), and seeds the roster entries'
+     * {@code gossipCaCertificate} with the matching Ed25519 signing certs. That forces
+     * {@code EnhancedKeyStoreLoader#generate()} down the "no agreement key on disk" branch — the one that
+     * reads the schema off the signing key — using Ed25519 end-to-end.
+     */
+    @Test
+    @DisplayName("KeyStore Loader Positive Test — Ed25519 signing keys")
+    void keyStoreLoaderEd25519PositiveTest() throws Exception {
+        final Path keyDirectory = Files.createDirectory(testDataDirectory.resolve("enhanced-valid-ed25519"));
+
+        // Generate Ed25519 signing + agreement material in-memory; keep only the signing key PEMs on disk,
+        // so `generate()` has to re-create the agreement cert using the Ed25519 signing key.
+        final Map<NodeId, KeysAndCerts> ed25519Material = new HashMap<>();
+        for (final NodeId nodeId : NODE_IDS) {
+            final KeysAndCerts kac = KeysAndCertsGenerator.generate(nodeId, SigningSchema.ED25519);
+            ed25519Material.put(nodeId, kac);
+            final String fileName = String.format("s-private-node%d.pem", nodeId.id() + 1);
+            EnhancedKeyStoreLoader.writePemFile(
+                    true,
+                    keyDirectory.resolve(fileName),
+                    kac.sigKeyPair().getPrivate().getEncoded());
+        }
+
+        // Build a roster whose gossipCaCertificate for each node is the Ed25519 signing cert generated above.
+        // This is how `EnhancedKeyStoreLoader#resolveNodeCertificate` finds the public signing cert.
+        final List<RosterEntry> rosterEntries = new ArrayList<>();
+        for (final NodeId nodeId : NODE_IDS) {
+            rosterEntries.add(RandomRosterEntryBuilder.create(new Random())
+                    .withNodeId(nodeId.id())
+                    .withSigCert(ed25519Material.get(nodeId).sigCert())
+                    .build());
+        }
+
+        final EnhancedKeyStoreLoader loader =
+                EnhancedKeyStoreLoader.using(configure(keyDirectory), NODE_IDS, rosterEntries);
+
+        assertThatCode(loader::migrate).doesNotThrowAnyException();
+        assertThatCode(loader::scan).doesNotThrowAnyException();
+        // The branch under test: this would have thrown with the old hard-coded "SHA384withRSA" when signing
+        // the agreement cert with an Ed25519 key.
+        assertThatCode(loader::generate).doesNotThrowAnyException();
+        assertThatCode(loader::verify).doesNotThrowAnyException();
+
+        final Map<NodeId, KeysAndCerts> kc = loader.keysAndCerts();
+        assertThat(kc).hasSize(NODE_IDS.size());
+        for (final NodeId nodeId : NODE_IDS) {
+            final KeysAndCerts keysAndCerts = kc.get(nodeId);
+            assertThat(keysAndCerts).isNotNull();
+
+            // Signing side is Ed25519 end-to-end. The JCE provider may surface the algorithm as either
+            // "Ed25519" or the generic "EdDSA"; SigningSchema.fromKeyType accepts both, and so do we.
+            assertThat(keysAndCerts.sigKeyPair().getPrivate().getAlgorithm()).isIn("Ed25519", "EdDSA");
+            assertThat(keysAndCerts.sigCert().getPublicKey().getAlgorithm()).isIn("Ed25519", "EdDSA");
+
+            // The agreement cert was signed by the Ed25519 signing key — this is what the branch
+            // enables and what the old SHA384withRSA constant would have blocked.
+            assertThat(keysAndCerts.agrCert().getSigAlgName()).isIn("Ed25519", "EdDSA");
+        }
+    }
+
+    /**
      * The Negative Type tests are designed to test the case where the key store loader is able to scan the key
      * directory, but one or more private keys are either corrupt or missing.
      *
@@ -174,7 +246,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
         final ConfigurationBuilder builder = ConfigurationBuilder.create();
-        BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
+        ConfigurationSetupUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());
         builder.withValue(CryptoConfig_.KEYSTORE_PASSWORD, "password");

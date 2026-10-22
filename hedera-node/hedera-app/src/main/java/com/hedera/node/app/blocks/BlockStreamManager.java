@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowHashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -13,8 +14,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.hashgraph.Round;
 
@@ -30,13 +34,32 @@ import org.hiero.consensus.model.hashgraph.Round;
  * Merkle trees will be in the order they are written.
  */
 public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener {
+    // SHA-384-default: the block-root Merkle tree's hash algorithm is chosen per-call by BlockStreamConfig.digestType
+    // (see BlockStreamManagerImpl.digestOrThrow()); this constant is only the fallback for callers with no
+    // access to that config (e.g. Hedera.java's genesis sentinel, which is only ever compared for equality).
     byte[] HASH_OF_ZERO_BYTES = noThrowSha384HashOf(new byte[] {0x0});
-    Bytes HASH_OF_ZERO = Bytes.wrap(HASH_OF_ZERO_BYTES);
+    Bytes HASH_OF_ZERO_384 = Bytes.wrap(HASH_OF_ZERO_BYTES);
 
-    /*
-     * Typically there are four siblings per block, but in our case the right penultimate root (i.e. the right child of a block's root hash) is merely a composition of its left child hash, requiring no other inputs. <b>This must change if we ever use one of the reserved roots for anything.</b>
+    /**
+     * The genesis/empty-subtree sentinel {@code hash(0x00)} under the hash algorithm selected by
+     * {@code BlockStreamConfig.digestType}: {@code sha256(0x00)} (32 bytes) when {@code digestType} is
+     * {@link DigestType#SHA_256}, otherwise the {@link #HASH_OF_ZERO_384} default ({@code sha384(0x00)}, 48 bytes).
+     *
+     * @param digestType the digest algorithm selected by {@code BlockStreamConfig.digestType}
+     * @return the config-appropriate hash-of-zero sentinel
      */
-    int NUM_SIBLINGS_PER_BLOCK = 3;
+    static Bytes hashOfZero(final DigestType digestType) {
+        return digestType == DigestType.SHA_256
+                ? Bytes.wrap(noThrowHashOf(new byte[] {0x0}, DigestType.SHA_256))
+                : HASH_OF_ZERO_384;
+    }
+
+    /**
+     * The number of sibling hashes on the path from a block's first branch up to its root: one per level
+     * of the eight assigned branches, plus the root of the reserved branches 9-16. The block root's other
+     * child, the consensus timestamp leaf, is carried separately and is not counted here.
+     */
+    int NUM_SIBLINGS_PER_BLOCK = 4;
 
     /**
      * The types of work that may be identified as pending within a block.
@@ -87,15 +110,25 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
     /**
      * Initializes the block stream manager after a restart or during reconnect with the hashes necessary to
      * infer the starting block tree states and the last block hash used in the restart or reconnect. At
-     * genesis, the last block hash should be the {@link #HASH_OF_ZERO}. For migration scenarios, the last
-     * block hash should be the migrated block hash from {@link BlockStreamService#migratedLastBlockHash()}.
-     * In all other cases, this value should be null, and the method should calculate it from the intermediate
-     * subtree states.
+     * genesis, the last block hash should be the {@link #HASH_OF_ZERO_384}. In all other cases, this value should
+     * be null, and the method should calculate it from the intermediate subtree states.
      *
      * @param state the state to use
      * @param lastBlockHash the hash of the last block
      */
-    void init(@NonNull State state, @Nullable Bytes lastBlockHash);
+    default void init(@NonNull final State state, @Nullable final Bytes lastBlockHash) {
+        init(state, lastBlockHash, false);
+    }
+
+    /**
+     * Initializes the block stream manager, optionally loading the cutover hash context when the block stream schema
+     * overwrite was executed during this startup.
+     *
+     * @param state the state to use
+     * @param lastBlockHash the hash of the last block
+     * @param cutoverSchemaExecuted whether the cutover schema overwrite was executed during this startup
+     */
+    void init(@NonNull State state, @Nullable Bytes lastBlockHash, boolean cutoverSchemaExecuted);
 
     /**
      * Updates the internal state of the block stream manager to reflect the start of a new round.
@@ -154,6 +187,16 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
     Instant lastUsedConsensusTime();
 
     /**
+     * Returns whether ending the given round should close the current block, based on current manager state and
+     * round metadata.
+     *
+     * @param state the mutable state of the network at the end of the round
+     * @param roundNum the number of the round that is about to end
+     * @return true if ending this round should close the current block
+     */
+    boolean willCloseBlock(@NonNull State state, long roundNum);
+
+    /**
      * Updates both the internal state of the block stream manager and the durable state of the network
      * to reflect the end of the last-started round.
      *
@@ -180,18 +223,57 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
     void writeItem(@NonNull Function<Timestamp, BlockItem> itemSpec);
 
     /**
-     * Notifies the block stream manager that a fatal event has occurred, e.g. an ISS. This event should
-     * trigger any essential fatal shutdown logic.
+     * Atomically writes all block items produced by a savepoint stack, unless the block-size circuit breaker has opened.
+     * Regardless of whether the items are written, advances the logical last-used consensus time to the supplied value.
+     *
+     * @param items the block items produced by a savepoint stack
+     * @param lastUsedConsensusTime the last consensus time assigned to the stack's output
+     */
+    void writeSavepointItems(@NonNull List<BlockItem> items, @NonNull Instant lastUsedConsensusTime);
+
+    /**
+     * Returns whether savepoint-stack block output is suppressed for the current block.
+     *
+     * @return whether savepoint-stack block output is suppressed
+     */
+    boolean isSavepointOutputSuppressed();
+
+    /**
+     * Signals that the platform has reached a catastrophic failure (e.g. following an ISS). Sets a flag that
+     * (a) stops the block stream from opening or mutating any further block state and (b) causes the next round
+     * boundary on the handler thread to flush the contents of any open and pending blocks to local disk for triage.
+     * Safe to call from any thread and idempotent; it does NOT itself flush. The block stream manager is otherwise
+     * allowed to keep processing rounds normally up until this point. Callers wait for the flush to finish via
+     * {@link #awaitFatalShutdown(Duration)}.
      */
     void notifyFatalEvent();
 
     /**
-     * Synchronous method that, when invoked, blocks until the block stream manager signals a successful
-     * completion of its fatal shutdown logic.
+     * Synchronous method invoked, after {@link #notifyFatalEvent()}, when the platform has reached a catastrophic
+     * failure. Blocks until the handler-thread flush of any open and pending blocks has completed, bounded by the
+     * given timeout; if no further round boundary occurs within the timeout it flushes any already-closed pending
+     * blocks itself (a race-free fallback) and returns.
      *
-     * @param timeout the maximum time to wait for block stream shutdown
+     * @param timeout the maximum time to wait for the open/pending blocks to be flushed to disk
      */
     void awaitFatalShutdown(@NonNull Duration timeout);
+
+    /**
+     * Returns a future that completes when all currently pending blocks awaiting proofs have been fully signed.
+     *
+     * @return a future that completes when there are no pending block proofs
+     */
+    @NonNull
+    CompletableFuture<Void> pendingBlockProofsFuture();
+
+    /**
+     * Returns whether this node has submitted its partial signatures for all blocks requested so far.
+     *
+     * @return true if all requested block signatures have been submitted
+     */
+    default boolean allBlocksSigned() {
+        return true;
+    }
 
     /**
      * Tracks that the given event hash has appeared in the current block.

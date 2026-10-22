@@ -8,6 +8,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hiero.otter.fixtures.app.OtterStateUtils.commitState;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.ConsensusStateEventHandler;
@@ -27,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.model.event.ConsensusEvent;
 import org.hiero.consensus.model.event.Event;
 import org.hiero.consensus.model.hashgraph.Round;
@@ -35,7 +37,6 @@ import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.model.transaction.Transaction;
 import org.hiero.otter.fixtures.app.services.platform.PlatformStateService;
 import org.hiero.otter.fixtures.app.services.roster.RosterService;
-import org.hiero.otter.fixtures.app.state.OtterStateInitializer;
 import org.hiero.otter.fixtures.network.transactions.OtterTransaction;
 
 /**
@@ -45,6 +46,8 @@ import org.hiero.otter.fixtures.network.transactions.OtterTransaction;
 public class OtterApp implements ConsensusStateEventHandler {
 
     public static final String UPGRADE_DETECTED_LOG_PAYLOAD = "OtterAppUpgradeDetectedPayload";
+
+    public static final long DEFAULT_TRANSACTION_OFFSET_NANOS = 104L;
 
     private static final Logger log = LogManager.getLogger("OtterApp");
 
@@ -71,16 +74,22 @@ public class OtterApp implements ConsensusStateEventHandler {
      *
      * @param configuration the configuration to use to create the app and its services
      * @param version the software version to set in the state
+     * @param genesisRoster the roster to write to the state in the first round, if the state does not contain a roster
+     * yet
      */
-    public OtterApp(@NonNull final Configuration configuration, @NonNull final SemanticVersion version) {
+    public OtterApp(
+            @NonNull final Configuration configuration,
+            @NonNull final SemanticVersion version,
+            @NonNull final Roster genesisRoster) {
         this.version = requireNonNull(version);
 
         final OtterAppConfig appConfig = configuration.getConfigData(OtterAppConfig.class);
         this.appServices =
                 appConfig.services().stream().map(OtterApp::instantiateService).toList();
-        this.allServices = Stream.concat(
-                        appServices.stream(), Stream.of(new PlatformStateService(), new RosterService()))
-                .toList();
+        final Stream<OtterService> hederaAppServices =
+                Stream.of(new PlatformStateService(), new RosterService(genesisRoster));
+        this.allServices =
+                Stream.concat(appServices.stream(), hederaAppServices).toList();
     }
 
     @NonNull
@@ -245,18 +254,20 @@ public class OtterApp implements ConsensusStateEventHandler {
         }
 
         final Configuration configuration = platform.getContext().getConfiguration();
+        final FileSystemManager fileSystemManager = platform.getContext().getFileSystemManager();
         if (!appServices.isEmpty()) {
             final boolean stateNotInitialized = appServices.stream()
                     .map(OtterService::name)
                     .map(state::getReadableStates)
                     .allMatch(ReadableStates::isEmpty);
             if (stateNotInitialized) {
-                OtterStateInitializer.initOtterAppState((VirtualMapStateImpl) state, appServices);
+                OtterStateUtils.initOtterAppStateStructure((VirtualMapStateImpl) state, appServices);
             }
         }
 
         for (final OtterService service : allServices) {
-            service.initialize(trigger, platform.getSelfId(), configuration, (VirtualMapStateImpl) state);
+            service.initialize(
+                    trigger, platform.getSelfId(), configuration, fileSystemManager, (VirtualMapStateImpl) state);
         }
     }
 

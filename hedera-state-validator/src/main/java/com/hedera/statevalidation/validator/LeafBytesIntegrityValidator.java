@@ -1,29 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.statevalidation.validator;
 
+import static com.hedera.statevalidation.util.ConfigUtils.getVirtualMapValueParseMaxSizeBytes;
 import static com.hedera.statevalidation.util.LogUtils.printFileDataLocationError;
 
 import com.hedera.hapi.platform.state.StateValue;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.statevalidation.validator.util.ValidationException;
-import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
+import com.swirlds.merkledb.internal.MerkleDbDataSource;
 import com.swirlds.state.merkle.VirtualMapState;
+import com.swirlds.virtualmap.MerkleHasher;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualHashChunk;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
-import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.base.crypto.Hash;
 
 /**
  * @see LeafBytesValidator
@@ -122,7 +124,8 @@ public class LeafBytesIntegrityValidator implements LeafBytesValidator {
             }
 
             // Check leaf hash against the hash stored in the hash chunk
-            final Hash leafHash = VirtualHasher.hashLeafRecord(leafBytes);
+            MerkleHasher merkleHasher = MerkleHasher.threadSafeDefault();
+            final byte[] leafHash = merkleHasher.leafNodeHashBytes(leafBytes);
             final long hashChunkPath = VirtualHashChunk.pathToChunkPath(p2KvPath, hashChunkHeight);
             final VirtualHashChunk hashChunk;
             final VirtualHashChunk lastLoadedChunk = lastChunk.get();
@@ -133,8 +136,8 @@ public class LeafBytesIntegrityValidator implements LeafBytesValidator {
                 hashChunk = vds.loadHashChunk(hashChunkId);
                 lastChunk.set(hashChunk);
             }
-            final Hash storedHash = hashChunk.calcHash(p2KvPath, firstLeafPath, lastLeafPath);
-            if (!leafHash.equals(storedHash)) {
+            final byte[] storedHash = hashChunk.calcHashBytes(merkleHasher, p2KvPath, firstLeafPath, lastLeafPath);
+            if (!Arrays.equals(leafHash, storedHash)) {
                 hashMismatchCount.incrementAndGet();
                 log.error("Leaf hash mismatch at path={}. calculated={} vs stored={}", p2KvPath, leafHash, storedHash);
                 return;
@@ -163,10 +166,7 @@ public class LeafBytesIntegrityValidator implements LeafBytesValidator {
                 leafBytesFromStore = VirtualLeafBytes.parseFrom(rawStoreBytes);
             } catch (RuntimeException ex) {
                 storeMismatchCount.incrementAndGet();
-                log.error(
-                        "Index cross-check failed: unable to parse bytes from store for path={}.",
-                        p2KvPath,
-                        ex.getMessage());
+                log.error("Index cross-check failed: unable to parse bytes from store for path={}.", p2KvPath, ex);
                 return;
             }
 
@@ -216,7 +216,7 @@ public class LeafBytesIntegrityValidator implements LeafBytesValidator {
                     ("%s validation failed. "
                                     + "successCount=%d vs expectedCount=%d, "
                                     + "pathMismatchCount=%d, valueErrorCount=%d, hashMismatchCount=%d, "
-                                    + "indexMismatchCount=%d, exceptionCount=%d")
+                                    + "indexMismatchCount=%d, storeMismatchCount=%d, exceptionCount=%d")
                             .formatted(
                                     getName(),
                                     successCount.get(),
@@ -231,6 +231,11 @@ public class LeafBytesIntegrityValidator implements LeafBytesValidator {
     }
 
     private static StateValue parseValue(Bytes valueBytes) throws ParseException {
-        return StateValue.PROTOBUF.parse(valueBytes);
+        return StateValue.PROTOBUF.parse(
+                valueBytes.toReadableSequentialData(),
+                false,
+                false,
+                Codec.DEFAULT_MAX_DEPTH,
+                getVirtualMapValueParseMaxSizeBytes());
     }
 }

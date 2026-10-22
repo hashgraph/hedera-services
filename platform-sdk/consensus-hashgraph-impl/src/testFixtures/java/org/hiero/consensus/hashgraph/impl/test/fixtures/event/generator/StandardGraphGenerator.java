@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator;
 
+import static java.util.Objects.requireNonNull;
 import static org.hiero.consensus.hashgraph.impl.test.fixtures.event.EventUtils.staticDynamicValue;
 import static org.hiero.consensus.hashgraph.impl.test.fixtures.event.EventUtils.weightedChoice;
 import static org.hiero.consensus.hashgraph.impl.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.time.Time;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.hiero.consensus.crypto.DefaultEventHasher;
 import org.hiero.consensus.event.IntakeEventCounter;
 import org.hiero.consensus.hashgraph.config.ConsensusConfig;
@@ -37,10 +40,11 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusConstants;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.node.NodeId;
+import org.hiero.consensus.model.roster.RosterEntryWrapper;
+import org.hiero.consensus.model.roster.RosterWrapper;
+import org.hiero.consensus.model.test.fixtures.roster.RosterWrapperFactory;
 import org.hiero.consensus.orphan.DefaultOrphanBuffer;
 import org.hiero.consensus.orphan.OrphanBuffer;
-import org.hiero.consensus.roster.RosterUtils;
-import org.hiero.consensus.roster.test.fixtures.RandomRosterBuilder;
 import org.hiero.consensus.round.EventWindowUtils;
 
 /**
@@ -73,7 +77,7 @@ public class StandardGraphGenerator implements GraphGenerator {
     /**
      * The roster representing the event sources.
      */
-    private Roster roster;
+    private RosterWrapper roster;
 
     /**
      * The average difference in the timestamp between two adjacent events (in seconds).
@@ -112,10 +116,14 @@ public class StandardGraphGenerator implements GraphGenerator {
     /** The latest snapshot to be produced by {@link #consensus} */
     private ConsensusSnapshot consensusSnapshot;
 
-    /**
-     * The platform context containing configuration for the internal consensus.
-     */
-    private final PlatformContext platformContext;
+    /** The configuration of the platform. */
+    private final Configuration configuration;
+
+    /** The metrics registry of the platform. */
+    private final Metrics metrics;
+
+    /** The platform time. */
+    private final Time time;
 
     /**
      * The linker for events to use with the internal consensus.
@@ -131,64 +139,74 @@ public class StandardGraphGenerator implements GraphGenerator {
     private Random random;
 
     /**
-     * Same as {@link #StandardGraphGenerator(PlatformContext, long, int, List, Roster)} with:
+     * Same as {@link #StandardGraphGenerator(Configuration, Metrics, Time, long, int, List, RosterWrapper)} with:
      * <ul>
      *     <li>maxOtherParents set to {@value #DEFAULT_MAX_OTHER_PARENTS}</li>
      *     <li>roster generated from event sources</li>
      * </ul>
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext, final long seed, final EventSource... eventSources) {
-        this(platformContext, seed, Arrays.asList(eventSources));
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
+            final long seed,
+            final EventSource... eventSources) {
+        this(configuration, metrics, time, seed, Arrays.asList(eventSources));
     }
 
     /**
-     * Same as {@link #StandardGraphGenerator(PlatformContext, long, int, List, Roster)} with:
+     * Same as {@link #StandardGraphGenerator(Configuration, Metrics, Time, long, int, List, RosterWrapper)} with:
      * <ul>
      *     <li>maxOtherParents set to {@value #DEFAULT_MAX_OTHER_PARENTS}</li>
      *     <li>roster generated from event sources</li>
      * </ul>
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
             final long seed,
             @NonNull final List<EventSource> eventSources) {
-        this(platformContext, seed, DEFAULT_MAX_OTHER_PARENTS, eventSources);
+        this(configuration, metrics, time, seed, DEFAULT_MAX_OTHER_PARENTS, eventSources);
     }
 
     /**
-     * Same as {@link #StandardGraphGenerator(PlatformContext, long, int, List, Roster)} with:
+     * Same as {@link #StandardGraphGenerator(Configuration, Metrics, Time, long, int, List, RosterWrapper)} with:
      * <ul>
      *     <li>roster generated from event sources</li>
      * </ul>
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
             final long seed,
             final int maxOtherParents,
             @NonNull final List<EventSource> eventSources) {
         this(
-                platformContext,
+                configuration,
+                metrics,
+                time,
                 seed,
                 maxOtherParents,
                 eventSources,
-                RandomRosterBuilder.create(new Random(seed))
-                        .withSize(eventSources.size())
-                        .build());
+                RosterWrapperFactory.randomRoster(new Random(seed), eventSources.size()));
     }
 
     /**
-     * Same as {@link #StandardGraphGenerator(PlatformContext, long, int, List, Roster)} with:
+     * Same as {@link #StandardGraphGenerator(Configuration, Metrics, Time, long, int, List, RosterWrapper)} with:
      * <ul>
      *     <li>maxOtherParents set to {@value #DEFAULT_MAX_OTHER_PARENTS}</li>
      * </ul>
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
             final long seed,
             @NonNull final List<EventSource> eventSources,
-            @NonNull final Roster roster) {
-        this(platformContext, seed, DEFAULT_MAX_OTHER_PARENTS, eventSources, roster);
+            @NonNull final RosterWrapper roster) {
+        this(configuration, metrics, time, seed, DEFAULT_MAX_OTHER_PARENTS, eventSources, roster);
     }
 
     /**
@@ -196,25 +214,31 @@ public class StandardGraphGenerator implements GraphGenerator {
      * <p>
      * Note: once an event source has been passed to this constructor it should not be modified by the outer context.
      *
-     * @param platformContext The platform context
+     * @param configuration The configuration of the platform.
+     * @param metrics The metrics registry of the platform.
+     * @param time The platform time.
      * @param seed The random seed used to generate events.
      * @param maxOtherParents The maximum number of other-parents for each event.
      * @param eventSources One or more event sources.
      * @param roster The roster to use.
      */
     public StandardGraphGenerator(
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
             final long seed,
             final int maxOtherParents,
             @NonNull final List<EventSource> eventSources,
-            @NonNull final Roster roster) {
+            @NonNull final RosterWrapper roster) {
         this.initialSeed = seed;
         this.maxOtherParents = maxOtherParents;
         this.random = new Random(seed);
         this.maxBirthRoundPerCreator = new HashMap<>();
-        this.platformContext = Objects.requireNonNull(platformContext);
+        this.configuration = requireNonNull(configuration);
+        this.metrics = requireNonNull(metrics);
+        this.time = requireNonNull(time);
         // we create a new list because we need to be able to remove sources later if nodes are removed
-        this.sources = new ArrayList<>(Objects.requireNonNull(eventSources));
+        this.sources = new ArrayList<>(requireNonNull(eventSources));
 
         if (eventSources.isEmpty()) {
             throw new IllegalArgumentException("At least one event source is required");
@@ -244,15 +268,16 @@ public class StandardGraphGenerator implements GraphGenerator {
         this.eventPeriodMean = that.eventPeriodMean;
         this.eventPeriodStandardDeviation = that.eventPeriodStandardDeviation;
         this.simultaneousEventFraction = that.simultaneousEventFraction;
-        this.platformContext = that.platformContext;
+        this.configuration = that.configuration;
+        this.metrics = that.metrics;
+        this.time = that.time;
         initializeInternalConsensus();
     }
 
     private void initializeInternalConsensus() {
-        consensus = new ConsensusImpl(
-                platformContext.getConfiguration(), platformContext.getTime(), new NoOpConsensusMetrics(), roster);
+        consensus = new ConsensusImpl(configuration, time, new NoOpConsensusMetrics(), roster, 0L);
         linker = new ConsensusLinker(NoOpLinkerLogsAndMetrics.getInstance());
-        orphanBuffer = new DefaultOrphanBuffer(platformContext.getMetrics(), mock(IntakeEventCounter.class));
+        orphanBuffer = new DefaultOrphanBuffer(metrics, mock(IntakeEventCounter.class));
     }
 
     /**
@@ -263,12 +288,12 @@ public class StandardGraphGenerator implements GraphGenerator {
      * @param roster the roster to use.
      */
     private void setAddressBookInitializeEventSources(
-            @NonNull final List<EventSource> eventSources, @NonNull final Roster roster) {
+            @NonNull final List<EventSource> eventSources, @NonNull final RosterWrapper roster) {
         final int eventSourceCount = eventSources.size();
 
         for (int index = 0; index < eventSourceCount; index++) {
             final EventSource source = eventSources.get(index);
-            final NodeId nodeId = NodeId.of(roster.rosterEntries().get(index).nodeId());
+            final NodeId nodeId = roster.nodeIdAtIndex(index);
             source.setNodeId(nodeId);
         }
     }
@@ -308,11 +333,10 @@ public class StandardGraphGenerator implements GraphGenerator {
         final List<List<Double>> matrix = new ArrayList<>(sources.size());
 
         for (int nodeIndex = 0; nodeIndex < sources.size(); nodeIndex++) {
-            final long nodeId = roster.rosterEntries().get(nodeIndex).nodeId();
+            final NodeId nodeId = roster.nodeIdAtIndex(nodeIndex);
             final List<Double> affinityVector = new ArrayList<>(sources.size());
             for (int otherNodeIndex = 0; otherNodeIndex < sources.size(); otherNodeIndex++) {
-                final long otherNodeId =
-                        roster.rosterEntries().get(otherNodeIndex).nodeId();
+                final NodeId otherNodeId = roster.nodeIdAtIndex(otherNodeIndex);
                 if (Objects.equals(nodeId, otherNodeId)) {
                     affinityVector.add(0.0);
                 } else {
@@ -362,7 +386,7 @@ public class StandardGraphGenerator implements GraphGenerator {
      */
     @Override
     public EventSource getSource(@NonNull final NodeId nodeID) {
-        final int nodeIndex = RosterUtils.getIndex(roster, nodeID.id());
+        final int nodeIndex = roster.index(nodeID);
         return sources.get(nodeIndex);
     }
 
@@ -373,7 +397,7 @@ public class StandardGraphGenerator implements GraphGenerator {
     }
 
     @Override
-    public @NonNull Roster getRoster() {
+    public @NonNull RosterWrapper getRoster() {
         return roster;
     }
 
@@ -420,11 +444,10 @@ public class StandardGraphGenerator implements GraphGenerator {
      * @param source The node that is creating the event.
      */
     private @Nullable EventSource getNextOtherParentSource(final long eventIndex, final EventSource source) {
-        if (roster.rosterEntries().size() == 1) {
+        if (roster.size() == 1) {
             return null;
         }
-        final List<Double> affinityVector = getOtherParentAffinityVector(
-                eventIndex, RosterUtils.getIndex(roster, source.getNodeId().id()));
+        final List<Double> affinityVector = getOtherParentAffinityVector(eventIndex, roster.index(source.getNodeId()));
         final int nodeIndex = weightedChoice(getRandom(), affinityVector);
         return sources.get(nodeIndex);
     }
@@ -523,12 +546,14 @@ public class StandardGraphGenerator implements GraphGenerator {
         // currently, we only support removing a node at restart, so this process mimics what happens at restart
 
         // remove the node from the address book and the sources
-        final int nodeIndex = RosterUtils.getIndex(roster, nodeId.id());
+        final int nodeIndex = roster.index(nodeId);
         sources.remove(nodeIndex);
 
-        final List<RosterEntry> newRosterEntries = new ArrayList<>(roster.rosterEntries());
+        final List<RosterEntry> newRosterEntries = roster.rosterEntries().stream()
+                .map(RosterEntryWrapper::toPbj)
+                .collect(Collectors.toCollection(ArrayList::new));
         newRosterEntries.remove(nodeIndex);
-        this.roster = new Roster(newRosterEntries);
+        this.roster = RosterWrapperFactory.createRosterWrapper(newRosterEntries);
 
         buildDefaultOtherParentAffinityMatrix();
         // save all non-ancient events
@@ -537,18 +562,10 @@ public class StandardGraphGenerator implements GraphGenerator {
         // reinitialize the internal consensus with the last snapshot
         initializeInternalConsensus();
         consensus.loadSnapshot(consensusSnapshot);
-        EventWindowUtils.createEventWindow(
-                consensusSnapshot,
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(ConsensusConfig.class)
-                        .roundsNonAncient());
-        linker.setEventWindow(EventWindowUtils.createEventWindow(
-                consensusSnapshot,
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(ConsensusConfig.class)
-                        .roundsNonAncient()));
+        final int roundsNonAncient =
+                configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
+        EventWindowUtils.createEventWindow(consensusSnapshot, roundsNonAncient);
+        linker.setEventWindow(EventWindowUtils.createEventWindow(consensusSnapshot, roundsNonAncient));
         // re-add all non-ancient events
         for (final EventImpl event : nonAncientEvents) {
             updateConsensus(event.getBaseEvent());

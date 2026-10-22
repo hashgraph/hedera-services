@@ -12,7 +12,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.safeValidateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -64,7 +63,7 @@ public class UpdateAccountEnabledTest {
                 nodeCreate("testNode", nodeAccount)
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeUpdate("testNode").accountId("").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
+                nodeUpdate("testNode").accountId("").hasKnownStatus(INVALID_NODE_ACCOUNT_ID));
     }
 
     @HapiTest
@@ -76,7 +75,7 @@ public class UpdateAccountEnabledTest {
                 nodeCreate("testNode", nodeAccount)
                         .adminKey("adminKey")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
-                nodeUpdate("testNode").aliasAccountId("alias").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
+                nodeUpdate("testNode").aliasAccountId("alias").hasKnownStatus(INVALID_NODE_ACCOUNT_ID));
     }
 
     @LeakyEmbeddedHapiTest(
@@ -108,7 +107,7 @@ public class UpdateAccountEnabledTest {
                         .via("failedUpdate"),
                 getTxnRecord("failedUpdate").logged(),
                 // The fee is charged here because the payer is not privileged
-                safeValidateChargedUsdWithin("failedUpdate", 0.001, 1.0, NODE_UPDATE_BASE_FEE_USD, 1.0),
+                validateChargedUsdWithin("failedUpdate", NODE_UPDATE_BASE_FEE_USD, 1.0),
                 nodeUpdate("node100")
                         .adminKey("testKey")
                         .accountId(nodeAccount2)
@@ -127,10 +126,8 @@ public class UpdateAccountEnabledTest {
                         .sigMapPrefixes(uniqueWithFullPrefixesFor("payer", "randomAccount", "testKey"))
                         .fee(ONE_HBAR)
                         .via("failedUpdateMultipleSigs"),
-                safeValidateChargedUsdWithin(
+                validateChargedUsdWithin(
                         "failedUpdateMultipleSigs",
-                        0.0011276316,
-                        3.0,
                         NODE_UPDATE_BASE_FEE_USD + 2 * SIGNATURE_FEE_AFTER_MULTIPLIER,
                         1.0));
     }

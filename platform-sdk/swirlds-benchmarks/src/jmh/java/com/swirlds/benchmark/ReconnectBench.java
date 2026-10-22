@@ -2,13 +2,21 @@
 package com.swirlds.benchmark;
 
 import static com.swirlds.benchmark.Utils.RUN_DELIMITER;
+import static org.awaitility.Awaitility.await;
 
 import com.swirlds.benchmark.reconnect.MerkleBenchmarkUtils;
+import com.swirlds.benchmark.reconnect.ReconnectBenchmarkResult;
 import com.swirlds.benchmark.reconnect.StateBuilder;
+import com.swirlds.benchmark.reconnect.network.NetworkProfile;
+import com.swirlds.benchmark.reconnect.network.NetworkSimulationConfig;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.hiero.consensus.model.node.NodeId;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -19,10 +27,10 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.SingleShotTime)
 @Fork(value = 1)
-@Warmup(iterations = 1)
-@Measurement(iterations = 7)
+@Warmup(iterations = 0)
+@Measurement(iterations = 1)
 public class ReconnectBench extends VirtualMapBaseBench {
 
     /** A random seed for the StateBuilder. */
@@ -30,62 +38,64 @@ public class ReconnectBench extends VirtualMapBaseBench {
     public long randomSeed;
 
     /** The probability of the teacher map having an extra node. */
-    @Param({"0.05"})
+    @Param({"0.09"})
     public double teacherAddProbability;
 
     /** The probability of the teacher map having removed a node, while the learner still having it. */
-    @Param({"0.05"})
+    @Param({"0.0"})
     public double teacherRemoveProbability;
 
     /**
-     * The probability of the teacher map having a value under a key that differs
-     * from the value under the same key in the learner map.
+     * The probability of the teacher map having a value under a key that differs from the value under the same key in
+     * the learner map.
      */
-    @Param({"0.05"})
+    @Param({"0.40"})
     public double teacherModifyProbability;
 
-    /**
-     * Emulated delay for sendAsync() calls in both Teaching- and Learning-Synchronizers,
-     * or zero for no delay. This emulates slow disk I/O when reading data.
-     */
-    @Param({"0"})
-    public long delayStorageMicroseconds;
+    /** Selects whether network shaping is applied ({@code REALISTIC}) or disabled ({@code LOOPBACK}). */
+    @Param({"REALISTIC"})
+    public NetworkProfile networkProfile;
+
+    /** One-way simulated latency in microseconds, applied when the {@code REALISTIC} profile is selected. */
+    @Param({"270"})
+    public long networkLatencyMicroseconds;
+
+    /** Per-direction simulated bandwidth in decimal megabits per second under the {@code REALISTIC} profile. */
+    @Param({"200"})
+    public long networkBandwidthMegabitsPerSecond;
 
     /**
-     * A percentage fuzz range for the delayStorageMicroseconds values,
-     * e.g. 0.15 for a -15%..+15% range around the value.
+     * Maximum accepted-but-unread bytes in each direction under the {@code REALISTIC} profile. When this limit is
+     * reached, writes block until the receiver consumes bytes, providing finite buffering and backpressure.
      */
-    @Param({"0.15"})
-    public double delayStorageFuzzRangePercent;
-
-    /**
-     * Emulated delay for serializeMessage() calls in both Teaching- and Learning-Synchronizers,
-     * or zero for no delay. This emulates slow network I/O when sending data.
-     */
-    @Param({"0"})
-    public long delayNetworkMicroseconds;
-
-    /**
-     * A percentage fuzz range for the delayNetworkMicroseconds values,
-     * e.g. 0.15 for a -15%..+15% range around the value.
-     */
-    @Param({"0.15"})
-    public double delayNetworkFuzzRangePercent;
+    @Param({"134217728"})
+    public int networkInflightBytesLimit;
 
     private static final String TEACHER_MAP_NAME = "teacher";
+    private static final String SAVE_DATA_DIRECTORY_PROPERTY = "benchmark.saveDataDirectory";
     private VirtualMap teacherMap;
     private VirtualMap teacherMapCopy;
 
     private static final String LEARNER_MAP_NAME = "learner";
     private VirtualMap learnerMap;
 
-    private VirtualMap reconnectedMap;
+    private ReconnectBenchmarkResult reconnectResult;
 
     private long[] teacherData;
 
     @Override
     String benchmarkName() {
         return "ReconnectBench";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void configureBenchmarkConfiguration(final ConfigurationBuilder configurationBuilder) {
+        super.configureBenchmarkConfiguration(configurationBuilder);
+        configurationBuilder.withSource(
+                new SimpleConfigSource(SAVE_DATA_DIRECTORY_PROPERTY, true).withOrdinal(Integer.MAX_VALUE));
     }
 
     /**
@@ -104,11 +114,11 @@ public class ReconnectBench extends VirtualMapBaseBench {
             // Both maps should be restored - otherwise, something went wrong
             if (teacherMap == null || learnerMap == null) {
                 if (teacherMap != null) {
-                    releaseAndCloseMap(teacherMap);
+                    teacherMap.release();
                     teacherMap = null;
                 }
                 if (learnerMap != null) {
-                    releaseAndCloseMap(learnerMap);
+                    learnerMap.release();
                     learnerMap = null;
                 }
             }
@@ -168,7 +178,14 @@ public class ReconnectBench extends VirtualMapBaseBench {
      */
     @Override
     protected void onInvocationTearDown() throws Exception {
-        reconnectedMap.release();
+        if (verify && reconnectResult != null && reconnectResult.reconnectedMap() != null) {
+            verifyMap(teacherData, reconnectResult.reconnectedMap());
+        }
+
+        if (reconnectResult != null && reconnectResult.reconnectedMap() != null) {
+            reconnectResult.reconnectedMap().release();
+        }
+        reconnectResult = null;
 
         super.onInvocationTearDown();
     }
@@ -182,22 +199,12 @@ public class ReconnectBench extends VirtualMapBaseBench {
         teacherMap.release();
         teacherMapCopy.release();
 
-        // Close all data sources
-        learnerMap.getDataSource().close();
-        teacherMap.getDataSource().close();
-
-        // release()/close() would delete the DB files eventually but not right away.
-        // Add a short sleep to help prevent irrelevant warning messages from being printed
-        // when the Tear Down deletes test files recursively right after
-        // this current runnable finishes executing.
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignore) {
-        }
-
         learnerMap = null;
         teacherMap = null;
+        teacherMapCopy = null;
         teacherData = null;
+
+        await().atMost(Duration.ofSeconds(30)).until(() -> MerkleDbDataSourceBuilder.getCountOfOpenDatabases() == 0);
 
         super.onTrialTearDown();
     }
@@ -206,24 +213,44 @@ public class ReconnectBench extends VirtualMapBaseBench {
     public void reconnect() throws Exception {
         logger.info(RUN_DELIMITER);
 
-        reconnectedMap = MerkleBenchmarkUtils.hashAndTestSynchronization(
-                learnerMap,
-                teacherMap,
+        final NetworkSimulationConfig networkConfig = NetworkSimulationConfig.resolve(
+                networkProfile,
+                networkLatencyMicroseconds,
+                networkBandwidthMegabitsPerSecond,
+                networkInflightBytesLimit);
+        final String reconnectMode =
+                configuration.getConfigData(VirtualMapConfig.class).reconnectMode();
+        logger.info(
+                "ReconnectBench state: learnerSize={}, teacherSize={}, randomSeed={}, teacherAddProbability={}, teacherRemoveProbability={}, teacherModifyProbability={}",
+                learnerMap.size(),
+                teacherMap.size(),
                 randomSeed,
-                delayStorageMicroseconds,
-                delayStorageFuzzRangePercent,
-                delayNetworkMicroseconds,
-                delayNetworkFuzzRangePercent,
-                new NodeId(),
-                configuration);
+                teacherAddProbability,
+                teacherRemoveProbability,
+                teacherModifyProbability);
+        logger.info("ReconnectBench traversal mode={}", reconnectMode);
+        logger.info(
+                "ReconnectBench network profile={}, latencyNanos={}, bandwidthBytesPerSecond={}, inflightBytesLimit={}",
+                networkConfig.profile(),
+                networkConfig.latencyNanos(),
+                networkConfig.bandwidthBytesPerSecond(),
+                networkConfig.inflightBytesLimit());
 
-        verifyMap(teacherData, reconnectedMap);
+        reconnectResult =
+                MerkleBenchmarkUtils.hashAndTestSynchronization(learnerMap, teacherMap, networkConfig, configuration);
+
+        logger.info("Reconnect stats: {}", reconnectResult.reconnectStats().format());
+        logger.info("Network teacherToLearner: {}", reconnectResult.teacherToLearnerStats());
+        logger.info("Network learnerToTeacher: {}", reconnectResult.learnerToTeacherStats());
     }
 
     static void main() throws Exception {
+        // This entry point is intended for local IDE profiling.
+        // Run in-process so the IntelliJ profiler attaches to the benchmark workload instead of a JMH fork.
+        // If a larger heap is needed, set it in the IDE run configuration VM options.
         new Runner(new OptionsBuilder()
                         .include(ReconnectBench.class.getSimpleName())
-                        .jvmArgs("-Xmx16g")
+                        .forks(0)
                         .build())
                 .run();
     }

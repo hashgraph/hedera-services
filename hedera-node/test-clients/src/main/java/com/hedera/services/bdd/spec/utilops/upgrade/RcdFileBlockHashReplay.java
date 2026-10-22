@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
-import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
-import static com.hedera.node.app.blocks.impl.BlockImplUtils.hashInternalNode;
-import static com.hedera.node.app.blocks.impl.BlockImplUtils.hashInternalNodeSingleChild;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.internal.WrappedRecordFileBlockHashes;
@@ -11,7 +8,10 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.streams.RecordStreamFile;
 import com.hedera.hapi.streams.SidecarFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
+import com.hedera.node.app.blocks.impl.BlockImplUtils;
+import com.hedera.node.app.blocks.impl.BlockRootTreeHasher;
 import com.hedera.node.app.blocks.impl.IncrementalStreamingHasher;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.node.app.records.impl.WrappedRecordFileBlockHashesCalculator;
 import com.hedera.node.app.records.impl.WrappedRecordFileBlockHashesComputationInput;
@@ -24,14 +24,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.base.crypto.DigestType;
 
 /**
  * Shared utility for replaying {@code .rcd} / {@code .rcd.gz} files from node0's record streams
@@ -43,7 +46,6 @@ public final class RcdFileBlockHashReplay {
     private static final Logger log = LogManager.getLogger(RcdFileBlockHashReplay.class);
 
     private static final int DEFAULT_MAX_SIDECAR_SIZE_BYTES = 256 * 1024 * 1024;
-    private static final Bytes EMPTY_INT_NODE = hashInternalNode(HASH_OF_ZERO, HASH_OF_ZERO);
 
     private RcdFileBlockHashReplay() {}
 
@@ -67,6 +69,7 @@ public final class RcdFileBlockHashReplay {
      *                           (use {@code HASH_OF_ZERO} for genesis)
      * @param initialHasher      the incremental streaming hasher to start from
      *                           (use a fresh empty hasher for genesis)
+     * @param digestType         the digest algorithm to use for hashing (e.g. {@link DigestType#SHA_384})
      * @return the replay result with per-block entries and final chained hash
      */
     public static ReplayResult replay(
@@ -74,11 +77,13 @@ public final class RcdFileBlockHashReplay {
             final long startBlockExclusive,
             final long endBlockInclusive,
             @NonNull final Bytes initialPrevHash,
-            @NonNull final IncrementalStreamingHasher initialHasher)
+            @NonNull final IncrementalStreamingHasher initialHasher,
+            @NonNull final DigestType digestType)
             throws IOException, ParseException {
         requireNonNull(spec);
         requireNonNull(initialPrevHash);
         requireNonNull(initialHasher);
+        requireNonNull(digestType);
 
         // 1. Discover record files from node0
         final var recordStreamsDir = spec.recordStreamsLoc(NodeSelector.byNodeId(0));
@@ -153,13 +158,14 @@ public final class RcdFileBlockHashReplay {
                     sidecars,
                     DEFAULT_MAX_SIDECAR_SIZE_BYTES);
 
-            // Compute per-block hashes
-            final var entry = WrappedRecordFileBlockHashesCalculator.compute(input);
+            final Supplier<MessageDigest> digestFactory = () -> CommonUtils.digestOrThrow(digestType);
+            final var entry = WrappedRecordFileBlockHashesCalculator.compute(input, digestFactory);
             entriesByBlock.put(blockNumber, entry);
 
             // Compute block root hash via Merkle tree (independent of production code)
             final var allPrevBlocksRootHash = Bytes.wrap(initialHasher.computeRootHash());
-            final var blockRootHash = computeBlockRootHash(prevWrappedBlockHash, allPrevBlocksRootHash, entry);
+            final var blockRootHash =
+                    computeBlockRootHash(prevWrappedBlockHash, allPrevBlocksRootHash, entry, digestType);
 
             // Update chain
             initialHasher.addNodeByHash(blockRootHash.toByteArray());
@@ -184,20 +190,39 @@ public final class RcdFileBlockHashReplay {
     static Bytes computeBlockRootHash(
             @NonNull final Bytes prevWrappedBlockHash,
             @NonNull final Bytes allPrevBlocksRootHash,
-            @NonNull final WrappedRecordFileBlockHashes entry) {
-        final Bytes depth5Node1 = hashInternalNode(prevWrappedBlockHash, allPrevBlocksRootHash);
-        final Bytes depth5Node2 = EMPTY_INT_NODE;
-        final Bytes depth5Node3 = hashInternalNode(HASH_OF_ZERO, entry.outputItemsTreeRootHash());
-        final Bytes depth5Node4 = EMPTY_INT_NODE;
+            @NonNull final WrappedRecordFileBlockHashes entry,
+            @NonNull final DigestType digestType) {
+        // Built by hand, on purpose. This replay must not share the block root tree implementation with
+        // block production: if it did, any error in that implementation would be reproduced here and the
+        // replay would agree with production regardless. A wrapped record block populates only branches 1, 2
+        // and 6; every other branch, assigned or reserved, is the empty sub-tree hash.
+        final var digest = CommonUtils.digestOrThrow(digestType);
+        final var empty = BlockRootTreeHasher.emptySubtreeFor(digest);
+        final var branches12 = BlockImplUtils.hashInternalNode(
+                CommonUtils.digestOrThrow(digestType), prevWrappedBlockHash, allPrevBlocksRootHash);
+        final var branches34 = BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), empty, empty);
+        final var branches56 = BlockImplUtils.hashInternalNode(
+                CommonUtils.digestOrThrow(digestType), empty, entry.outputItemsTreeRootHash());
+        final var branches78 = BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), empty, empty);
+        final var branches1234 =
+                BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), branches12, branches34);
+        final var branches5678 =
+                BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), branches56, branches78);
+        final var assignedHalf =
+                BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), branches1234, branches5678);
 
-        final Bytes depth4Node1 = hashInternalNode(depth5Node1, depth5Node2);
-        final Bytes depth4Node2 = hashInternalNode(depth5Node3, depth5Node4);
-        final Bytes depth3Node1 = hashInternalNode(depth4Node1, depth4Node2);
+        final var subtreesRoot = BlockImplUtils.hashInternalNode(
+                CommonUtils.digestOrThrow(digestType), assignedHalf, emptyReservedHalf(digestType));
+        return BlockImplUtils.hashInternalNode(
+                CommonUtils.digestOrThrow(digestType), entry.consensusTimestampHash(), subtreesRoot);
+    }
 
-        final Bytes depth2Node1 = entry.consensusTimestampHash();
-        final Bytes depth2Node2 = hashInternalNodeSingleChild(depth3Node1);
-
-        return hashInternalNode(depth2Node1, depth2Node2);
+    private static Bytes emptyReservedHalf(final DigestType digestType) {
+        final var empty = BlockRootTreeHasher.emptySubtreeFor(CommonUtils.digestOrThrow(digestType));
+        final var pairOfEmpties = BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), empty, empty);
+        final var fourEmpties =
+                BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), pairOfEmpties, pairOfEmpties);
+        return BlockImplUtils.hashInternalNode(CommonUtils.digestOrThrow(digestType), fourEmpties, fourEmpties);
     }
 
     /**

@@ -6,9 +6,9 @@ import static com.hedera.statevalidation.analyzer.StateAnalyzer.analyzePathToHas
 import static com.hedera.statevalidation.analyzer.StateAnalyzer.analyzePathToKeyValueStorage;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.statevalidation.report.Report;
+import com.hedera.statevalidation.report.StateReport;
 import com.hedera.statevalidation.util.StateUtils;
-import com.swirlds.merkledb.MerkleDbDataSource;
+import com.swirlds.merkledb.internal.MerkleDbDataSource;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +54,7 @@ public class AnalyzeCommand implements Runnable {
         vds = (MerkleDbDataSource) virtualMap.getDataSource();
         requireNonNull(vds);
 
-        final Report report = new Report();
+        final StateReport report = new StateReport();
 
         // Check flags to pick the branch to run
         boolean anyFlagSet = analyzePathToKeyValueStorage || analyzeKeyToPathStorage || analyzePathToHashStorage;

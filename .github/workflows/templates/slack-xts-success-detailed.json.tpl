@@ -1,14 +1,7 @@
-{{- $tests := getenv "FLAKY_TESTS_JSON" | default "[]" | data.JSONArray -}}
-{{- $flaky_lines := coll.Slice -}}
-{{- range $test := $tests -}}
-  {{- $status := "" -}}
-  {{- if eq (conv.ToString $test.is_new) "true" -}}{{- $status = " (New)" -}}{{- end -}}
-  {{- $flaky_lines = coll.Append (printf "• `%s#%s` — <%s|#%v>%s" $test.class $test.method $test.issue_url $test.issue_number $status) $flaky_lines -}}
-{{- end -}}
 {
   "attachments": [
     {
-      "color": "#00FF00",
+      "color": {{ getenv "SLACK_COLOR" "#00FF00" | data.ToJSON }},
       "blocks": [
         {
           "type": "header",
@@ -85,19 +78,7 @@
               "text": {{ printf "<%s>" (getenv "WORKFLOW_RUN_URL" | required "WORKFLOW_RUN_URL must be set") | data.ToJSON }}
             }
           ]
-        }
-{{- if gt (len $tests) 0 }},
-        {
-          "type": "divider"
         },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": {{ conv.Join $flaky_lines "\n" | data.ToJSON }}
-          }
-        }
-{{- end }},
         {
           "type": "divider"
         },

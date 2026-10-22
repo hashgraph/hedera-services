@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.state.signed;
 
-import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static com.swirlds.state.test.fixtures.merkle.VirtualMapStateTestUtils.createTestStateWithVM;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hiero.base.utility.test.fixtures.assertions.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -15,30 +14,48 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
-import com.swirlds.platform.test.fixtures.state.TestingAppStateInitializer;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.state.test.fixtures.merkle.VirtualMapStateTestUtils;
 import com.swirlds.state.test.fixtures.merkle.VirtualMapUtils;
 import com.swirlds.virtualmap.VirtualMap;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.hiero.base.crypto.SignatureVerifier;
 import org.hiero.base.exceptions.ReferenceCountException;
+import org.hiero.base.file.FileSystemManager;
+import org.hiero.base.utility.test.fixtures.file.TestFileSystemManager;
 import org.hiero.base.utility.test.fixtures.tags.TestComponentTags;
-import org.hiero.consensus.crypto.SignatureVerifier;
 import org.hiero.consensus.platformstate.PlatformStateModifier;
-import org.hiero.consensus.roster.RosterStateUtils;
-import org.hiero.consensus.roster.test.fixtures.RandomRosterBuilder;
+import org.hiero.consensus.roster.RosterStateId;
+import org.hiero.consensus.roster.WritableRosterStore;
+import org.hiero.consensus.roster.test.fixtures.RosterFactory;
+import org.hiero.consensus.state.test.fixtures.RandomSignedStateGenerator;
+import org.hiero.consensus.state.test.fixtures.TestingAppStateInitializer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
+
+    @TempDir
+    static Path tempDir;
+
+    private static FileSystemManager fileSystemManager;
+
+    @BeforeAll
+    static void setupFileSystemManager() {
+        fileSystemManager = new TestFileSystemManager(tempDir);
+    }
 
     /**
      * Generate a signed state.
@@ -60,10 +77,11 @@ class SignedStateTests {
      */
     private VirtualMapState buildMockState(
             final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
-        final var real = VirtualMapStateTestUtils.createTestState();
+        final var real = VirtualMapStateTestUtils.createTestState(fileSystemManager);
         TestingAppStateInitializer.initConsensusModuleStates(real);
-        RosterStateUtils.setActiveRoster(
-                real, RandomRosterBuilder.create(random).build(), 0L);
+        final WritableRosterStore rosterStore =
+                new WritableRosterStore(real.getWritableStates(RosterStateId.SERVICE_NAME));
+        rosterStore.putActiveRoster(RosterFactory.randomRoster(random, 4), 0L);
         final VirtualMapState state = spy(real);
         final VirtualMap realRoot = state.getRoot();
         final VirtualMap rootSpy = spy(realRoot);
@@ -211,14 +229,15 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final var virtualMap = VirtualMapUtils.createVirtualMap();
+        final var virtualMap = VirtualMapUtils.createVirtualMap(fileSystemManager);
 
         final VirtualMapState state = spy(createTestStateWithVM(virtualMap));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         TestingAppStateInitializer.initPlatformState(state);
         when(platformState.getRound()).thenReturn(0L);
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final SignedState signedState =
-                new SignedState(CONFIGURATION, mock(SignatureVerifier.class), state, "test", false, false, false);
+                new SignedState(configuration, mock(SignatureVerifier.class), state, "test", false, false, false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 
@@ -235,7 +254,7 @@ class SignedStateTests {
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {
         final Random random = new Random();
-        final VirtualMapState state = VirtualMapStateTestUtils.createTestState();
+        final VirtualMapState state = VirtualMapStateTestUtils.createTestState(fileSystemManager);
         generateSignedState(random, state);
 
         assertEquals(

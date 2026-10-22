@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip1299;
 
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.TestTags.ONLY_SUBPROCESS;
 import static com.hedera.services.bdd.junit.TestTags.SERIAL;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_PARENT_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.NetworkUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -25,12 +28,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.GenesisSubprocessTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.BlockSourceFactory;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -57,30 +61,55 @@ public class UpdateNodeAccountTestSubprocess {
     @Nested
     class UpdateNodeAccountIdPositiveTests {
 
+        // This test asserts the node writes per-account stream directories to its own disk, so it needs a
+        // file-writing node on a dedicated genesis network with no block node (BLOCKS + gRPC would stall).
         @Tag(ONLY_SUBPROCESS)
         @HapiTest
+        @GenesisSubprocessTest
         final Stream<DynamicTest> accountUpdateBuildsProperRecordPath() {
             final AtomicReference<AccountID> newAccountId = new AtomicReference<>();
             final AtomicReference<AccountID> oldNodeAccountId = new AtomicReference<>();
             final String nodeToUpdate = "3";
-            final Path recordsDir = workingDirFor(Long.parseLong(nodeToUpdate), null)
-                    .resolve("data")
-                    .resolve("recordStreams");
 
             return hapiTest(
                     cryptoCreate("newAccount").exposingCreatedIdTo(newAccountId::set),
                     // account 6 is the node account of node 3
                     getAccountInfo("6").exposingIdTo(oldNodeAccountId::set),
                     nodeUpdate(nodeToUpdate).accountId("newAccount").signedByPayerAnd("newAccount"),
-                    // create a transaction after the update so record files are generated
+                    // create a transaction after the update so stream files are generated
                     cryptoCreate("foo"),
-                    // assert record paths
+                    // The output dir stays on the old node account until a restart.
                     withOpContext((spec, log) -> {
-                        final var oldRecordPath =
-                                recordsDir.resolve("record" + asAccountString(oldNodeAccountId.get()));
-                        final var newRecordPath = recordsDir.resolve("record" + asAccountString(newAccountId.get()));
-                        assertTrue(oldRecordPath.toFile().exists());
-                        assertFalse(newRecordPath.toFile().exists());
+                        // Resolve the stream dirs from the updated node's own (scope-aware) working dir: a
+                        // @GenesisSubprocessTest network is scoped by method name, not the default "hapi"
+                        // scope, so workingDirFor(..., null) would point at a non-existent path.
+                        final var node = spec.getNetworkNodes().get(Integer.parseInt(nodeToUpdate));
+                        // Check whichever stream files the node writes: no record files when it streams only
+                        // blocks, no block files when it streams only records or only over gRPC
+                        final var streamMode = BlockSourceFactory.effectiveStartupProperties(spec)
+                                .getStreamMode("blockStream.streamMode");
+                        final boolean writesRecordFiles = streamMode != BLOCKS;
+                        final boolean writesBlockFiles =
+                                streamMode != RECORDS && !BlockSourceFactory.isWriterModeGrpcOnly(spec);
+                        assertTrue(writesRecordFiles || writesBlockFiles, "The node writes no stream files to check");
+                        if (writesRecordFiles) {
+                            final var recordsDir =
+                                    node.getExternalPath(RECORD_STREAMS_DIR).getParent();
+                            final var oldRecordPath =
+                                    recordsDir.resolve("record" + asAccountString(oldNodeAccountId.get()));
+                            final var newRecordPath =
+                                    recordsDir.resolve("record" + asAccountString(newAccountId.get()));
+                            assertTrue(oldRecordPath.toFile().exists());
+                            assertFalse(newRecordPath.toFile().exists());
+                        }
+                        if (writesBlockFiles) {
+                            final var blocksDir = node.getExternalPath(BLOCK_STREAMS_PARENT_DIR);
+                            final var oldBlockPath =
+                                    blocksDir.resolve("block-" + asAccountString(oldNodeAccountId.get()));
+                            final var newBlockPath = blocksDir.resolve("block-" + asAccountString(newAccountId.get()));
+                            assertTrue(oldBlockPath.toFile().exists());
+                            assertFalse(newBlockPath.toFile().exists());
+                        }
                     }));
         }
     }

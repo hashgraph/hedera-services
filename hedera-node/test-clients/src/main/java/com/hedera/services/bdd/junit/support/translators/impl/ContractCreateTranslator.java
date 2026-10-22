@@ -31,14 +31,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Translates a contract create transaction into a {@link SingleTransactionRecord}.
  */
 public class ContractCreateTranslator implements BlockTransactionPartsTranslator {
-    private static final Logger log = LogManager.getLogger(ContractCreateTranslator.class);
 
     private static final Set<String> TESTS_WITH_DISABLED_BYTECODE_SIDECARS =
             Set.of("TraceabilitySuite.actionsShowPropagatedRevert");
@@ -80,7 +77,7 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                                         } else {
                                             mapTracesToVerboseLogs(derivedBuilder, parts.traces());
                                         }
-                                        baseTranslator.addCreatedIdsTo(derivedBuilder, remainingStateChanges);
+                                        baseTranslator.addCreatedIdsTo(derivedBuilder, parts, remainingStateChanges);
                                         baseTranslator.addChangedContractNonces(
                                                 derivedBuilder, evmResult.contractNonces());
                                     }
@@ -101,11 +98,19 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                                         final long fileNum =
                                                 op.fileIDOrElse(FileID.DEFAULT).fileNum();
                                         if (baseTranslator.knowsFileContents(fileNum)) {
-                                            initcode = baseTranslator.getFileContents(fileNum);
-                                            final var hexedInitcode = new String(removeIfAnyLeading0x(initcode));
-                                            initcode = Bytes.fromHex(hexedInitcode
-                                                    + op.constructorParameters().toHex());
-                                            needsExternalization = true;
+                                            final var fileContents = baseTranslator.getFileContents(fileNum);
+                                            final var hexedInitcode = new String(removeIfAnyLeading0x(fileContents));
+                                            // In a concurrent run the shared block can carry an unrelated spec's
+                                            // file (e.g. plain text) whose number this create references; only
+                                            // treat valid hex as initcode so non-hex contents don't abort the
+                                            // entire (shared) block's translation and time out every stream
+                                            // assertion waiting on a block in that range.
+                                            if (isHex(hexedInitcode)) {
+                                                initcode = Bytes.fromHex(hexedInitcode
+                                                        + op.constructorParameters()
+                                                                .toHex());
+                                                needsExternalization = true;
+                                            }
                                         }
                                     }
                                     if (initcode != null) {
@@ -124,10 +129,10 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                             });
                     if (parts.status() == SUCCESS) {
                         final var output = parts.createContractOutputOrThrow();
-                        final var contractNum = output.evmTransactionResultOrThrow()
+                        final long contractNum = output.evmTransactionResultOrThrow()
                                 .contractIdOrThrow()
                                 .contractNumOrThrow();
-                        if (baseTranslator.entityCreatedThisUnit(contractNum)) {
+                        if (baseTranslator.entityCreatedThisUnit(ACCOUNT, contractNum)) {
                             // Consume the specific contract number from the created list;
                             // using nextCreatedNum(ACCOUNT) here would pop the lowest number
                             // which may belong to a different account created in the same unit
@@ -168,5 +173,23 @@ public class ContractCreateTranslator implements BlockTransactionPartsTranslator
                 remainingStateChanges,
                 followingUnitTraces,
                 executingHookId);
+    }
+
+    /**
+     * Returns whether the given string is valid (even-length) hex and therefore safe to pass to
+     * {@link Bytes#fromHex(String)}. Guards against treating an unrelated spec's non-initcode file
+     * (whose number a concurrent contract create may reference) as hex initcode.
+     */
+    private static boolean isHex(@NonNull final String s) {
+        if ((s.length() & 1) == 1) {
+            return false;
+        }
+        for (int i = 0, n = s.length(); i < n; i++) {
+            final char c = s.charAt(i);
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

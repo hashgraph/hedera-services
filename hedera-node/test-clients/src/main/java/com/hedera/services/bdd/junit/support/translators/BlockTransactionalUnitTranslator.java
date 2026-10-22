@@ -2,6 +2,8 @@
 package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ATOMIC_BATCH;
+import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_ENDPOINT_PUBLICATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_MAINTENANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_DELETE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
@@ -107,9 +109,11 @@ import com.hedera.services.bdd.junit.support.translators.inputs.BlockTransaction
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -118,6 +122,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class BlockTransactionalUnitTranslator {
     private static final Logger log = LogManager.getLogger(BlockTransactionalUnitTranslator.class);
+
+    private static final Set<HederaFunctionality> RECORD_STREAM_ABSENT_FUNCTIONALITIES = EnumSet.of(
+            STATE_SIGNATURE_TRANSACTION, HINTS_PARTIAL_SIGNATURE, MIGRATION_ROOT_HASH_VOTE, CLPR_MAINTENANCE);
 
     /**
      * The base translator used to create the {@link SingleTransactionRecord}s.
@@ -132,6 +139,7 @@ public class BlockTransactionalUnitTranslator {
                     put(CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
                     put(CONSENSUS_DELETE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
+                    put(CLPR_ENDPOINT_PUBLICATION, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONSENSUS_UPDATE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONTRACT_CALL, new ContractCallTranslator());
                     put(CONTRACT_CREATE, new ContractCreateTranslator());
@@ -194,6 +202,7 @@ public class BlockTransactionalUnitTranslator {
                     put(HISTORY_PROOF_VOTE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(LEDGER_ID_PUBLICATION, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(MIGRATION_ROOT_HASH_VOTE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(CLPR_MAINTENANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                 }
             };
 
@@ -252,7 +261,7 @@ public class BlockTransactionalUnitTranslator {
                 if (hookMetadata != null && blockTransactionParts.isHookCall()) {
                     executingHookId = hookMetadata.execHookIds().removeFirst();
                 }
-                if (blockTransactionParts.functionality() != STATE_SIGNATURE_TRANSACTION
+                if (!RECORD_STREAM_ABSENT_FUNCTIONALITIES.contains(blockTransactionParts.functionality())
                         && blockTransactionParts.hasResult()
                         && blockTransactionParts.transactionParts() != null) {
                     final var translation = translator.translate(

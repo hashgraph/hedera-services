@@ -10,6 +10,7 @@ import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.
 import static com.hedera.node.app.spi.key.KeyVerifier.NO_AUTHORIZING_KEYS;
 import static com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel.YES;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId.NO;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.Type.ATTRIBUTED_BATCH_INNER_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.BATCH_INNER;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -53,6 +54,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling;
@@ -211,6 +213,11 @@ public class ChildDispatchFactory {
                 stack, options.reversingBehavior(), options.category(), options.signedTxCustomizer(), streamMode);
         final var streamBuilder =
                 initializedForChild(childStack.getBaseBuilder(StreamBuilder.class), requireNonNull(childTxnInfo));
+        // A dispatch made after the batch inner that caused it has already unwound cannot have its owner inferred
+        // from the stack, so the caller names that owner explicitly here
+        options.dispatchMetadata()
+                .getMetadata(ATTRIBUTED_BATCH_INNER_ID, TransactionID.class)
+                .ifPresent(ownerId -> childStack.trackBatchInnerId(streamBuilder, ownerId));
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
@@ -308,8 +315,9 @@ public class ChildDispatchFactory {
                 category);
         // Charge as top-level transactions if the category is BATCH_INNER.
         final var childFees = category == BATCH_INNER
-                ? dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId, YES)
-                : dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId);
+                ? dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId, YES, null)
+                : dispatchHandleContext.dispatchComputeFees(
+                        txnInfo.txBody(), payerId, ComputeDispatchFeesAsTopLevel.NO, null);
 
         // Child transactions can inherit highVolume from a parent synthetic dispatch.
         final var isHighVolume = txnInfo.txBody().highVolume();

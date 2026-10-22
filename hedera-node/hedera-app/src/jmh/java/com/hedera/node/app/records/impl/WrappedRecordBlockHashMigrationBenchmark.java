@@ -18,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import org.hiero.base.crypto.DigestType;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -100,8 +101,12 @@ public class WrappedRecordBlockHashMigrationBenchmark {
             }
         }
         final var subtreeHashes = hasher.intermediateHashingState();
+
+        // WrappedHashesGenerator writes all-zero hashes for block 0, so matching zero hashes
+        // here satisfy the migration's hash-match check without re-parsing the generated file.
+        final var zeroHash = Bytes.wrap(new byte[HASH_SIZE]);
         jumpstartConfig = new BlockStreamJumpstartConfig(
-                0L, Bytes.wrap(prevHash), hasher.leafCount(), subtreeHashes.size(), subtreeHashes);
+                0L, Bytes.wrap(prevHash), hasher.leafCount(), subtreeHashes.size(), subtreeHashes, zeroHash, zeroHash);
 
         config = new BlockRecordStreamConfig(
                 "/tmp/logDir",
@@ -131,7 +136,8 @@ public class WrappedRecordBlockHashMigrationBenchmark {
 
     @Benchmark
     public void execute() {
-        new WrappedRecordBlockHashMigration().execute(StreamMode.BOTH, config, jumpstartConfig, false);
+        new WrappedRecordBlockHashMigration()
+                .execute(StreamMode.BOTH, config, jumpstartConfig, false, DigestType.SHA_384);
     }
 
     public static void main(String... args) throws Exception {
@@ -170,8 +176,15 @@ public class WrappedRecordBlockHashMigrationBenchmark {
                 final var entryBuf = new ByteArrayOutputStream(128);
                 for (int i = 0; i < count; i++) {
                     entryBuf.reset();
-                    rng.nextBytes(h1);
-                    rng.nextBytes(h2);
+                    if (i == 0) {
+                        // Block 0's two hashes are all zeros so the benchmark setup can match
+                        // them in the jumpstart config without re-parsing the generated file.
+                        java.util.Arrays.fill(h1, (byte) 0);
+                        java.util.Arrays.fill(h2, (byte) 0);
+                    } else {
+                        rng.nextBytes(h1);
+                        rng.nextBytes(h2);
+                    }
 
                     // Field 1: blockNumber (int64 varint) — omit for 0 (proto3 default)
                     if (i != 0) {

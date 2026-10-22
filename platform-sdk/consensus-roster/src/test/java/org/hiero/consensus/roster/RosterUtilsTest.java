@@ -9,40 +9,44 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
-import com.swirlds.state.merkle.VirtualMapState;
-import com.swirlds.state.spi.ReadableStates;
 import java.security.cert.CertificateEncodingException;
 import java.util.List;
-import java.util.Random;
+import org.hiero.base.crypto.Cryptography;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
-import org.hiero.base.utility.test.fixtures.RandomUtils;
-import org.hiero.consensus.platformstate.PlatformStateService;
-import org.hiero.consensus.roster.test.fixtures.RandomRosterBuilder;
 import org.hiero.consensus.test.fixtures.crypto.PreGeneratedX509Certs;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class RosterUtilsTest {
 
     @Test
     void testHash() {
-        final Hash hash = RosterUtils.hash(Roster.DEFAULT);
+        final Hash hash = RosterUtils.hash(Roster.DEFAULT, DigestType.SHA_384);
         assertEquals(
                 "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b",
                 hash.toString());
 
         final Hash anotherHash = RosterUtils.hash(
-                Roster.DEFAULT.copyBuilder().rosterEntries(RosterEntry.DEFAULT).build());
+                Roster.DEFAULT.copyBuilder().rosterEntries(RosterEntry.DEFAULT).build(), DigestType.SHA_384);
         assertEquals(
                 "5d693ce2c5d445194faee6054b4d8fe4a4adc1225cf0afc2ecd7866ea895a0093ea3037951b75ab7340b75699aa1db1d",
                 anotherHash.toString());
 
-        final Hash validRosterHash = RosterUtils.hash(RosterValidatorTests.buildValidRoster());
+        final Hash validRosterHash = RosterUtils.hash(RosterValidatorTests.buildValidRoster(), DigestType.SHA_384);
         assertEquals(
                 "b58744d9cfbceda7b1b3c50f501c3ab30dc4ea7e59e96c8071a7bb2198e7071bde40535605c7f37db47e7a1efe5ef280",
                 validRosterHash.toString());
+    }
+
+    @Test
+    void testHashWithDigestType() {
+        assertEquals(
+                RosterUtils.hash(Roster.DEFAULT), RosterUtils.hash(Roster.DEFAULT, Cryptography.DEFAULT_DIGEST_TYPE));
+
+        final Hash sha256Hash = RosterUtils.hash(Roster.DEFAULT, DigestType.SHA_256);
+        assertEquals(DigestType.SHA_256, sha256Hash.getDigestType());
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", sha256Hash.toString());
     }
 
     @Test
@@ -146,63 +150,6 @@ public class RosterUtilsTest {
                                         .build()))
                                 .build(),
                         0));
-    }
-
-    @Test
-    void testCreateRosterHistory() {
-        final Random random = new Random();
-        final VirtualMapState state = Mockito.mock(VirtualMapState.class);
-        final ReadableStates readableStates = Mockito.mock(ReadableStates.class);
-        Mockito.when(state.getReadableStates(PlatformStateService.NAME)).thenReturn(readableStates);
-
-        final Roster currentRoster =
-                RandomRosterBuilder.create(random).withSize(4).build();
-        final Roster previousRoster =
-                RandomRosterBuilder.create(random).withSize(3).build();
-        RosterServiceStateMock.setup(state, currentRoster, 16L, previousRoster);
-
-        final RosterHistory rosterHistory = RosterStateUtils.createRosterHistory(state);
-        assertEquals(previousRoster, rosterHistory.getPreviousRoster());
-        assertEquals(currentRoster, rosterHistory.getCurrentRoster());
-    }
-
-    @Test
-    void testCreateRosterHistoryVerifyRound() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final VirtualMapState state = Mockito.mock(VirtualMapState.class);
-        final Roster currentRoster =
-                RandomRosterBuilder.create(random).withSize(4).build();
-        final Roster previousRoster =
-                RandomRosterBuilder.create(random).withSize(3).build();
-        RosterServiceStateMock.setup(state, currentRoster, 16L, previousRoster);
-
-        final RosterHistory rosterHistory = RosterStateUtils.createRosterHistory(state);
-        assertEquals(currentRoster, rosterHistory.getCurrentRoster());
-        assertEquals(previousRoster, rosterHistory.getPreviousRoster());
-
-        assertEquals(currentRoster, rosterHistory.getRosterForRound(16));
-        assertEquals(currentRoster, rosterHistory.getRosterForRound(18));
-        assertEquals(currentRoster, rosterHistory.getRosterForRound(100));
-        assertEquals(currentRoster, rosterHistory.getRosterForRound(Integer.MAX_VALUE));
-        assertEquals(previousRoster, rosterHistory.getRosterForRound(15));
-        assertEquals(previousRoster, rosterHistory.getRosterForRound(0));
-        assertNull(rosterHistory.getRosterForRound(-1));
-    }
-
-    @Test
-    void testCreateRosterHistoryNoActiveRosters() {
-        final VirtualMapState state = Mockito.mock(VirtualMapState.class);
-        Mockito.when(state.getReadableStates(RosterStateId.SERVICE_NAME)).thenReturn(null);
-
-        assertThrows(NullPointerException.class, () -> RosterStateUtils.createRosterHistory(state));
-    }
-
-    @Test
-    void testCreateRosterHistoryNoRosters() {
-        final VirtualMapState state = Mockito.mock(VirtualMapState.class);
-        RosterServiceStateMock.setup(state, null, 16L, null);
-
-        assertThrows(IllegalArgumentException.class, () -> RosterStateUtils.createRosterHistory(state));
     }
 
     @Test

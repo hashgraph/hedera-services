@@ -3,9 +3,9 @@ package org.hiero.consensus.hashgraph.impl.test.fixtures.consensus.framework;
 
 import static org.hiero.consensus.test.fixtures.WeightGenerators.BALANCED;
 
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.swirlds.common.context.PlatformContext;
+import com.swirlds.base.time.Time;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,9 @@ import org.hiero.consensus.hashgraph.impl.test.fixtures.event.emitter.StandardEv
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator.StandardGraphGenerator;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.source.EventSource;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.source.StandardEventSource;
-import org.hiero.consensus.roster.test.fixtures.RandomRosterBuilder;
+import org.hiero.consensus.model.roster.RosterEntryWrapper;
+import org.hiero.consensus.model.roster.RosterWrapper;
+import org.hiero.consensus.model.test.fixtures.roster.RosterWrapperFactory;
 import org.hiero.consensus.test.fixtures.WeightGenerator;
 
 /** A builder for {@link ConsensusTestOrchestrator} instances */
@@ -33,7 +35,10 @@ public class OrchestratorBuilder {
     private int totalEventNum = 10_000;
     private Function<List<Long>, List<EventSource>> eventSourceBuilder = null;
     private Consumer<EventSource> eventSourceConfigurator = es -> {};
-    private PlatformContext platformContext;
+    private Configuration configuration;
+    private Metrics metrics;
+    private Time time;
+
     /**
      * A function that creates an event emitter based on a graph generator and a seed. They should produce emitters that
      * will emit events in different orders. For example, nothing would be tested if both returned a
@@ -60,7 +65,9 @@ public class OrchestratorBuilder {
         weightGenerator = testInput.weightGenerator();
         seed = testInput.seed();
         totalEventNum = testInput.eventsToGenerate();
-        platformContext = testInput.platformContext();
+        configuration = testInput.configuration();
+        metrics = testInput.metrics();
+        time = testInput.time();
         return this;
     }
 
@@ -88,13 +95,10 @@ public class OrchestratorBuilder {
         final long shuffler1Seed = random.nextLong();
         final long shuffler2Seed = random.nextLong();
 
-        final Roster roster = RandomRosterBuilder.create(random)
-                .withSize(numberOfNodes)
-                .withWeightGenerator(weightGenerator)
-                .build();
+        final RosterWrapper roster = RosterWrapperFactory.randomRoster(random, numberOfNodes, weightGenerator);
 
         final List<Long> weights =
-                roster.rosterEntries().stream().map(RosterEntry::weight).toList();
+                roster.rosterEntries().stream().map(RosterEntryWrapper::weight).toList();
         final List<EventSource> eventSources;
         if (eventSourceBuilder != null) {
             eventSources = eventSourceBuilder.apply(weights);
@@ -110,8 +114,8 @@ public class OrchestratorBuilder {
         }
         // randomise the number of other parents to increase test coverage
         final int numOtherParents = random.nextInt(1, numberOfNodes);
-        final StandardGraphGenerator graphGenerator =
-                new StandardGraphGenerator(platformContext, graphSeed, numOtherParents, eventSources, roster);
+        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(
+                configuration, metrics, time, graphSeed, numOtherParents, eventSources, roster);
 
         // Make the graph generators create a fresh set of events.
         // Use the same seed so that they create identical graphs.
@@ -123,9 +127,9 @@ public class OrchestratorBuilder {
         final List<ConsensusTestNode> nodes = new ArrayList<>();
         // Create two instances to run consensus on. Each instance reseeds the emitter so that they
         // emit events in different orders.
-        nodes.add(ConsensusTestNode.genesisContext(platformContext, node1Emitter));
-        nodes.add(ConsensusTestNode.genesisContext(platformContext, node2Emitter));
+        nodes.add(ConsensusTestNode.genesisContext(configuration, metrics, time, node1Emitter));
+        nodes.add(ConsensusTestNode.genesisContext(configuration, metrics, time, node2Emitter));
 
-        return new ConsensusTestOrchestrator(platformContext, nodes, weights, totalEventNum);
+        return new ConsensusTestOrchestrator(configuration, metrics, nodes, weights, totalEventNum);
     }
 }

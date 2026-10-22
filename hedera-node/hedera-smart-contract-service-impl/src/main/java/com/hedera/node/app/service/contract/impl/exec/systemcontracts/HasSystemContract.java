@@ -14,6 +14,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -30,6 +32,20 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
             .contractNum(numberOfLongZero(Address.fromHexString(HAS_EVM_ADDRESS)))
             .build();
 
+    /**
+     * A set of call data prefixes (i.e. function selectors in the realm of Solidity)
+     * that are eligible for proxy redirection to the Hedera Account Service system contract.
+     */
+    private static final Set<Integer> HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES = Set.of(
+            0xbbee989e, // hbarAllowance(address spender)
+            0x86aff07c, // hbarApprove(address spender, int256 amount)
+            0xf5677e99); // setUnlimitedAutomaticAssociations(bool enableAutoAssociations)
+
+    public static boolean isPayloadEligibleForHasProxyRedirect(Bytes payload) {
+        final int prefix = payload.size() >= FUNCTION_SELECTOR_LENGTH ? payload.getInt(0) : 0;
+        return HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES.contains(prefix);
+    }
+
     @Inject
     public HasSystemContract(
             @NonNull final GasCalculator gasCalculator,
@@ -44,16 +60,20 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
     }
 
     @Override
-    public FullResult computeFully(
-            @NonNull ContractID contractID, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
+    public void computeFully(
+            @NonNull ContractID contractID,
+            @NonNull final Bytes input,
+            @NonNull final MessageFrame frame,
+            @NonNull final Consumer<FullResult> completion) {
         requireNonNull(input);
         requireNonNull(frame);
 
         // Check if calls to hedera account service is enabled
         if (!contractsConfigOf(frame).systemContractAccountServiceEnabled()) {
-            return haltResult(NOT_SUPPORTED, frame.getRemainingGas());
+            completion.accept(haltResult(NOT_SUPPORTED, frame.getRemainingGas()));
+            return;
         }
 
-        return super.computeFully(contractID, input, frame);
+        super.computeFully(contractID, input, frame, completion);
     }
 }

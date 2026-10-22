@@ -13,11 +13,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.accountAllowanceHook;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -48,14 +45,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.hiero.base.utility.CommonUtils.hex;
-import static org.hiero.hapi.support.fees.Extra.HOOK_UPDATES;
 import static org.hiero.hapi.support.fees.Extra.KEYS;
 import static org.hiero.hapi.support.fees.Extra.PROCESSING_BYTES;
 import static org.hiero.hapi.support.fees.Extra.SIGNATURES;
-import static org.hyperledger.besu.crypto.Hash.keccak256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.cryptography.libsecp256k1.ContextualLibsecp256k1;
+import com.hedera.cryptography.libsecp256k1.Libsecp256k1;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -63,14 +61,11 @@ import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.lang.foreign.MemorySegment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -87,11 +82,11 @@ import org.junit.jupiter.api.Tag;
 @Tag(SIMPLE_FEES)
 @HapiTestLifecycle
 public class CryptoCreateSimpleFeesTest {
+    private static final ContextualLibsecp256k1 LIBSECP256K1 = ContextualLibsecp256k1.getInstance();
 
     private static final String PAYER = "payer";
     private static final String ADMIN_KEY = "adminKey";
     private static final String PAYER_KEY = "payerKey";
-    private static final String HOOK_CONTRACT = "TruePreHook";
     private static final String VALID_ALIAS_ED25519_KEY = "ValidAliasEd25519Key";
     private static final String DUPLICATE_TXN_ID = "duplicateTxnId";
     private static final String NEW_KEY = "newPayerKey";
@@ -99,11 +94,7 @@ public class CryptoCreateSimpleFeesTest {
     private static final String cryptoCreatetxn = "cryptoCreatetxn";
 
     @BeforeAll
-    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.overrideInClass(Map.of(
-                "fees.simpleFeesEnabled", "true",
-                "hooks.hooksEnabled", "true"));
-    }
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {}
 
     @Nested
     @DisplayName("CryptoCreate Simple Fees Positive Test Cases")
@@ -230,88 +221,6 @@ public class CryptoCreateSimpleFeesTest {
         }
 
         @HapiTest
-        @DisplayName("CryptoCreate - with hook creation details - full charging without extras")
-        Stream<DynamicTest> cryptoCreateWithIncludedSigAndHook() {
-            return hapiTest(
-                    uploadInitCode(HOOK_CONTRACT),
-                    contractCreate(HOOK_CONTRACT).gas(5_000_000L),
-                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate("testAccount")
-                            .withHooks(accountAllowanceHook(1L, HOOK_CONTRACT))
-                            .payingWith(PAYER)
-                            .signedBy(PAYER)
-                            .via(cryptoCreatetxn),
-                    validateChargedUsdWithinWithTxnSize(
-                            cryptoCreatetxn,
-                            txnSize -> expectedCryptoCreateFullFeeUsd(Map.of(
-                                    SIGNATURES, 1L,
-                                    HOOK_UPDATES, 1L,
-                                    PROCESSING_BYTES, (long) txnSize)),
-                            0.1),
-                    validateChargedAccount(cryptoCreatetxn, PAYER));
-        }
-
-        @HapiTest
-        @DisplayName("CryptoCreate - with included hook, signature and key - full charging without extras")
-        Stream<DynamicTest> cryptoCreateWithIncludedHookSigAndKey() {
-            return hapiTest(
-                    uploadInitCode(HOOK_CONTRACT),
-                    contractCreate(HOOK_CONTRACT).gas(5_000_000L),
-                    cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
-                    newKeyNamed(ADMIN_KEY),
-                    cryptoCreate("testAccount")
-                            .withHooks(accountAllowanceHook(1L, HOOK_CONTRACT))
-                            .key(ADMIN_KEY)
-                            .payingWith(PAYER)
-                            .signedBy(PAYER)
-                            .via(cryptoCreatetxn),
-                    validateChargedUsdWithinWithTxnSize(
-                            cryptoCreatetxn,
-                            txnSize -> expectedCryptoCreateFullFeeUsd(Map.of(
-                                    SIGNATURES, 1L,
-                                    KEYS, 1L,
-                                    HOOK_UPDATES, 1L,
-                                    PROCESSING_BYTES, (long) txnSize)),
-                            0.1),
-                    validateChargedAccount(cryptoCreatetxn, PAYER));
-        }
-
-        @HapiTest
-        @DisplayName("CryptoCreate - with extra hooks, signatures and keys - full charging without extras")
-        Stream<DynamicTest> cryptoCreateWithExtraHookSigAndKey() {
-            // Define a threshold submit key that requires two simple keys signatures
-            KeyShape keyShape = threshOf(2, SIMPLE, SIMPLE);
-
-            // Create a valid signature with both simple keys signing
-            SigControl validSig = keyShape.signedWith(sigs(ON, ON));
-            return hapiTest(
-                    uploadInitCode(HOOK_CONTRACT),
-                    contractCreate(HOOK_CONTRACT).gas(5_000_000L),
-                    newKeyNamed(PAYER_KEY).shape(keyShape),
-                    cryptoCreate(PAYER)
-                            .key(PAYER_KEY)
-                            .sigControl(forKey(PAYER_KEY, validSig))
-                            .balance(ONE_HUNDRED_HBARS),
-                    cryptoCreate("testAccount")
-                            .memo("Test")
-                            .key(PAYER_KEY)
-                            .sigControl(forKey(PAYER_KEY, validSig))
-                            .withHooks(accountAllowanceHook(2L, HOOK_CONTRACT), accountAllowanceHook(3L, HOOK_CONTRACT))
-                            .payingWith(PAYER)
-                            .signedBy(PAYER_KEY)
-                            .via(cryptoCreatetxn),
-                    validateChargedUsdWithinWithTxnSize(
-                            cryptoCreatetxn,
-                            txnSize -> expectedCryptoCreateFullFeeUsd(Map.of(
-                                    SIGNATURES, 2L,
-                                    KEYS, 2L,
-                                    HOOK_UPDATES, 2L,
-                                    PROCESSING_BYTES, (long) txnSize)),
-                            0.1),
-                    validateChargedAccount(cryptoCreatetxn, PAYER));
-        }
-
-        @HapiTest
         @DisplayName("CryptoCreate with alias - full charging without extras")
         Stream<DynamicTest> cryptoCreateWithAliasThresholdWithExtraSigAndKeys() {
             return hapiTest(
@@ -326,21 +235,32 @@ public class CryptoCreateSimpleFeesTest {
                                 ecdsaKey.getECDSASecp256K1().toByteArray();
                         log.info("Compressed ECDSA key length: {}", compressedPubKey.length);
 
-                        // decompress to uncompressed format
-                        final var params = SECNamedCurves.getByName("secp256k1");
-                        final var curve = params.getCurve();
-                        final ECPoint point = curve.decodePoint(compressedPubKey);
+                        final byte[] pubkey = new byte[Libsecp256k1.PUBLIC_KEY_BYTES];
+                        final MemorySegment pubkeySeg = MemorySegment.ofArray(pubkey);
+                        if (LIBSECP256K1.secp256k1EcPubkeyParse(
+                                        pubkeySeg, MemorySegment.ofArray(compressedPubKey), compressedPubKey.length)
+                                != 1) {
+                            throw new IllegalStateException("secp256k1EcPubkeyParse failed");
+                        }
+                        final byte[] uncompressed = new byte[Libsecp256k1.PUBLIC_KEY_BYTES + 1];
+                        final long[] uncompressedLen = new long[] {uncompressed.length};
+                        if (LIBSECP256K1.secp256k1EcPubkeySerialize(
+                                        MemorySegment.ofArray(uncompressed),
+                                        MemorySegment.ofArray(uncompressedLen),
+                                        pubkeySeg,
+                                        Libsecp256k1.SECP256K1_EC_UNCOMPRESSED)
+                                != 1) {
+                            throw new IllegalStateException("secp256k1EcPubkeySerialize failed");
+                        }
 
-                        // get uncompressed public key bytes
-                        final byte[] uncompressed = point.getEncoded(false);
-                        if (uncompressed.length != 65 || uncompressed[0] != 0x04) {
+                        if (uncompressedLen[0] != 65 || uncompressed[0] != 0x04) {
                             throw new IllegalStateException("Invalid uncompressed ECDSA public key");
                         }
 
                         // compute the EVM address from the uncompressed public key
                         final byte[] raw = Arrays.copyOfRange(uncompressed, 1, uncompressed.length);
-                        final Bytes32 hash = keccak256(Bytes.wrap(raw));
-                        final byte[] evmAddress = hash.slice(12, 20).toArray();
+                        final byte[] hash = MiscCryptoUtils.keccak256DigestOf(raw);
+                        final byte[] evmAddress = Arrays.copyOfRange(hash, 12, 12 + 20);
                         final ByteString alias = ByteString.copyFrom(evmAddress);
 
                         log.info("Uncompressed ECDSA length: {}", raw.length);

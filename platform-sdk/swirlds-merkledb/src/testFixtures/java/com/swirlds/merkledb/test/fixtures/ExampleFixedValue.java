@@ -2,12 +2,10 @@
 package com.swirlds.merkledb.test.fixtures;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Random;
 
 public final class ExampleFixedValue extends ExampleByteArrayVirtualValue {
@@ -72,7 +70,7 @@ public final class ExampleFixedValue extends ExampleByteArrayVirtualValue {
         out.writeBytes(data);
     }
 
-    public static class ExampleFixedValueCodec implements Codec<ExampleFixedValue> {
+    public static class ExampleFixedValueCodec extends Codec<ExampleFixedValue> {
 
         @Override
         public ExampleFixedValue getDefaultInstance() {
@@ -82,36 +80,23 @@ public final class ExampleFixedValue extends ExampleByteArrayVirtualValue {
 
         @NonNull
         @Override
-        public ExampleFixedValue parse(
+        protected ExampleFixedValue parseImpl(
                 @NonNull ReadableSequentialData in,
                 boolean strictMode,
                 boolean parseUnknownFields,
                 int maxDepth,
-                int maxSize)
-                throws ParseException {
+                int maxSize) {
             return new ExampleFixedValue(in);
         }
 
         @Override
-        public void write(@NonNull ExampleFixedValue value, @NonNull WritableSequentialData out) throws IOException {
+        protected void writeImpl(@NonNull ExampleFixedValue value, @NonNull WritableSequentialData out) {
             value.writeTo(out);
-        }
-
-        @Override
-        public int measure(@NonNull ReadableSequentialData in) throws ParseException {
-            throw new UnsupportedOperationException("ExampleFixedValueCodec.measure() not implemented");
         }
 
         @Override
         public int measureRecord(ExampleFixedValue value) {
             return value.getSizeInBytes();
-        }
-
-        @Override
-        public boolean fastEquals(@NonNull ExampleFixedValue value, @NonNull ReadableSequentialData in)
-                throws ParseException {
-            final ExampleFixedValue other = parse(in);
-            return other.equals(value);
         }
     }
 }

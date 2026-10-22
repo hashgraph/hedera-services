@@ -6,6 +6,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.SignedTxCustomizer.NOOP_SIGNED_TX_CUSTOMIZER;
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,8 +36,11 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.streams.ContractAction;
+import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -253,6 +257,28 @@ public class StreamBuilderTest {
     }
 
     @Test
+    void exceededContractTraceDataLimitClearsAllContractSidecars() {
+        final var actions = new ContractActions(List.of(
+                ContractAction.newBuilder().callType(ContractActionType.CALL).build()));
+        final var stateChanges = ContractStateChanges.DEFAULT;
+        final var bytecode =
+                ContractBytecode.newBuilder().initcode(Bytes.wrap("too-large")).build();
+        final var maxTraceDataBytes = ContractActions.PROTOBUF.measureRecord(actions);
+
+        final var builder = new RecordStreamBuilder(REVERSIBLE, NOOP_SIGNED_TX_CUSTOMIZER, USER, maxTraceDataBytes)
+                .signedTx(NORMAL_SIGNED_TX)
+                .transactionID(transactionID)
+                .addContractStateChanges(stateChanges, false)
+                .addContractActions(actions, false)
+                .addContractBytecode(bytecode, false)
+                .addContractActions(actions, false);
+
+        final var sidecars = builder.build().transactionSidecarRecords();
+        assertTrue(builder.hasTraceDataSizeLimitExceeded());
+        assertTrue(sidecars.isEmpty());
+    }
+
+    @Test
     void protoConversionLeavesReceiptBlockNumberUnsetWhenBuilderDidNotSetIt() {
         final var builder = new RecordStreamBuilder(REVERSIBLE, NOOP_SIGNED_TX_CUSTOMIZER, USER);
         builder.signedTx(SignedTransaction.DEFAULT)
@@ -408,5 +434,25 @@ public class StreamBuilderTest {
                 .isEqualTo(Bytes.EMPTY);
         assertThat(createRecord.transactionRecord().contractCreateResult().logInfo())
                 .isEqualTo(emptyList());
+    }
+
+    @Test
+    void transactionBody_returnsBodyParsedFromSignedTx() {
+        final var body = TransactionBody.newBuilder().memo("test-memo").build();
+        final var bodyBytes = TransactionBody.PROTOBUF.toBytes(body);
+        final var signedTx = SignedTransaction.newBuilder().bodyBytes(bodyBytes).build();
+        final var builder = new RecordStreamBuilder(REVERSIBLE, NOOP_SIGNED_TX_CUSTOMIZER, USER).signedTx(signedTx);
+
+        assertEquals(body, builder.transactionBody());
+    }
+
+    @Test
+    void transactionBody_withInvalidBodyBytes_throwsIllegalStateException() {
+        final var signedTx = SignedTransaction.newBuilder()
+                .bodyBytes(Bytes.wrap(new byte[] {0x06}))
+                .build();
+        final var builder = new RecordStreamBuilder(REVERSIBLE, NOOP_SIGNED_TX_CUSTOMIZER, USER).signedTx(signedTx);
+
+        assertThatThrownBy(builder::transactionBody).isInstanceOf(IllegalStateException.class);
     }
 }

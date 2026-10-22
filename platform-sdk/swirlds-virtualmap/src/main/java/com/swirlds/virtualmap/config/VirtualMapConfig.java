@@ -17,16 +17,8 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param numHashThreads
  * 		The number of threads to devote to hashing. If not set, defaults to the number of threads implied by
  *        {@code virtualMap.percentHashThreads} and {@link Runtime#availableProcessors()}.
- * @param hashChunkHeight
- *      Hash chunk height. The height is used to store hashes on disk in chunks rather than individually.
- *      This config is also used by virtual hasher to create hashing tasks, so they are mostly aligned
- *      with hash chunks on disk.
  * @param reconnectMode
  *      Reconnect mode. For the list of accepted values, see {@link VirtualMapReconnectMode}.
- * @param reconnectFlushInterval
- *      During reconnect, virtual nodes are periodically flushed to disk after they are hashed. This
- *      interval indicates the number of nodes to hash before they are flushed to disk. If zero, all
- *      hashed nodes are flushed in the end of reconnect hashing only.
  * @param percentCleanerThreads
  * 		Gets the percentage (from 0.0 to 100.0) of available processors to devote to cache
  * 		cleaner threads. Ignored if an explicit number of threads is given via {@code virtualMap.numCleanerThreads}.
@@ -46,21 +38,23 @@ import com.swirlds.config.api.validation.annotation.Min;
  *      -Xmx80g, and familyThrottlePercent is 5.0, the threshold will be set to 4Gb. If both familyThrottlePercent
  *      and familyThrottleThreshold are set, familyThrottleThreshold is used, and familyThrottlePercent is
  *      ignored
- * @param fullRehashTimeoutMs the number of milliseconds to wait for the full leaf rehash to finish before it fail with an exception.
+ * @param valueParseMaxSizeBytes
+ *      Maximum allowed size for parsing a delimited virtual-map value payload.
+ * @param fullRehashTimeoutMs the number of milliseconds to wait for the full leaf rehash to finish, including
+ *      flushing all new hashes to disk, before it fails with an exception.
  */
 // spotless:off
 @ConfigData("virtualMap")
 public record VirtualMapConfig(
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "50.0") double percentHashThreads,
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
-        @Min(1) @Max(64) @ConfigProperty(defaultValue = "6") int hashChunkHeight,
         @ConfigProperty(defaultValue = PULL_TOP_TO_BOTTOM) String reconnectMode,
-        @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0") double percentCleanerThreads,
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numCleanerThreads,
         @Min(1) @ConfigProperty(defaultValue = "1200000000") long copyFlushCandidateThreshold,
         @Min(-1) @Max(100) @ConfigProperty(defaultValue = "10.0") double familyThrottlePercent,
         @Min(-1) @ConfigProperty(defaultValue = "-1") long familyThrottleThreshold,
+        @Min(1) @ConfigProperty(defaultValue = "37748736") int valueParseMaxSizeBytes,
         @Min(0) @ConfigProperty(defaultValue = "600000") int fullRehashTimeoutMs) {
 
     // spotless:on

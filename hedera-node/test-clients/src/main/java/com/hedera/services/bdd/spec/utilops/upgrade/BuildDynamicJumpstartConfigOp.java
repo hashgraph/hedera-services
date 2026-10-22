@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
-import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
-import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.WRAPPED_RECORD_HASHES_FILE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.internal.WrappedRecordFileBlockHashesLog;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.IncrementalStreamingHasher;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.config.data.BlockStreamJumpstartConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.base.crypto.DigestType;
 
 /**
  * A utility operation that dynamically generates valid jumpstart data and populates config
@@ -77,7 +78,8 @@ public class BuildDynamicJumpstartConfigOp extends UtilOp {
         // >= firstDiskBlock so the migration has disk entries to process from
         // jumpstartBlockNum+1 onward.
         final int mid = entries.size() / 2;
-        final long jumpstartBlockNum = entries.get(mid - 1).blockNumber();
+        final var jumpstartEntry = entries.get(mid - 1);
+        final long jumpstartBlockNum = jumpstartEntry.blockNumber();
         log.info(
                 "Using jumpstart block {} (~midpoint of disk range [{}, {}])",
                 jumpstartBlockNum,
@@ -87,8 +89,11 @@ public class BuildDynamicJumpstartConfigOp extends UtilOp {
         // Replay .rcd files from genesis through the jumpstart block to compute the TRUE
         // chained hash. Unlike the disk hashes file (which may start at a block > 0),
         // the .rcd files must exist for ALL blocks from genesis and produce a correct chain.
-        final var hasher = new IncrementalStreamingHasher(sha384DigestOrThrow(), List.of(), 0L);
-        final var replayResult = RcdFileBlockHashReplay.replay(spec, -1, jumpstartBlockNum, HASH_OF_ZERO, hasher);
+        final var digestTypeName = spec.startupProperties().get("blockStream.digestType");
+        final var digestType = digestTypeName != null ? DigestType.valueOf(digestTypeName) : DigestType.SHA_384;
+        final var hasher = new IncrementalStreamingHasher(CommonUtils.digestOrThrow(digestType), List.of(), 0L);
+        final var replayResult = RcdFileBlockHashReplay.replay(
+                spec, -1, jumpstartBlockNum, BlockStreamManager.hashOfZero(digestType), hasher, digestType);
         final var prevWrappedBlockHash = replayResult.finalChainedHash();
         log.info(
                 "Computed jumpstart state via .rcd replay from genesis; "
@@ -107,6 +112,12 @@ public class BuildDynamicJumpstartConfigOp extends UtilOp {
         envOverrides.put(
                 "blockStream.jumpstart.streamingHasherSubtreeHashes",
                 intermediateHashes.stream().map(Bytes::toHex).collect(Collectors.joining(",")));
+        envOverrides.put(
+                "blockStream.jumpstart.currentBlockConsensusTimestampHash",
+                jumpstartEntry.consensusTimestampHash().toHex());
+        envOverrides.put(
+                "blockStream.jumpstart.currentBlockOutputItemsTreeRootHash",
+                jumpstartEntry.outputItemsTreeRootHash().toHex());
         log.info(
                 "Set jumpstart config properties: blockNum={}, leafCount={}, hashCount={}",
                 jumpstartBlockNum,
@@ -119,7 +130,9 @@ public class BuildDynamicJumpstartConfigOp extends UtilOp {
                 prevWrappedBlockHash,
                 hasher.leafCount(),
                 intermediateHashes.size(),
-                intermediateHashes));
+                intermediateHashes,
+                jumpstartEntry.consensusTimestampHash(),
+                jumpstartEntry.outputItemsTreeRootHash()));
         return false;
     }
 }

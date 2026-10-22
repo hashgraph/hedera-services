@@ -2,6 +2,7 @@
 package com.hedera.services.bdd.junit.support;
 
 import com.hedera.hapi.block.stream.Block;
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -11,6 +12,19 @@ import java.util.stream.Stream;
  * Defines API for validating a stream of {@link Block}s either independently or against a record stream.
  */
 public interface BlockStreamValidator {
+    /**
+     * Returns {@code true} if the given block items represent a Wrapped Record Block (WRB).
+     * Detection is based on the presence of a {@code RECORD_FILE} item.
+     */
+    static boolean isWrappedRecordBlock(@NonNull final List<BlockItem> items) {
+        for (final var item : items) {
+            if (item.hasRecordFile()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     interface Factory {
         /**
          * Returns true if this validator applies to the given {@link HapiSpec}.
@@ -41,6 +55,24 @@ public interface BlockStreamValidator {
             @NonNull final List<Block> blocks, @NonNull final StreamFileAccess.RecordStreamData data) {
         try {
             validateBlockVsRecords(blocks, data);
+        } catch (final Throwable t) {
+            return Stream.of(t);
+        }
+        return Stream.empty();
+    }
+
+    /**
+     * Validate the given {@link Block}s independent of any record stream, returning a {@link Stream} of
+     * {@link Throwable}s for any validation errors. Used under {@code streamMode=BLOCKS}, where no record
+     * stream exists: validators that override {@link #validateBlocks} run their full checks, while parity
+     * validators that only override {@link #validateBlockVsRecords} are inert here (their
+     * {@link #validateBlocks} is the no-op default).
+     * @param blocks the blocks to validate
+     * @return a stream of validation errors
+     */
+    default Stream<Throwable> validationErrorsIn(@NonNull final List<Block> blocks) {
+        try {
+            validateBlocks(blocks);
         } catch (final Throwable t) {
             return Stream.of(t);
         }

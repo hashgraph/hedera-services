@@ -2,11 +2,10 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.platform.state.signed.StartupStateUtils.loadStateFile;
-import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
-import static com.swirlds.platform.test.fixtures.state.TestStateUtils.destroyStateLifecycleManager;
+import static com.swirlds.state.test.fixtures.merkle.TestStateUtils.destroyStateLifecycleManager;
+import static org.hiero.base.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.hiero.base.utility.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.hiero.consensus.state.SignedStateFileWriter.writeSignedStateToDisk;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,25 +16,19 @@ import static org.mockito.Mockito.spy;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.config.StateCommonConfig_;
-import com.swirlds.common.constructable.ConstructableRegistration;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBinImpl;
-import com.swirlds.common.test.fixtures.TestRecycleBin;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig_;
 import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.state.snapshot.SignedStateFilePath;
-import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import com.swirlds.state.StateLifecycleManager;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.state.merkle.VirtualMapStateLifecycleManager;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -45,12 +38,25 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.hiero.base.constructable.ConstructableRegistryException;
+import org.hiero.base.crypto.config.CryptoConfig;
+import org.hiero.base.file.FileSystemManager;
+import org.hiero.base.file.FileUtils;
+import org.hiero.consensus.BasicConfig;
+import org.hiero.consensus.PathsConfig;
+import org.hiero.consensus.PathsConfig_;
+import org.hiero.consensus.constructable.ConstructableRegistration;
+import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.io.RecycleBin;
-import org.hiero.consensus.metrics.noop.NoOpMetrics;
+import org.hiero.consensus.io.RecycleBinImpl;
 import org.hiero.consensus.model.node.NodeId;
+import org.hiero.consensus.reconnect.config.ReconnectConfig;
+import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.config.StateConfig_;
+import org.hiero.consensus.state.persistence.SignedStateFilePath;
 import org.hiero.consensus.state.signed.SignedState;
 import org.hiero.consensus.state.snapshot.StateToDiskReason;
+import org.hiero.consensus.state.test.fixtures.RandomSignedStateGenerator;
+import org.hiero.consensus.test.fixtures.io.TestRecycleBin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,11 +69,25 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("StartupStateUtilities Tests")
 public class StartupStateUtilsTests {
 
+    private static final Configuration CONFIGURATION = ConfigurationBuilder.create()
+            .withConfigDataType(BasicConfig.class)
+            .withConfigDataType(MerkleDbConfig.class)
+            .withSource(new SimpleConfigSource().withValue(MerkleDbConfig_.INITIAL_CAPACITY, "" + 65_536L))
+            .withConfigDataType(VirtualMapConfig.class)
+            .withConfigDataType(PathsConfig.class)
+            .withConfigDataType(CryptoConfig.class)
+            .withConfigDataType(StateConfig.class)
+            .withConfigDataType(PathsConfig.class)
+            .withConfigDataType(ReconnectConfig.class)
+            .build();
+
     /**
-     * Temporary directory provided by JUnit
+     * Location to save states
      */
     @TempDir
-    Path testDirectory;
+    Path savedStateDir;
+
+    private FileSystemManager fileSystemManager;
 
     private SignedStateFilePath signedStateFilePath;
 
@@ -78,11 +98,9 @@ public class StartupStateUtilsTests {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        FileUtils.deleteDirectory(testDirectory);
-        signedStateFilePath = new SignedStateFilePath(new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .getOrCreateConfig()
-                .getConfigData(StateCommonConfig.class));
+        FileUtils.deleteDirectory(savedStateDir);
+        fileSystemManager = new FileSystemManager(savedStateDir);
+        signedStateFilePath = new SignedStateFilePath(fileSystemManager, mainClassName, selfId, swirldName);
         currentSoftwareVersion = SemanticVersion.newBuilder().major(1).build();
     }
 
@@ -98,16 +116,12 @@ public class StartupStateUtilsTests {
     }
 
     @NonNull
-    private PlatformContext buildContext(final boolean deleteInvalidStateFiles, @NonNull final RecycleBin recycleBin) {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+    private Configuration buildConfiguration(
+            final boolean deleteInvalidStateFiles, @NonNull final RecycleBin recycleBin) {
+        return new TestConfigBuilder()
+                .withValue(PathsConfig_.SAVED_STATE_DIR, savedStateDir.toString())
                 .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
-
-        return TestPlatformContextBuilder.create()
-                .withConfiguration(configuration)
-                .withRecycleBin(recycleBin)
-                .build();
     }
 
     /**
@@ -118,7 +132,8 @@ public class StartupStateUtilsTests {
     @NonNull
     private SignedState writeState(
             @NonNull final Random random,
-            @NonNull final PlatformContext platformContext,
+            @NonNull final Configuration configuration,
+            @NonNull final FileSystemManager fileSystemManager,
             final long round,
             final boolean corrupted)
             throws IOException {
@@ -132,10 +147,10 @@ public class StartupStateUtilsTests {
         // Async snapshot requires all references to the state being written to disk to be released
         state.release();
 
-        final Path savedStateDirectory =
-                signedStateFilePath.getSignedStateDirectory(mainClassName, selfId, swirldName, round);
+        final Path savedStateDirectory = signedStateFilePath.getSignedStateDirectory(round);
         writeSignedStateToDisk(
-                platformContext,
+                configuration,
+                fileSystemManager,
                 selfId,
                 savedStateDirectory,
                 StateToDiskReason.PERIODIC_SNAPSHOT,
@@ -155,16 +170,16 @@ public class StartupStateUtilsTests {
         return signedState;
     }
 
-    private static StateLifecycleManager<VirtualMapState, VirtualMap> createLifecycleManager() {
-        return new VirtualMapStateLifecycleManager(new NoOpMetrics(), new FakeTime(), CONFIGURATION);
+    private StateLifecycleManager<VirtualMapState, VirtualMap> createLifecycleManager() {
+        return new VirtualMapStateLifecycleManager(new NoOpMetrics(), new FakeTime(), CONFIGURATION, fileSystemManager);
     }
 
     @Test
     @DisplayName("Genesis Test")
     void genesisTest() throws SignedStateLoadingException {
-        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
+        final Configuration configuration = buildConfiguration(false, TestRecycleBin.getInstance());
 
-        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
+        final RecycleBin recycleBin = initializeRecycleBin(configuration, selfId);
 
         StateLifecycleManager<VirtualMapState, VirtualMap> lifecycleManager = createLifecycleManager();
         final SignedState loadedState = loadStateFile(
@@ -173,7 +188,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformContext,
+                        configuration,
+                        fileSystemManager,
                         lifecycleManager)
                 .reservedSignedState()
                 .getNullable();
@@ -186,7 +202,7 @@ public class StartupStateUtilsTests {
     @DisplayName("Normal Restart Test")
     void normalRestartTest() throws IOException, SignedStateLoadingException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
+        final Configuration configuration = buildConfiguration(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -194,10 +210,10 @@ public class StartupStateUtilsTests {
         SignedState latestState = null;
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
-            latestState = writeState(random, platformContext, latestRound, false);
+            latestState = writeState(random, configuration, fileSystemManager, latestRound, false);
         }
 
-        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
+        final RecycleBin recycleBin = initializeRecycleBin(configuration, selfId);
         final StateLifecycleManager<VirtualMapState, VirtualMap> lifecycleManager = createLifecycleManager();
         final SignedState loadedState = loadStateFile(
                         recycleBin,
@@ -205,7 +221,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformContext,
+                        configuration,
+                        fileSystemManager,
                         lifecycleManager)
                 .reservedSignedState()
                 .get();
@@ -223,7 +240,7 @@ public class StartupStateUtilsTests {
     @DisplayName("Corrupted State No Recycling Test")
     void corruptedStateNoRecyclingTest() throws IOException {
         final Random random = getRandomPrintSeed();
-        final PlatformContext platformContext = buildContext(false, TestRecycleBin.getInstance());
+        final Configuration configuration = buildConfiguration(false, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -231,9 +248,9 @@ public class StartupStateUtilsTests {
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
             final boolean corrupted = i == stateCount - 1;
-            writeState(random, platformContext, latestRound, corrupted);
+            writeState(random, configuration, fileSystemManager, latestRound, corrupted);
         }
-        final RecycleBin recycleBin = initializeRecycleBin(platformContext, selfId);
+        final RecycleBin recycleBin = initializeRecycleBin(configuration, selfId);
 
         StateLifecycleManager<VirtualMapState, VirtualMap> lifecycleManager = createLifecycleManager();
         assertThrows(SignedStateLoadingException.class, () -> {
@@ -245,7 +262,8 @@ public class StartupStateUtilsTests {
                     mainClassName,
                     swirldName,
                     currentSoftwareVersion,
-                    platformContext,
+                    configuration,
+                    fileSystemManager,
                     lifecycleManager);
         });
         destroyStateLifecycleManager(lifecycleManager);
@@ -269,7 +287,7 @@ public class StartupStateUtilsTests {
                 .when(recycleBin)
                 .recycle(any());
 
-        final PlatformContext platformContext = buildContext(true, recycleBin);
+        final Configuration configuration = buildConfiguration(true, TestRecycleBin.getInstance());
 
         int stateCount = 5;
 
@@ -278,7 +296,7 @@ public class StartupStateUtilsTests {
         for (int i = 0; i < stateCount; i++) {
             latestRound += random.nextInt(100, 200);
             final boolean corrupted = (stateCount - i) <= invalidStateCount;
-            final SignedState state = writeState(random, platformContext, latestRound, corrupted);
+            final SignedState state = writeState(random, configuration, fileSystemManager, latestRound, corrupted);
             if (!corrupted) {
                 latestUncorruptedState = state;
             }
@@ -292,7 +310,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformContext,
+                        configuration,
+                        fileSystemManager,
                         lifecycleManager)
                 .reservedSignedState()
                 .getNullable();
@@ -313,9 +332,8 @@ public class StartupStateUtilsTests {
             RandomSignedStateGenerator.releaseReservable(loadedState.getState().getRoot());
         }
 
-        final Path savedStateDirectory = signedStateFilePath
-                .getSignedStateDirectory(mainClassName, selfId, swirldName, latestRound)
-                .getParent();
+        final Path savedStateDirectory =
+                signedStateFilePath.getSignedStateDirectory(latestRound).getParent();
         int filesCount;
         try (Stream<Path> list = Files.list(savedStateDirectory)) {
             filesCount = (int) list.count();
@@ -325,10 +343,8 @@ public class StartupStateUtilsTests {
         destroyStateLifecycleManager(lifecycleManager);
     }
 
-    private RecycleBin initializeRecycleBin(PlatformContext platformContext, NodeId selfId) {
+    private RecycleBin initializeRecycleBin(@NonNull final Configuration configuration, @NonNull final NodeId selfId) {
         final var metrics = new NoOpMetrics();
-        final var configuration = platformContext.getConfiguration();
-        final var fileSystemManager = FileSystemManager.create(configuration);
         final var time = Time.getCurrent();
         return RecycleBinImpl.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
     }

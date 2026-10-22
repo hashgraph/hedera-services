@@ -3,6 +3,7 @@ package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.PERMISSION_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.UPGRADE_FILE_CONTENT;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -30,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -254,7 +255,10 @@ public class FileUpdateSuite {
 
         return hapiTest(
                 fileCreate("test").entityMemo(firstMemo).contents(old4K),
-                fileUpdate("test").entityMemo(ZERO_BYTE_MEMO).contents(new4k).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                fileUpdate("test")
+                        .entityMemo(ZERO_BYTE_MEMO)
+                        .contents(new4k)
+                        .hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
                 fileUpdate("test").entityMemo(secondMemo).contents(new4k),
                 getFileContents("test").hasContents(ignore -> new4k),
                 getFileInfo("test").hasMemo(secondMemo));
@@ -282,7 +286,7 @@ public class FileUpdateSuite {
         return hapiTest(
                 fileCreate("test"), doWithStartupConfig("entities.maxLifetime", maxLifetime -> fileUpdate("test")
                         .lifetime(parseLong(maxLifetime) + 12_345L)
-                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
+                        .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE)));
     }
 
     @LeakyEmbeddedHapiTest(
@@ -380,7 +384,7 @@ public class FileUpdateSuite {
 
     @SuppressWarnings("java:S5960")
     @LeakyEmbeddedHapiTest(
-            reason = NEEDS_STATE_ACCESS,
+            reason = {MUST_SKIP_INGEST, NEEDS_STATE_ACCESS},
             overrides = {"contracts.maxGasPerSec"})
     final Stream<DynamicTest> serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
@@ -407,14 +411,16 @@ public class FileUpdateSuite {
                         .gas(gasToOffer)
                         .hasAnyStatusAtAll()
                         .deferStatusResolution(),
-                uncheckedSubmit(ethereumCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(4))
-                                .gasLimit(gasToOffer)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(civilian)
-                                .txnId(refundedTxn))
-                        .payingWith(GENESIS),
+                ethereumCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(4))
+                        .gasLimit(gasToOffer)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(civilian)
+                        .txnId(refundedTxn)
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll()
+                        .deferStatusResolution(),
                 sleepFor(6_000L),
-                withOpContext((spec, opLog) -> {
+                doingContextual(spec -> {
                     final var unrefundedOp = getTxnRecord(unrefundedTxn);
                     final var refundedOp = getTxnRecord(refundedTxn).assertingNothingAboutHashes();
                     allRunFor(spec, refundedOp, unrefundedOp);

@@ -39,15 +39,15 @@ import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.config.StateCommonConfig;
-import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.builder.ModulesConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import org.hiero.base.crypto.config.CryptoConfig;
-import org.hiero.consensus.config.BasicConfig;
+import org.hiero.consensus.BasicConfig;
+import org.hiero.consensus.PathsConfig;
 import org.hiero.consensus.metrics.config.MetricsConfig;
 import org.hiero.consensus.pces.config.PcesConfig;
 import org.hiero.consensus.state.config.StateConfig;
@@ -90,7 +90,7 @@ public final class ConfigUtils {
 
     public static String JOB_URL = System.getProperty("job.url");
 
-    public static final String FULL_REHASH_TIMEOUT_MS = System.getProperty("fullRehashTimeoutMs", "600000");
+    public static final String FULL_REHASH_TIMEOUT_MS = System.getProperty("fullRehashTimeoutMs", "1800000");
 
     private static Configuration configuration;
 
@@ -102,9 +102,8 @@ public final class ConfigUtils {
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(StateCommonConfig.class)
+                .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(StateConfig.class)
-                .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(FilesConfig.class)
                 .withConfigDataType(ApiPermissionConfig.class)
                 .withConfigDataType(BootstrapConfig.class)
@@ -119,10 +118,13 @@ public final class ConfigUtils {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(BlockRecordStreamConfig.class)
                 .withConfigDataType(BlockStreamJumpstartConfig.class)
+                .withConfigDataType(ModulesConfig.class)
+                .withConfigDataType(PathsConfig.class)
                 .withSource(new SimpleConfigSource().withValue("merkleDb.usePbj", false))
                 .withSource(new SimpleConfigSource().withValue("merkleDb.minNumberOfFilesInCompaction", 2))
                 .withSource(new SimpleConfigSource().withValue("merkleDb.maxFileChannelsPerFileReader", FILE_CHANNELS))
-                .withSource(new SimpleConfigSource().withValue("merkleDb.maxThreadsPerFileChannel", 1))
+                .withSource(
+                        (new SimpleConfigSource().withValue("event.preconsensus.pcesFileWriterType", "OUTPUT_STREAM")))
                 .withSource(
                         new SimpleConfigSource().withValue("virtualMap.fullRehashTimeoutMs", FULL_REHASH_TIMEOUT_MS))
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
@@ -139,8 +141,9 @@ public final class ConfigUtils {
                 .withConverter(HederaFunctionalitySet.class, new FunctionalitySetConverter())
                 .withConverter(Bytes.class, new BytesConverter());
         if (!TMP_DIR.isEmpty()) {
-            configurationBuilder.withSource(
-                    new SimpleConfigSource().withValue("temporaryFiles.temporaryFilePath", TMP_DIR));
+            configurationBuilder.withSource(new SimpleConfigSource()
+                    .withValue("paths.tmpDir", TMP_DIR)
+                    .withValue("temporaryFiles.temporaryFilePath", TMP_DIR));
         }
         configuration = configurationBuilder.build();
     }
@@ -154,5 +157,9 @@ public final class ConfigUtils {
             initConfiguration();
         }
         return configuration;
+    }
+
+    public static int getVirtualMapValueParseMaxSizeBytes() {
+        return getConfiguration().getConfigData(VirtualMapConfig.class).valueParseMaxSizeBytes();
     }
 }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.statevalidation.validator;
 
+import static com.hedera.statevalidation.util.ParallelProcessingUtils.VALIDATOR_FORK_JOIN_POOL;
+
 import com.hedera.statevalidation.util.StateUtils;
-import com.hedera.statevalidation.validator.pipeline.RehashTaskExecutor;
 import com.hedera.statevalidation.validator.util.ValidationException;
 import com.swirlds.state.merkle.VirtualMapState;
+import com.swirlds.virtualmap.RecordAccessor;
+import com.swirlds.virtualmap.TaskPerNodeFullRehasher;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.internal.RecordAccessor;
-import com.swirlds.virtualmap.internal.merkle.VirtualMapMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +31,7 @@ public class RehashValidator implements Validator {
     private long firstLeafPath;
     private long lastLeafPath;
     private Hash originalHash;
+    private long timeoutMs;
 
     /**
      * {@inheritDoc}
@@ -58,10 +60,10 @@ public class RehashValidator implements Validator {
         final VirtualMap vm = state.getRoot();
         this.originalHash = StateUtils.getOriginalStateHash();
         this.records = vm.getRecords();
+        this.timeoutMs = vm.getVirtualMapConfig().fullRehashTimeoutMs();
 
-        final VirtualMapMetadata metadata = vm.getMetadata();
-        this.firstLeafPath = metadata.getFirstLeafPath();
-        this.lastLeafPath = metadata.getLastLeafPath();
+        this.firstLeafPath = vm.getMetadata().getFirstLeafPath();
+        this.lastLeafPath = vm.getMetadata().getLastLeafPath();
     }
 
     /**
@@ -72,11 +74,16 @@ public class RehashValidator implements Validator {
         logger.debug("Doing full rehash for the path range: {} - {} in the VirtualMap", firstLeafPath, lastLeafPath);
 
         final long startTime = System.currentTimeMillis();
-        final RehashTaskExecutor executor = new RehashTaskExecutor(records, firstLeafPath, lastLeafPath);
         final Hash computedHash;
 
         try {
-            computedHash = executor.execute();
+            computedHash = TaskPerNodeFullRehasher.hash(
+                    VALIDATOR_FORK_JOIN_POOL,
+                    firstLeafPath,
+                    lastLeafPath,
+                    records::findLeafRecord,
+                    TaskPerNodeFullRehasher.Listener.NO_OP,
+                    timeoutMs);
         } catch (final Exception e) {
             throw new ValidationException(REHASH_GROUP, "Unexpected exception: " + e.getMessage(), e);
         }

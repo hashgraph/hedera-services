@@ -6,25 +6,21 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMet
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.initLogging;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.state.signed.StartupStateUtils.loadInitialState;
-import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.hiero.base.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.hiero.consensus.constructable.ConstructableRegistration.setupConstructableRegistry;
 import static org.hiero.sloth.fixtures.app.SlothStateUtils.initGenesisState;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.builder.PlatformBuilder;
-import com.swirlds.platform.builder.PlatformBuildingBlocks;
-import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.builder.PlatformBuilder.PersistenceScope;
+import com.swirlds.platform.context.PlatformContext;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.util.BootstrapUtils;
-import com.swirlds.platform.wiring.PlatformComponents;
+import com.swirlds.platform.test.fixtures.builder.TestPlatformBuilder;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.state.merkle.VirtualMapStateLifecycleManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,20 +30,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.base.file.FileSystemManager;
+import org.hiero.consensus.ConsensusLayerBuildingBlocks;
+import org.hiero.consensus.PathsConfig;
 import org.hiero.consensus.io.RecycleBin;
+import org.hiero.consensus.io.RecycleBinImpl;
 import org.hiero.consensus.metrics.platform.SnapshotEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
+import org.hiero.consensus.model.roster.ConsensusLayerRosterInputs;
 import org.hiero.consensus.platformstate.PlatformStateService;
 import org.hiero.consensus.platformstate.ReadablePlatformStateStore;
-import org.hiero.consensus.roster.RosterHistory;
-import org.hiero.consensus.roster.RosterStateUtils;
+import org.hiero.consensus.roster.RosterStateId;
+import org.hiero.consensus.roster.WritableRosterStore;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 import org.hiero.sloth.fixtures.SlothTransactionType;
 import org.hiero.sloth.fixtures.app.SlothApp;
 import org.hiero.sloth.fixtures.app.SlothExecutionLayer;
+import org.hiero.sloth.fixtures.app.SlothStateUtils;
 import org.hiero.sloth.fixtures.container.docker.metrics.ToFilePrometheusExporter;
 
 /**
@@ -76,11 +78,11 @@ public class ConsensusNodeManager {
     /**
      * Creates a new instance of {@code ConsensusNodeManager} with the specified parameters.
      *
-     * @param selfId the unique identifier for this node
+     * @param selfId         the unique identifier for this node
      * @param platformConfig the configuration for the platform
-     * @param activeRoster the roster of nodes in the network
-     * @param version the semantic version of the platform
-     * @param keysAndCerts the keys and certificates for this node
+     * @param activeRoster   the roster of nodes in the network
+     * @param version        the semantic version of the platform
+     * @param keysAndCerts   the keys and certificates for this node
      */
     public ConsensusNodeManager(
             @NonNull final NodeId selfId,
@@ -90,7 +92,7 @@ public class ConsensusNodeManager {
             @NonNull final KeysAndCerts keysAndCerts) {
 
         initLogging();
-        BootstrapUtils.setupConstructableRegistry();
+        setupConstructableRegistry();
 
         setupGlobalMetrics(platformConfig);
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
@@ -98,7 +100,9 @@ public class ConsensusNodeManager {
         log.info(STARTUP.getMarker(), "Creating node {} with version {}", selfId, version);
 
         final Time time = Time.getCurrent();
-        final FileSystemManager fileSystemManager = FileSystemManager.create(platformConfig);
+        final PathsConfig pathsConfig = platformConfig.getConfigData(PathsConfig.class);
+        final FileSystemManager fileSystemManager =
+                new FileSystemManager(pathsConfig.savedStateDir(), pathsConfig.tmpDir());
         final RecycleBin recycleBin = RecycleBinImpl.create(
                 metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
         getMetricsProvider().subscribeSnapshot((Consumer<? super SnapshotEvent>)
@@ -107,7 +111,7 @@ public class ConsensusNodeManager {
         final PlatformContext platformContext =
                 PlatformContext.create(platformConfig, time, metrics, fileSystemManager, recycleBin);
         final VirtualMapStateLifecycleManager stateLifecycleManager =
-                new VirtualMapStateLifecycleManager(metrics, time, platformConfig);
+                new VirtualMapStateLifecycleManager(metrics, time, platformConfig, fileSystemManager);
 
         slothApp = new SlothApp(platformConfig, version);
 
@@ -117,7 +121,8 @@ public class ConsensusNodeManager {
                 SlothApp.APP_NAME,
                 SlothApp.SWIRLD_NAME,
                 selfId,
-                platformContext,
+                platformConfig,
+                fileSystemManager,
                 stateLifecycleManager);
         final ReservedSignedState initialState = reservedState.state();
         final VirtualMapState state = initialState.get().getState();
@@ -126,39 +131,42 @@ public class ConsensusNodeManager {
         }
 
         // Set active the roster
-        final ReadablePlatformStateStore store =
+        final ReadablePlatformStateStore platformStateStore =
                 new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-        RosterStateUtils.setActiveRoster(state, activeRoster, store.getRound() + 1);
+        final WritableRosterStore rosterStore =
+                new WritableRosterStore(state.getWritableStates(RosterStateId.SERVICE_NAME));
+        rosterStore.putActiveRoster(activeRoster, platformStateStore.getRound() + 1);
+        SlothStateUtils.commitState(state);
 
-        final RosterHistory rosterHistory = RosterStateUtils.createRosterHistory(state);
+        final ConsensusLayerRosterInputs rosterInputs = rosterStore.getConsensusLayerRosterInputs();
         executionCallback = new SlothExecutionLayer(new Random(), metrics, time);
-        final PlatformBuilder builder = PlatformBuilder.create(
-                        SlothApp.APP_NAME,
-                        SlothApp.SWIRLD_NAME,
-                        version,
-                        initialState,
-                        slothApp,
-                        selfId,
-                        Long.toString(selfId.id()),
-                        rosterHistory,
-                        stateLifecycleManager)
-                .withPlatformContext(platformContext)
-                .withConfiguration(platformConfig)
-                .withKeysAndCerts(keysAndCerts)
-                .withExecutionLayer(executionCallback);
 
-        // Build the platform component builder
-        final PlatformComponentBuilder componentBuilder = builder.buildComponentBuilder();
-        final PlatformBuildingBlocks blocks = componentBuilder.getBuildingBlocks();
+        final TestPlatformBuilder builder = new TestPlatformBuilder(
+                platformConfig,
+                platformContext.getMetrics(),
+                platformContext.getTime(),
+                rosterInputs,
+                keysAndCerts,
+                selfId,
+                platformContext.getRecycleBin(),
+                platformContext.getFileSystemManager(),
+                executionCallback,
+                slothApp,
+                initialState,
+                stateLifecycleManager,
+                version,
+                new PersistenceScope(SlothApp.APP_NAME, SlothApp.SWIRLD_NAME),
+                Long.toString(selfId.id()),
+                SlothApp.DEFAULT_TRANSACTION_OFFSET_NANOS);
+
+        platform = builder.build();
 
         // Wiring: Forward consensus rounds to registered listeners
-        final PlatformComponents platformComponents = blocks.platformComponents();
-        platformComponents
+        final ConsensusLayerBuildingBlocks buildingBlocks = builder.buildingBlocks();
+        buildingBlocks
                 .hashgraphModule()
                 .consensusRoundOutputWire()
                 .solderTo("dockerApp", "consensusRounds", this::notifyConsensusRoundListeners);
-
-        platform = componentBuilder.build();
     }
 
     /**

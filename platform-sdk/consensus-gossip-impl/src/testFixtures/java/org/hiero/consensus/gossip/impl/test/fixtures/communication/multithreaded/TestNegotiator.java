@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.gossip.impl.test.fixtures.communication.multithreaded;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.hiero.base.concurrent.throttle.StackTraceDeduplicator;
 import org.hiero.consensus.gossip.impl.network.Connection;
 import org.hiero.consensus.gossip.impl.network.ConnectionManager;
 import org.hiero.consensus.gossip.impl.network.communication.NegotiationProtocols;
@@ -17,9 +14,6 @@ import org.hiero.consensus.gossip.impl.test.fixtures.communication.TestPeerProto
  * Used to run a negotiator in a separate thread and capture any exceptions it might throw
  */
 class TestNegotiator {
-    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    private final PlatformContext platformContext =
-            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
 
     private final TestPeerProtocol protocol;
     private final ProtocolNegotiatorThread negotiator;
@@ -36,7 +30,7 @@ class TestNegotiator {
                 100,
                 List.of(c -> handshakeRan.incrementAndGet()),
                 new NegotiationProtocols(List.of(protocol)),
-                platformContext.getTime());
+                new StackTraceDeduplicator());
         thread = new Thread(this::run);
     }
 

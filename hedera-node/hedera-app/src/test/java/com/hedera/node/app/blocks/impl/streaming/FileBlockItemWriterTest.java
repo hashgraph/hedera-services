@@ -16,6 +16,9 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.MerkleSiblingHash;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter.OnDiskPendingBlock;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.records.SelfNodeAccountIdManager;
@@ -23,6 +26,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.internal.network.PendingProof;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -34,10 +38,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,6 +56,7 @@ class FileBlockItemWriterTest {
     private static final String BLK_GZ = "000000000000000000000000000000000001.blk.gz";
     private static final String PENDING_BLK_GZ = "000000000000000000000000000000000001.pnd.gz";
     private static final String PENDING_PROOF_JSON = "000000000000000000000000000000000001.pnd.json";
+    private static final String OPEN_GZ = "000000000000000000000000000000000001.open.gz";
 
     @TempDir
     Path tempDir;
@@ -72,7 +81,7 @@ class FileBlockItemWriterTest {
 
     @BeforeEach
     void setUp() {
-        when(selfNodeAccountIdManager.getSelfNodeAccountId()).thenReturn(selfNodeInfo.accountId());
+        lenient().when(selfNodeAccountIdManager.getSelfNodeAccountId()).thenReturn(selfNodeInfo.accountId());
         lenient().when(blockStreamConfig.blockFileBufferOuterSizeKb()).thenReturn(4096);
         lenient().when(blockStreamConfig.blockFileBufferInnerSizeKb()).thenReturn(1024);
         lenient().when(blockStreamConfig.blockFileBufferGzipSizeKb()).thenReturn(256);
@@ -366,5 +375,131 @@ class FileBlockItemWriterTest {
         assertEquals(pendingProof, recoveredProof, "Recovered proof should match the original");
 
         assertDoesNotThrow(() -> subject.flushPendingBlock(PendingProof.DEFAULT));
+    }
+
+    @Test
+    void flushingIncompleteBlockRenamesToIssWithoutMarkerOrProofSidecar() {
+        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
+        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
+        when(blockStreamConfig.blockFileDir()).thenReturn(tempDir.toString());
+
+        final var subject = new FileBlockItemWriter(configProvider, selfNodeAccountIdManager, FileSystems.getDefault());
+        subject.openBlock(1);
+        subject.writeItem(BlockItem.PROTOBUF
+                .toBytes(BlockItem.newBuilder()
+                        .roundHeader(RoundHeader.newBuilder().roundNumber(1L).build())
+                        .build())
+                .toByteArray());
+
+        subject.flushIncompleteBlock();
+
+        final var dir = tempDir.resolve("block-0.0.3");
+        // The partial .blk.gz is renamed to .open.gz; deliberately no completion marker and no pending-proof sidecar,
+        // so it is never treated as complete nor picked up by pending-block recovery.
+        assertFalse(new File(dir.resolve(BLK_GZ).toString()).exists(), "Complete block file should be renamed away");
+        assertFalse(new File(dir.resolve(MF).toString()).exists(), "No completion marker for an incomplete block");
+        assertFalse(new File(dir.resolve(PENDING_PROOF_JSON).toString()).exists(), "No pending-proof sidecar");
+        assertTrue(new File(dir.resolve(OPEN_GZ).toString()).exists(), "Incomplete (.open.gz) artifact should exist");
+
+        // Calling again in a non-OPEN state is a no-op (best-effort, never throws)
+        assertDoesNotThrow(subject::flushIncompleteBlock);
+    }
+
+    @Test
+    void flushIncompleteBlockSwallowsRenameFailure() throws IOException {
+        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
+        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
+        when(blockStreamConfig.blockFileDir()).thenReturn(tempDir.toString());
+
+        final var subject = new FileBlockItemWriter(configProvider, selfNodeAccountIdManager, FileSystems.getDefault());
+        subject.openBlock(1);
+        subject.writeItem(BlockItem.PROTOBUF
+                .toBytes(BlockItem.newBuilder()
+                        .roundHeader(RoundHeader.newBuilder().roundNumber(1L).build())
+                        .build())
+                .toByteArray());
+
+        // Pre-create the .open.gz target so the rename fails; the flush must swallow it (best-effort, never throws).
+        Files.writeString(tempDir.resolve("block-0.0.3").resolve(OPEN_GZ), "blocker");
+        assertDoesNotThrow(subject::flushIncompleteBlock);
+    }
+
+    @ParameterizedTest
+    @MethodSource("signedTransactionBytes")
+    void loadContiguousPendingBlocksPreservesSignedTransactionBytes(final Bytes signedTxBytes) throws IOException {
+        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
+        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
+        when(blockStreamConfig.blockFileDir()).thenReturn(tempDir.toString());
+
+        final var subject = new FileBlockItemWriter(configProvider, selfNodeAccountIdManager, FileSystems.getDefault());
+        subject.openBlock(2);
+
+        final var blockItem =
+                BlockItem.newBuilder().signedTransaction(signedTxBytes).build();
+        subject.writeItem(BlockItem.PROTOBUF.toBytes(blockItem).toByteArray());
+
+        final var pendingProof = PendingProof.newBuilder()
+                .block(2)
+                .blockHash(Bytes.fromHex("abcd"))
+                .previousBlockHash(Bytes.fromHex("ef01"))
+                .startOfBlockStateRootHash(Bytes.fromHex("2345"))
+                .blockTimestamp(Timestamp.newBuilder().seconds(1_700_000_000L).build())
+                .siblingHashesFromPrevBlockRoot(List.of(
+                        new MerkleSiblingHash(true, Bytes.fromHex("1111")),
+                        new MerkleSiblingHash(true, Bytes.fromHex("2222")),
+                        new MerkleSiblingHash(true, Bytes.fromHex("3333")),
+                        new MerkleSiblingHash(true, Bytes.fromHex("4444"))))
+                .build();
+        subject.flushPendingBlock(pendingProof);
+
+        final List<OnDiskPendingBlock> loaded = FileBlockItemWriter.loadContiguousPendingBlocks(
+                tempDir, 3, Codec.DEFAULT_MAX_DEPTH, Codec.DEFAULT_MAX_SIZE);
+
+        assertEquals(1, loaded.size());
+        final var loadedBlock = loaded.getFirst();
+        assertEquals(pendingProof, loadedBlock.pendingProof());
+        assertEquals(1, loadedBlock.items().size());
+        assertTrue(loadedBlock.items().getFirst().hasSignedTransaction());
+        assertEquals(signedTxBytes, loadedBlock.items().getFirst().signedTransactionOrThrow());
+    }
+
+    private static List<Bytes> signedTransactionBytes() {
+        return List.of(
+                SignedTransaction.PROTOBUF.toBytes(SignedTransaction.newBuilder()
+                        .bodyBytes(Bytes.wrap("test-body".getBytes()))
+                        .build()),
+                // Field 1000, varint 1, either in SignedTransaction or inside its bodyBytes (field 1).
+                Bytes.fromHex("c03e01"),
+                Bytes.fromHex("0a03c03e01"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, c03e01", "true, c03e01", "false, 0a03c03e01", "true, 0a03c03e01"})
+    void loadContiguousPendingBlocksRejectsUnknownFields(final boolean compressed, final String blockHex)
+            throws IOException {
+        final var dir = Files.createDirectory(tempDir.resolve("block-0.0.3"));
+        final var pendingProof = PendingProof.newBuilder()
+                .block(1)
+                .blockTimestamp(new Timestamp(1, 0))
+                .siblingHashesFromPrevBlockRoot(List.of(
+                        new MerkleSiblingHash(true, Bytes.EMPTY),
+                        new MerkleSiblingHash(true, Bytes.EMPTY),
+                        new MerkleSiblingHash(true, Bytes.EMPTY),
+                        new MerkleSiblingHash(true, Bytes.EMPTY)))
+                .build();
+        Files.writeString(dir.resolve(PENDING_PROOF_JSON), PendingProof.JSON.toJSON(pendingProof));
+        // Field 1000, varint 1, at either Block level or inside its first BlockItem (field 1).
+        final var bytes = Bytes.fromHex(blockHex).toByteArray();
+        if (compressed) {
+            try (final var out = new GZIPOutputStream(Files.newOutputStream(dir.resolve(PENDING_BLK_GZ)))) {
+                out.write(bytes);
+            }
+        } else {
+            Files.write(dir.resolve(PENDING_BLK_GZ.replace(".gz", "")), bytes);
+        }
+
+        assertThat(FileBlockItemWriter.loadContiguousPendingBlocks(
+                        tempDir, 2, Codec.DEFAULT_MAX_DEPTH, Codec.DEFAULT_MAX_SIZE))
+                .isEmpty();
     }
 }

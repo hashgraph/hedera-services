@@ -16,8 +16,10 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.MerkleHasher;
+import com.swirlds.virtualmap.MerklePathUtils;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Random;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
@@ -28,6 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class VirtualHashChunkTest {
 
     private static final int HASH_LENGTH = Cryptography.DEFAULT_DIGEST_TYPE.digestLength();
+    private static final MerkleHasher HASHER = new MerkleHasher();
 
     @Test
     void createTest() {
@@ -43,15 +46,16 @@ public class VirtualHashChunkTest {
             assertDoesNotThrow(() -> new VirtualHashChunk(0, height, hashData, height));
             assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(0, height, hashData, height + 1));
             assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(1, height, hashData, height));
-            assertDoesNotThrow(
-                    () -> new VirtualHashChunk(Path.getLeftGrandChildPath(0, height), height, hashData, height));
-            assertDoesNotThrow(
-                    () -> new VirtualHashChunk(Path.getLeftGrandChildPath(0, height), height, hashData, height - 1));
-            assertDoesNotThrow(
-                    () -> new VirtualHashChunk(Path.getRightGrandChildPath(0, height), height, hashData, height));
+            assertDoesNotThrow(() ->
+                    new VirtualHashChunk(MerklePathUtils.getLeftGrandChildPath(0, height), height, hashData, height));
+            assertDoesNotThrow(() -> new VirtualHashChunk(
+                    MerklePathUtils.getLeftGrandChildPath(0, height), height, hashData, height - 1));
+            assertDoesNotThrow(() ->
+                    new VirtualHashChunk(MerklePathUtils.getRightGrandChildPath(0, height), height, hashData, height));
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> new VirtualHashChunk(Path.getLeftGrandChildPath(0, height + 1), height, hashData, height));
+                    () -> new VirtualHashChunk(
+                            MerklePathUtils.getLeftGrandChildPath(0, height + 1), height, hashData, height));
         }
         assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(1, 1, new byte[HASH_LENGTH * 2], 2));
         assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(3, 1, new byte[HASH_LENGTH * 2], 2));
@@ -62,10 +66,10 @@ public class VirtualHashChunkTest {
     @Test
     void createDataLengthTest() {
         final int hashLen = Cryptography.DEFAULT_DIGEST_TYPE.digestLength();
-        assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(0, 1, null, 1));
+        assertThrows(NullPointerException.class, () -> new VirtualHashChunk(0, 1, null, 1));
         for (int h = 2; h < 6; h++) {
             final int height = h;
-            assertThrows(IllegalArgumentException.class, () -> new VirtualHashChunk(0, height, null, height));
+            assertThrows(NullPointerException.class, () -> new VirtualHashChunk(0, height, null, height));
             final int chunkSize = VirtualHashChunk.getChunkSize(height);
             final byte[] hashData = new byte[hashLen * chunkSize];
             final byte[] hashDataMinusOne = new byte[hashLen * chunkSize - 1];
@@ -140,12 +144,12 @@ public class VirtualHashChunkTest {
         for (long path = 1; path < 10000; path++) {
             final long chunkId = VirtualHashChunk.pathToChunkId(path, chunkHeight);
             final long chunkPath = VirtualHashChunk.chunkIdToChunkPath(chunkId, chunkHeight);
-            final int rank = Path.getRank(path);
+            final int rank = MerklePathUtils.getRank(path);
             if (rank % chunkHeight == 0) {
                 final int pathIndex = VirtualHashChunk.getPathIndexInChunk(path, chunkPath, chunkHeight);
                 assertEquals(path, VirtualHashChunk.getPathInChunk(pathIndex, chunkPath, chunkHeight));
             } else {
-                assertEquals(chunkPath, Path.getGrandParentPath(path, rank % chunkHeight));
+                assertEquals(chunkPath, MerklePathUtils.getGrandParentPath(path, rank % chunkHeight));
             }
         }
     }
@@ -359,7 +363,7 @@ public class VirtualHashChunkTest {
         final Random random = new Random();
         final byte[] hashData = new byte[HASH_LENGTH];
         random.nextBytes(hashData);
-        return new Hash(hashData);
+        return new Hash(hashData, Cryptography.DEFAULT_DIGEST_TYPE);
     }
 
     @ParameterizedTest
@@ -367,7 +371,7 @@ public class VirtualHashChunkTest {
     void setHashTest(final int height) {
         final Random random = new Random();
         final int chunkSize = VirtualHashChunk.getChunkSize(height);
-        final long chunkPath = Path.getLeftGrandChildPath(0, random.nextInt(8) * height);
+        final long chunkPath = MerklePathUtils.getLeftGrandChildPath(0, random.nextInt(8) * height);
         final VirtualHashChunk chunk = new VirtualHashChunk(chunkPath, height);
         for (int i = 0; i < chunkSize; i++) {
             final Hash hash = genRandomHash();
@@ -378,20 +382,22 @@ public class VirtualHashChunkTest {
             assertEquals(hash, chunk.getHashAtIndex(i));
             assertEquals(hash, chunk.getHashAtPath(path));
         }
-        assertThrows(IllegalArgumentException.class, () -> chunk.setHashAtPath(chunk.getPath(chunkSize), new Hash()));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> chunk.setHashAtPath(chunk.getPath(chunkSize), new Hash(Cryptography.DEFAULT_DIGEST_TYPE)));
     }
 
     @Test
     void dataRankTest() {
         final int height = 5;
-        final long chunkPath = Path.getLeftGrandChildPath(0, height);
+        final long chunkPath = MerklePathUtils.getLeftGrandChildPath(0, height);
         final VirtualHashChunk chunk = new VirtualHashChunk(chunkPath, height);
         assertEquals(1, chunk.dataRank());
-        chunk.setHashAtPath(Path.getLeftChildPath(chunkPath), genRandomHash());
+        chunk.setHashAtPath(MerklePathUtils.getLeftChildPath(chunkPath), genRandomHash());
         assertEquals(1, chunk.dataRank());
-        chunk.setHashAtPath(Path.getLeftGrandChildPath(chunkPath, 2), genRandomHash());
+        chunk.setHashAtPath(MerklePathUtils.getLeftGrandChildPath(chunkPath, 2), genRandomHash());
         assertEquals(2, chunk.dataRank());
-        chunk.setHashAtPath(Path.getRightChildPath(chunkPath), genRandomHash());
+        chunk.setHashAtPath(MerklePathUtils.getRightChildPath(chunkPath), genRandomHash());
         assertEquals(2, chunk.dataRank());
     }
 
@@ -402,7 +408,7 @@ public class VirtualHashChunkTest {
         final VirtualHashChunk chunk = new VirtualHashChunk(chunkPath, height);
         assertEquals(1, chunk.dataRank()); // data rank == 1, this is 2 hashes
         for (int i = 1; i <= height; i++) {
-            final long path = Path.getLeftGrandChildPath(chunkPath, i);
+            final long path = MerklePathUtils.getLeftGrandChildPath(chunkPath, i);
             chunk.setHashAtPath(path, genRandomHash());
             final int dataRank = chunk.dataRank();
             assertEquals(i, dataRank);
@@ -421,7 +427,7 @@ public class VirtualHashChunkTest {
     void copyTest(final int height) {
         final Random random = new Random();
         final int chunkSize = VirtualHashChunk.getChunkSize(height);
-        final long chunkPath = Path.getLeftGrandChildPath(0, random.nextInt(8) * height);
+        final long chunkPath = MerklePathUtils.getLeftGrandChildPath(0, random.nextInt(8) * height);
         final VirtualHashChunk original = new VirtualHashChunk(chunkPath, height);
 
         // Populate original chunk with random hashes
@@ -455,13 +461,13 @@ public class VirtualHashChunkTest {
         final VirtualHashChunk original = new VirtualHashChunk(0, 2);
 
         final Hash hash1 =
-                new Hash("111111111111111111111111111111111111111111111111".getBytes(StandardCharsets.UTF_8));
+                new Hash("1".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash2 =
-                new Hash("222222222222222222222222222222222222222222222222".getBytes(StandardCharsets.UTF_8));
+                new Hash("2".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash3 =
-                new Hash("333333333333333333333333333333333333333333333333".getBytes(StandardCharsets.UTF_8));
+                new Hash("3".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash4 =
-                new Hash("444444444444444444444444444444444444444444444444".getBytes(StandardCharsets.UTF_8));
+                new Hash("4".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
 
         original.setHashAtPath(3, hash1);
         original.setHashAtPath(4, hash2);
@@ -478,10 +484,14 @@ public class VirtualHashChunkTest {
         assertEquals(hash4, copy.getHashAtPath(6));
 
         // Modify the original
-        final Hash newHash1 =
-                new Hash("AAA111111111111111111111111111111111111111111111".getBytes(StandardCharsets.UTF_8));
-        final Hash newHash2 =
-                new Hash("BBB222222222222222222222222222222222222222222222".getBytes(StandardCharsets.UTF_8));
+        final String aaaPrefix = "AAA";
+        final Hash newHash1 = new Hash(
+                (aaaPrefix + "1".repeat(HASH_LENGTH - aaaPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final String bbbPrefix = "BBB";
+        final Hash newHash2 = new Hash(
+                (bbbPrefix + "2".repeat(HASH_LENGTH - bbbPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
         original.setHashAtPath(3, newHash1);
         original.setHashAtPath(4, newHash2);
 
@@ -501,10 +511,13 @@ public class VirtualHashChunkTest {
         // Create original chunk with height 1 (2 hashes)
         final VirtualHashChunk original = new VirtualHashChunk(0, 1);
 
-        final Hash originalHash1 =
-                new Hash("ORIG11111111111111111111111111111111111111111111".getBytes(StandardCharsets.UTF_8));
-        final Hash originalHash2 =
-                new Hash("ORIG22222222222222222222222222222222222222222222".getBytes(StandardCharsets.UTF_8));
+        final String originalPrefix = "ORIG";
+        final Hash originalHash1 = new Hash(
+                (originalPrefix + "1".repeat(HASH_LENGTH - originalPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash originalHash2 = new Hash(
+                (originalPrefix + "2".repeat(HASH_LENGTH - originalPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
 
         original.setHashAtPath(1, originalHash1);
         original.setHashAtPath(2, originalHash2);
@@ -513,10 +526,13 @@ public class VirtualHashChunkTest {
         final VirtualHashChunk copy = original.copy();
 
         // Modify the copy
-        final Hash copyHash1 =
-                new Hash("COPY11111111111111111111111111111111111111111111".getBytes(StandardCharsets.UTF_8));
-        final Hash copyHash2 =
-                new Hash("COPY22222222222222222222222222222222222222222222".getBytes(StandardCharsets.UTF_8));
+        final String copyPrefix = "COPY";
+        final Hash copyHash1 = new Hash(
+                (copyPrefix + "1".repeat(HASH_LENGTH - copyPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash copyHash2 = new Hash(
+                (copyPrefix + "2".repeat(HASH_LENGTH - copyPrefix.length())).getBytes(StandardCharsets.UTF_8),
+                Cryptography.DEFAULT_DIGEST_TYPE);
         copy.setHashAtPath(1, copyHash1);
         copy.setHashAtPath(2, copyHash2);
 
@@ -538,7 +554,7 @@ public class VirtualHashChunkTest {
         for (long path : testPaths) {
             final VirtualHashChunk original = new VirtualHashChunk(path, height);
             final Hash testHash = genRandomHash();
-            final long firstLeafPath = Path.getLeftGrandChildPath(path, height);
+            final long firstLeafPath = MerklePathUtils.getLeftGrandChildPath(path, height);
             original.setHashAtPath(firstLeafPath, testHash);
 
             final VirtualHashChunk copy = original.copy();
@@ -570,7 +586,7 @@ public class VirtualHashChunkTest {
     void serializationRoundTripTest(final int height) {
         final Random random = new Random();
         final int chunkSize = VirtualHashChunk.getChunkSize(height);
-        final long chunkPath = Path.getLeftGrandChildPath(0, random.nextInt(8) * height);
+        final long chunkPath = MerklePathUtils.getLeftGrandChildPath(0, random.nextInt(8) * height);
         final VirtualHashChunk original = new VirtualHashChunk(chunkPath, height);
 
         // Populate with random hashes
@@ -640,8 +656,8 @@ public class VirtualHashChunkTest {
         final byte[] emptyBuffer = new byte[0];
         final ReadableSequentialData in = BufferedData.wrap(emptyBuffer);
 
-        // This should throw IllegalArgumentException because required fields are missing
-        assertThrows(IllegalArgumentException.class, () -> VirtualHashChunk.parseFrom(in, 4));
+        // This should throw NullPointerException because required fields are missing
+        assertThrows(NullPointerException.class, () -> VirtualHashChunk.parseFrom(in, 4));
     }
 
     @Test
@@ -780,53 +796,74 @@ public class VirtualHashChunkTest {
     @Test
     void calcHashTest36() {
         final VirtualHashChunk chunk = new VirtualHashChunk(0, 2);
-        final Hash hash3 =
-                new Hash("345678901234567890123456789012345678901234567890".getBytes(StandardCharsets.UTF_8));
-        final Hash hash4 =
-                new Hash("456789012345678901234567890123456789012345678901".getBytes(StandardCharsets.UTF_8));
-        final Hash hash5 =
-                new Hash("567890123456789012345678901234567890123456789012".getBytes(StandardCharsets.UTF_8));
-        final Hash hash6 =
-                new Hash("678901234567890123456789012345678901234567890123".getBytes(StandardCharsets.UTF_8));
+        final Hash hash3 = new Hash(
+                Arrays.copyOf(
+                        "345678901234567890123456789012345678901234567890".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash hash4 = new Hash(
+                Arrays.copyOf(
+                        "456789012345678901234567890123456789012345678901".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash hash5 = new Hash(
+                Arrays.copyOf(
+                        "567890123456789012345678901234567890123456789012".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash hash6 = new Hash(
+                Arrays.copyOf(
+                        "678901234567890123456789012345678901234567890123".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
         chunk.setHashAtPath(3, hash3);
         chunk.setHashAtPath(4, hash4);
         chunk.setHashAtPath(5, hash5);
         chunk.setHashAtPath(6, hash6);
-        assertEquals(hash3, chunk.calcHash(3, 3, 6));
-        assertEquals(hash4, chunk.calcHash(4, 3, 6));
-        assertEquals(hash5, chunk.calcHash(5, 3, 6));
-        assertEquals(hash6, chunk.calcHash(6, 3, 6));
-        final Hash hash1 = VirtualHashChunk.hashInternal(hash3, hash4);
-        final Hash hash2 = VirtualHashChunk.hashInternal(hash5, hash6);
-        assertEquals(hash1, chunk.calcHash(1, 3, 6));
-        assertEquals(hash2, chunk.calcHash(2, 3, 6));
-        final Hash rootHash = VirtualHashChunk.hashInternal(hash1, hash2);
-        assertEquals(rootHash, chunk.calcHash(0, 3, 6));
-        assertEquals(rootHash, chunk.chunkRootHash(3, 6));
-        assertEquals(rootHash, chunk.chunkRootHash(10, 20));
+        assertEquals(hash3, chunk.calcHash(HASHER, 3, 3, 6));
+        assertEquals(hash4, chunk.calcHash(HASHER, 4, 3, 6));
+        assertEquals(hash5, chunk.calcHash(HASHER, 5, 3, 6));
+        assertEquals(hash6, chunk.calcHash(HASHER, 6, 3, 6));
+        final Hash hash1 = HASHER.internalNodeHash(hash3, hash4);
+        final Hash hash2 = HASHER.internalNodeHash(hash5, hash6);
+        assertEquals(hash1, chunk.calcHash(HASHER, 1, 3, 6));
+        assertEquals(hash2, chunk.calcHash(HASHER, 2, 3, 6));
+        final Hash rootHash = HASHER.internalNodeHash(hash1, hash2);
+        assertEquals(rootHash, chunk.calcHash(HASHER, 0, 3, 6));
+        assertEquals(rootHash, chunk.chunkRootHash(HASHER, 3, 6));
+        assertEquals(rootHash, chunk.chunkRootHash(HASHER, 10, 20));
     }
 
     @Test
     void calcHashTest24() {
         final VirtualHashChunk chunk = new VirtualHashChunk(0, 2);
-        final Hash hash2 =
-                new Hash("234567890123456789012345678901234567890123456789".getBytes(StandardCharsets.UTF_8));
-        final Hash hash3 =
-                new Hash("345678901234567890123456789012345678901234567890".getBytes(StandardCharsets.UTF_8));
-        final Hash hash4 =
-                new Hash("456789012345678901234567890123456789012345678901".getBytes(StandardCharsets.UTF_8));
+        final Hash hash2 = new Hash(
+                Arrays.copyOf(
+                        "234567890123456789012345678901234567890123456789".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash hash3 = new Hash(
+                Arrays.copyOf(
+                        "345678901234567890123456789012345678901234567890".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
+        final Hash hash4 = new Hash(
+                Arrays.copyOf(
+                        "456789012345678901234567890123456789012345678901".getBytes(StandardCharsets.UTF_8),
+                        HASH_LENGTH),
+                Cryptography.DEFAULT_DIGEST_TYPE);
         chunk.setHashAtPath(2, hash2);
         chunk.setHashAtPath(3, hash3);
         chunk.setHashAtPath(4, hash4);
-        assertEquals(hash2, chunk.calcHash(2, 2, 4));
-        assertEquals(hash3, chunk.calcHash(3, 2, 4));
-        assertEquals(hash4, chunk.calcHash(4, 2, 4));
-        final Hash hash1 = VirtualHashChunk.hashInternal(hash3, hash4);
-        assertEquals(hash1, chunk.calcHash(1, 2, 4));
-        assertEquals(hash2, chunk.calcHash(2, 2, 4));
-        final Hash rootHash = VirtualHashChunk.hashInternal(hash1, hash2);
-        assertEquals(rootHash, chunk.calcHash(0, 2, 4));
-        assertEquals(rootHash, chunk.chunkRootHash(2, 4));
+        assertEquals(hash2, chunk.calcHash(HASHER, 2, 2, 4));
+        assertEquals(hash3, chunk.calcHash(HASHER, 3, 2, 4));
+        assertEquals(hash4, chunk.calcHash(HASHER, 4, 2, 4));
+        final Hash hash1 = HASHER.internalNodeHash(hash3, hash4);
+        assertEquals(hash1, chunk.calcHash(HASHER, 1, 2, 4));
+        assertEquals(hash2, chunk.calcHash(HASHER, 2, 2, 4));
+        final Hash rootHash = HASHER.internalNodeHash(hash1, hash2);
+        assertEquals(rootHash, chunk.calcHash(HASHER, 0, 2, 4));
+        assertEquals(rootHash, chunk.chunkRootHash(HASHER, 2, 4));
     }
 
     @Test
@@ -836,19 +873,19 @@ public class VirtualHashChunkTest {
 
         // Set hash for path 1 only (firstLeafPath and lastLeafPath are 1)
         final Hash hash1 =
-                new Hash("111111111111111111111111111111111111111111111111".getBytes(StandardCharsets.UTF_8));
+                new Hash("1".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         chunk.setHashAtPath(1, hash1);
 
         // Calculate hash at path 0 (root), which needs to hash(hash1, hash2)
-        // Since path 2 > lastLeafPath (1), it should use VirtualHasher.NO_PATH2_HASH
-        final Hash calculatedRootHash = chunk.calcHash(0, 1, 1);
+        // Since path 2 > lastLeafPath (1), it should use null
+        final Hash calculatedRootHash = chunk.calcHash(HASHER, 0, 1, 1);
 
-        // Expected: hash of (hash1, NO_PATH2_HASH)
-        final Hash expectedRootHash = VirtualHashChunk.hashInternal(hash1, null);
+        // Expected: hash of (hash1, null)
+        final Hash expectedRootHash = HASHER.internalNodeHash(hash1, null);
         assertEquals(expectedRootHash, calculatedRootHash);
 
         // Also test via chunkRootHash
-        final Hash chunkRootHash = chunk.chunkRootHash(1, 1);
+        final Hash chunkRootHash = chunk.chunkRootHash(HASHER, 1, 1);
         assertEquals(expectedRootHash, chunkRootHash);
     }
 
@@ -858,13 +895,13 @@ public class VirtualHashChunkTest {
         final VirtualHashChunk chunk = new VirtualHashChunk(0, 2);
 
         final Hash hash3 =
-                new Hash("333333333333333333333333333333333333333333333333".getBytes(StandardCharsets.UTF_8));
+                new Hash("3".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash4 =
-                new Hash("444444444444444444444444444444444444444444444444".getBytes(StandardCharsets.UTF_8));
+                new Hash("4".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash5 =
-                new Hash("555555555555555555555555555555555555555555555555".getBytes(StandardCharsets.UTF_8));
+                new Hash("5".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
         final Hash hash6 =
-                new Hash("666666666666666666666666666666666666666666666666".getBytes(StandardCharsets.UTF_8));
+                new Hash("6".repeat(HASH_LENGTH).getBytes(StandardCharsets.UTF_8), Cryptography.DEFAULT_DIGEST_TYPE);
 
         chunk.setHashAtPath(3, hash3);
         chunk.setHashAtPath(4, hash4);
@@ -872,13 +909,13 @@ public class VirtualHashChunkTest {
         chunk.setHashAtPath(6, hash6);
 
         // Calculate hash at path 1 (internal rank)
-        final Hash hash1Calculated = chunk.calcHash(1, 3, 6);
-        final Hash hash1Expected = VirtualHashChunk.hashInternal(hash3, hash4);
+        final Hash hash1Calculated = chunk.calcHash(HASHER, 1, 3, 6);
+        final Hash hash1Expected = HASHER.internalNodeHash(hash3, hash4);
         assertEquals(hash1Expected, hash1Calculated);
 
         // Calculate hash at path 2 (internal rank)
-        final Hash hash2Calculated = chunk.calcHash(2, 3, 6);
-        final Hash hash2Expected = VirtualHashChunk.hashInternal(hash5, hash6);
+        final Hash hash2Calculated = chunk.calcHash(HASHER, 2, 3, 6);
+        final Hash hash2Expected = HASHER.internalNodeHash(hash5, hash6);
         assertEquals(hash2Expected, hash2Calculated);
     }
 
@@ -888,7 +925,7 @@ public class VirtualHashChunkTest {
         final Random random = new Random();
         final int chunkSize = VirtualHashChunk.getChunkSize(height);
         final long chunkPath =
-                Path.getLeftGrandChildPath(0, random.nextInt(1, 8) * height) + random.nextInt(1 << height);
+                MerklePathUtils.getLeftGrandChildPath(0, random.nextInt(1, 8) * height) + random.nextInt(1 << height);
         final VirtualHashChunk chunk = new VirtualHashChunk(chunkPath, height);
 
         for (int i = 0; i < chunkSize; i++) {
@@ -902,7 +939,7 @@ public class VirtualHashChunkTest {
         final long lastLeafPath = firstLeafPath * 2;
         for (int i = 0; i < chunkSize; i++) {
             final long path = chunk.getPath(i);
-            assertEquals(chunk.getHashAtIndex(i), chunk.calcHash(path, firstLeafPath, lastLeafPath));
+            assertEquals(chunk.getHashAtIndex(i), chunk.calcHash(HASHER, path, firstLeafPath, lastLeafPath));
         }
     }
 
@@ -917,13 +954,13 @@ public class VirtualHashChunkTest {
         }
 
         // Calculate intermediate nodes to verify recursion
-        final Hash hash3 = chunk.calcHash(3, 7, 14); // Should calculate from paths 7-8
+        final Hash hash3 = chunk.calcHash(HASHER, 3, 7, 14); // Should calculate from paths 7-8
         assertNotNull(hash3);
-        final Hash hash4 = chunk.calcHash(4, 7, 14); // Should calculate from paths 9-10
+        final Hash hash4 = chunk.calcHash(HASHER, 4, 7, 14); // Should calculate from paths 9-10
         assertNotNull(hash4);
 
-        final Hash expectedHash1 = VirtualHashChunk.hashInternal(hash3, hash4);
-        final Hash hash1 = chunk.calcHash(1, 7, 14);
+        final Hash expectedHash1 = HASHER.internalNodeHash(hash3, hash4);
+        final Hash hash1 = chunk.calcHash(HASHER, 1, 7, 14);
         assertEquals(expectedHash1, hash1);
     }
 }

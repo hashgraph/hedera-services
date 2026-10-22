@@ -1,14 +1,10 @@
-{{- $tests := getenv "FLAKY_TESTS_JSON" | default "[]" | data.JSONArray -}}
-{{- $flaky_lines := coll.Slice -}}
-{{- range $test := $tests -}}
-  {{- $status := "" -}}
-  {{- if eq (conv.ToString $test.is_new) "true" -}}{{- $status = " (New)" -}}{{- end -}}
-  {{- $flaky_lines = coll.Append (printf "• `%s#%s` — <%s|#%v>%s" $test.class $test.method $test.issue_url $test.issue_number $status) $flaky_lines -}}
-{{- end -}}
+{{- $refName := getenv "REF_NAME" | required "REF_NAME must be set" -}}
+{{- $color := "#FF0000" -}}
+{{- if strings.HasPrefix "release/" $refName -}}{{- $color = "#F08080" -}}{{- end -}}
 {
   "attachments": [
     {
-      "color": "#FF0000",
+      "color": {{ $color | data.ToJSON }},
       "blocks": [
         {
           "type": "header",
@@ -25,7 +21,7 @@
           "type": "section",
           "text": {
             "type": "mrkdwn",
-            "text": "*MATS test failure on `main`. See status below.*"
+            "text": {{ printf "*MATS test failure on `%s`. See status below.* " (getenv "REF_NAME" | required "REF_NAME must be set") | data.ToJSON }}
           },
           "fields": [
             {
@@ -39,21 +35,13 @@
             {
               "type": "mrkdwn",
               "text": {{ printf "*Failing Test(s)*: %s" (getenv "FAILED_TESTS" | required "FAILED_TESTS must be set") | data.ToJSON }}
+            },
+            {
+              "type": "mrkdwn",
+              "text": {{ printf "*Run attempt*: %s" (getenv "RUN_ATTEMPT") | data.ToJSON }}
             }
           ]
-        }
-{{- if gt (len $tests) 0 }},
-        {
-          "type": "divider"
         },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": {{ conv.Join $flaky_lines "\n" | data.ToJSON }}
-          }
-        }
-{{- end }},
         {
           "type": "divider"
         },
@@ -86,7 +74,7 @@
             },
             {
               "type": "mrkdwn",
-              "text": {{ getenv "SLACK_USER_ID" | data.ToJSON }}
+              "text": {{ getenv "SLACK_USER_ID" | default "N/A" | data.ToJSON }}
             },
             {
               "type": "mrkdwn",

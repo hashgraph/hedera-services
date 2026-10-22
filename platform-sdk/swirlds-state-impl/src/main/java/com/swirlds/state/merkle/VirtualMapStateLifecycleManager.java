@@ -10,6 +10,7 @@ import static java.util.Objects.requireNonNull;
 import com.swirlds.base.time.Time;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.StateLifecycleManager;
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.Hash;
+import org.hiero.base.file.FileSystemManager;
 
 /**
  * This class is responsible for maintaining references to the mutable state and the latest immutable state.
@@ -81,6 +83,9 @@ public class VirtualMapStateLifecycleManager implements StateLifecycleManager<Vi
     @NonNull
     private final Configuration configuration;
 
+    @NonNull
+    private final FileSystemManager fileSystemManager;
+
     /**
      * Constructor. Creates an initial genesis state eagerly, which is immediately available via
      * {@link #getMutableState()}.
@@ -90,8 +95,12 @@ public class VirtualMapStateLifecycleManager implements StateLifecycleManager<Vi
      * @param configuration the configuration
      */
     public VirtualMapStateLifecycleManager(
-            @NonNull final Metrics metrics, @NonNull final Time time, @NonNull final Configuration configuration) {
+            @NonNull final Metrics metrics,
+            @NonNull final Time time,
+            @NonNull final Configuration configuration,
+            @NonNull final FileSystemManager fileSystemManager) {
         this.configuration = requireNonNull(configuration);
+        this.fileSystemManager = requireNonNull(fileSystemManager);
         this.metrics = requireNonNull(metrics);
         this.time = requireNonNull(time);
         this.stateMetrics = new StateMetrics(metrics);
@@ -99,7 +108,12 @@ public class VirtualMapStateLifecycleManager implements StateLifecycleManager<Vi
 
         // Eagerly create a genesis state so getMutableState() is always valid after construction.
         // If the node is restarting from a snapshot, loadSnapshot() will replace this genesis state.
-        final VirtualMapStateImpl genesisState = new VirtualMapStateImpl(configuration, metrics);
+        final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
+        final String defaultMerkleDbFodlerName = merkleDbConfig.defaultDbFolderName();
+        final MerkleDbDataSourceBuilder dsBuilder = new MerkleDbDataSourceBuilder(
+                defaultMerkleDbFodlerName, configuration, fileSystemManager, merkleDbConfig.initialCapacity());
+        final VirtualMap genesisVirtualMap = new VirtualMap(dsBuilder, configuration);
+        final VirtualMapState genesisState = new VirtualMapStateImpl(genesisVirtualMap, metrics);
         genesisState.getRoot().reserve();
         stateRef.set(genesisState);
     }
@@ -111,6 +125,12 @@ public class VirtualMapStateLifecycleManager implements StateLifecycleManager<Vi
     @Override
     public VirtualMapState getMutableState() {
         return stateRef.get();
+    }
+
+    /// {@inheritDoc}
+    @Override
+    public void prepareForFreeze() {
+        getMutableState().getRoot().getDataSource().stopAndDisableBackgroundCompaction(false);
     }
 
     /**
@@ -242,14 +262,15 @@ public class VirtualMapStateLifecycleManager implements StateLifecycleManager<Vi
     @Override
     public Hash loadSnapshot(@NonNull final Path targetPath) throws IOException {
         log.info(STARTUP.getMarker(), "Loading snapshot from disk {}", targetPath);
-        final VirtualMap virtualMap = VirtualMap.loadFromDirectory(
-                targetPath, configuration, () -> new MerkleDbDataSourceBuilder(configuration));
+        // MerkleDb capacity will be loaded from the snapshot, so can be set to 0 here
+        final VirtualMap snapshotVirtualMap = VirtualMap.loadFromDirectory(
+                targetPath, configuration, () -> new MerkleDbDataSourceBuilder(configuration, fileSystemManager, 0));
 
         // Capture the hash of the original immutable snapshot before releasing it
-        final Hash originalHash = virtualMap.getHash();
+        final Hash originalHash = snapshotVirtualMap.getHash();
 
-        final VirtualMap mutableCopy = virtualMap.copy();
-        virtualMap.release();
+        final VirtualMap mutableCopy = snapshotVirtualMap.copy();
+        snapshotVirtualMap.release();
 
         // VirtualMapStateImpl constructor calls registerMetrics internally
         final VirtualMapStateImpl loadedState = new VirtualMapStateImpl(mutableCopy, metrics);

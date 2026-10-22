@@ -5,13 +5,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.roster.impl.schemas.V0540RosterSchema;
+import com.hedera.node.app.service.roster.impl.schemas.V0790RosterSchema;
 import com.hedera.node.app.spi.migrate.StartupNetworks;
+import com.hedera.node.internal.network.Network;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.hiero.consensus.platformstate.PlatformStateService;
@@ -39,14 +42,27 @@ public class RosterServiceImpl implements Service {
     private final BiConsumer<Roster, Roster> onAdopt;
 
     private final Supplier<StartupNetworks> startupNetworks;
+    /**
+     * A callback to invoke with an adopted override network.
+     */
+    private final Consumer<Network> onOverrideNetwork;
 
     public RosterServiceImpl(
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final BiConsumer<Roster, Roster> onAdopt,
             @NonNull final Supplier<StartupNetworks> startupNetworks) {
+        this(canAdopt, onAdopt, startupNetworks, network -> {});
+    }
+
+    public RosterServiceImpl(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final BiConsumer<Roster, Roster> onAdopt,
+            @NonNull final Supplier<StartupNetworks> startupNetworks,
+            @NonNull final Consumer<Network> onOverrideNetwork) {
         this.onAdopt = requireNonNull(onAdopt);
         this.canAdopt = requireNonNull(canAdopt);
         this.startupNetworks = requireNonNull(startupNetworks);
+        this.onOverrideNetwork = requireNonNull(onOverrideNetwork);
     }
 
     @NonNull
@@ -63,7 +79,9 @@ public class RosterServiceImpl implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new));
+        final var v0540Schema = new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new, onOverrideNetwork);
+        registry.register(v0540Schema);
+        registry.register(new V0790RosterSchema(WritableRosterStore::new, v0540Schema::restart));
     }
 
     @Override

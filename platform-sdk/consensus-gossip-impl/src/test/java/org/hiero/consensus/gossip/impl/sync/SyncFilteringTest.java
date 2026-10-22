@@ -6,8 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 import org.hiero.base.CompareTo;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.event.NoOpIntakeEventCounter;
+import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.gossip.config.SyncConfig;
 import org.hiero.consensus.gossip.impl.gossip.shadowgraph.SyncUtils;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.emitter.EventEmitterBuilder;
@@ -34,7 +36,6 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.orphan.DefaultOrphanBuffer;
-import org.hiero.consensus.roster.RosterUtils;
 import org.junit.jupiter.api.Test;
 
 class SyncFilteringTest {
@@ -100,16 +101,17 @@ class SyncFilteringTest {
     void filterLikelyDuplicatesTest() {
         final Random random = getRandomPrintSeed();
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final Metrics metrics = new NoOpMetrics();
+
         final StandardEventEmitter eventEmitter = EventEmitterBuilder.newBuilder()
-                .setPlatformContext(platformContext)
+                .setConfiguration(configuration)
+                .setMetrics(metrics)
                 .setRandomSeed(random.nextLong())
                 .setNumNodes(32)
                 .build();
 
-        final NodeId selfId =
-                RosterUtils.getNodeId(eventEmitter.getGraphGenerator().getRoster(), 0);
+        final NodeId selfId = eventEmitter.getGraphGenerator().getRoster().nodeIdAtIndex(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
         final Duration timeStep = Duration.ofMillis(10);
@@ -122,10 +124,8 @@ class SyncFilteringTest {
         final Map<Hash, PlatformEvent> eventMap =
                 events.stream().collect(Collectors.toMap(PlatformEvent::getHash, Function.identity()));
 
-        final Duration nonAncestorSendThreshold = platformContext
-                .getConfiguration()
-                .getConfigData(SyncConfig.class)
-                .nonAncestorFilterThreshold();
+        final Duration nonAncestorSendThreshold =
+                configuration.getConfigData(SyncConfig.class).nonAncestorFilterThreshold();
 
         final Instant endTime =
                 startingTime.plus(timeStep.multipliedBy(eventCount)).plus(nonAncestorSendThreshold.multipliedBy(2));
@@ -165,20 +165,18 @@ class SyncFilteringTest {
                 assertTrue(filteredHashes.contains(expectedEvent.getHash()));
             }
 
-            assertTopologicalOrder(platformContext, filteredEvents);
+            assertTopologicalOrder(metrics, filteredEvents);
 
             time.tick(Duration.ofMillis(100));
         }
     }
 
-    private static void assertTopologicalOrder(
-            final PlatformContext platformContext, final List<PlatformEvent> events) {
+    private static void assertTopologicalOrder(final Metrics metrics, final List<PlatformEvent> events) {
         if (events.isEmpty()) {
             // empty list is always in order
             return;
         }
-        final DefaultOrphanBuffer orphanBuffer =
-                new DefaultOrphanBuffer(platformContext.getMetrics(), new NoOpIntakeEventCounter());
+        final DefaultOrphanBuffer orphanBuffer = new DefaultOrphanBuffer(metrics, new NoOpIntakeEventCounter());
         orphanBuffer.setEventWindow(new EventWindow(1, 1, events.getFirst().getBirthRound(), 1));
         // Verify topological ordering.
         for (final PlatformEvent event : events) {
@@ -199,16 +197,13 @@ class SyncFilteringTest {
         final Instant baseTime = Instant.now();
         final FakeTime time = new FakeTime(baseTime, Duration.ZERO);
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final StandardEventEmitter eventEmitter = EventEmitterBuilder.newBuilder()
-                .setPlatformContext(platformContext)
+                .setTime(time)
                 .setRandomSeed(random.nextLong())
                 .setNumNodes(16)
                 .build();
 
-        final NodeId selfId =
-                RosterUtils.getNodeId(eventEmitter.getGraphGenerator().getRoster(), 0);
+        final NodeId selfId = eventEmitter.getGraphGenerator().getRoster().nodeIdAtIndex(0);
 
         // Create enough events to almost certainly include:
         // - at least one self event near the end of the list (candidate to send first)
@@ -244,16 +239,12 @@ class SyncFilteringTest {
         final Instant baseTime = Instant.now();
         final FakeTime time = new FakeTime(baseTime, Duration.ZERO);
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final StandardEventEmitter eventEmitter = EventEmitterBuilder.newBuilder()
-                .setPlatformContext(platformContext)
                 .setRandomSeed(random.nextLong())
                 .setNumNodes(16)
                 .build();
 
-        final NodeId selfId =
-                RosterUtils.getNodeId(eventEmitter.getGraphGenerator().getRoster(), 0);
+        final NodeId selfId = eventEmitter.getGraphGenerator().getRoster().nodeIdAtIndex(0);
 
         // Create enough events to almost certainly include:
         // - at least one self event near the end of the list (candidate to send first)

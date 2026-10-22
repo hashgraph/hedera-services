@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.event.creator.impl;
 
-import static com.swirlds.component.framework.wires.SolderType.OFFER;
 import static java.util.Objects.requireNonNull;
+import static org.hiero.consensus.wiring.framework.wires.SolderType.INJECT;
+import static org.hiero.consensus.wiring.framework.wires.SolderType.OFFER;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
-import com.swirlds.component.framework.component.ComponentWiring;
-import com.swirlds.component.framework.model.WiringModel;
-import com.swirlds.component.framework.wires.input.InputWire;
-import com.swirlds.component.framework.wires.output.OutputWire;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,13 +20,20 @@ import org.hiero.consensus.event.creator.config.EventCreationWiringConfig;
 import org.hiero.consensus.event.creator.impl.tipset.TipsetEventCreator;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
+import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
+import org.hiero.consensus.model.roster.RosterWrapper;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
+import org.hiero.consensus.wiring.framework.component.ComponentWiring;
+import org.hiero.consensus.wiring.framework.model.WiringModel;
+import org.hiero.consensus.wiring.framework.transformers.WireTransformer;
+import org.hiero.consensus.wiring.framework.wires.input.InputWire;
+import org.hiero.consensus.wiring.framework.wires.output.OutputWire;
 
 /**
  * Default implementation of the {@link EventCreatorModule}.
@@ -38,7 +41,31 @@ import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 public class DefaultEventCreatorModule implements EventCreatorModule {
 
     @Nullable
+    private WireTransformer<ConsensusRound, EventWindow> eventWindowExtractor;
+
+    @Nullable
     private ComponentWiring<EventCreationManager, PlatformEvent> eventCreationManagerWiring;
+
+    @Nullable
+    private InputWire<PlatformEvent> orderedEventInputWire;
+
+    @Nullable
+    private InputWire<EventWindow> initialEventWindowInputWire;
+
+    @Nullable
+    private InputWire<PlatformStatus> platformStatusInputWire;
+
+    @Nullable
+    private InputWire<Duration> healthStatusInputWire;
+
+    @Nullable
+    private InputWire<SyncProgress> syncProgressInputWire;
+
+    @Nullable
+    private InputWire<QuiescenceCommand> quiescenceCommandInputWire;
+
+    @Nullable
+    private InputWire<Object> clearCreationManagerInputWire;
 
     /**
      * {@inheritDoc}
@@ -51,7 +78,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
             @NonNull final Time time,
             @NonNull final SecureRandom random,
             @NonNull final KeysAndCerts keysAndCerts,
-            @NonNull final Roster roster,
+            @NonNull final RosterWrapper roster,
             @NonNull final NodeId selfId,
             @NonNull final EventTransactionSupplier transactionSupplier,
             @NonNull final SignatureTransactionCheck signatureTransactionCheck) {
@@ -64,19 +91,33 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
         final EventCreationConfig eventCreationConfig = configuration.getConfigData(EventCreationConfig.class);
         final EventCreationWiringConfig wiringConfig = configuration.getConfigData(EventCreationWiringConfig.class);
 
-        // Set up component wiring
-        this.eventCreationManagerWiring =
+        // Set up wired components
+        eventWindowExtractor = new WireTransformer<>(
+                model, "EventCreator_EventWindowExtractor", "consensus round", ConsensusRound::getEventWindow);
+        eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, wiringConfig.eventCreationManager());
+
+        // Set up input wires
+        orderedEventInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent);
+        initialEventWindowInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow, "event window");
+        platformStatusInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus, "PlatformStatus");
+        healthStatusInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::reportUnhealthyDuration, "health info");
+        syncProgressInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::reportSyncProgress);
+        quiescenceCommandInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::quiescenceCommand);
+        clearCreationManagerInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
+
+        // Wire components
+        assert initialEventWindowInputWire != null;
+        eventWindowExtractor.getOutputWire().solderTo(initialEventWindowInputWire, INJECT);
 
         // Set up heartbeat wire
         model.buildHeartbeatWire(eventCreationConfig.period())
                 .solderTo(
                         eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent, "heartbeat"),
                         OFFER);
-
-        // Force not soldered wires to be built
-        eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
-        eventCreationManagerWiring.getInputWire(EventCreationManager::quiescenceCommand);
 
         // Create and bind components
         final BytesSigner bytesSigner = new PlatformSigner(keysAndCerts);
@@ -102,8 +143,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<PlatformEvent> orderedEventInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::registerEvent);
+        return requireNonNull(orderedEventInputWire, "Not initialized");
     }
 
     /**
@@ -111,9 +151,17 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
      */
     @Override
     @NonNull
-    public InputWire<EventWindow> eventWindowInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::setEventWindow, "event window");
+    public InputWire<ConsensusRound> consensusRoundInputWire() {
+        return requireNonNull(eventWindowExtractor, "Not initialized").getInputWire();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public InputWire<EventWindow> initialEventWindowInputWire() {
+        return requireNonNull(initialEventWindowInputWire, "Not initialized");
     }
 
     /**
@@ -122,8 +170,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<PlatformStatus> platformStatusInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::updatePlatformStatus, "PlatformStatus");
+        return requireNonNull(platformStatusInputWire, "Not initialized");
     }
 
     /**
@@ -132,8 +179,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<Duration> healthStatusInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::reportUnhealthyDuration, "health info");
+        return requireNonNull(healthStatusInputWire, "Not initialized");
     }
 
     /**
@@ -142,8 +188,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<SyncProgress> syncProgressInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::reportSyncProgress);
+        return requireNonNull(syncProgressInputWire, "Not initialized");
     }
 
     /**
@@ -152,8 +197,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<QuiescenceCommand> quiescenceCommandInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::quiescenceCommand);
+        return requireNonNull(quiescenceCommandInputWire, "Not initialized");
     }
 
     /**
@@ -162,6 +206,14 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     public void destroy() {
         throw new UnsupportedOperationException("Shutdown mechanism not implemented yet");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void flush() {
+        requireNonNull(eventCreationManagerWiring, "Not initialized").flush();
     }
 
     // *****************************************************************
@@ -180,14 +232,6 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
      * {@inheritDoc}
      */
     @Override
-    public void flush() {
-        requireNonNull(eventCreationManagerWiring, "Not initialized").flush();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void stopSquelching() {
         requireNonNull(eventCreationManagerWiring, "Not initialized").stopSquelching();
     }
@@ -197,7 +241,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
      */
     @Override
     @NonNull
-    public InputWire<Object> clearCreationMangerInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized").getInputWire(EventCreationManager::clear);
+    public InputWire<Object> clearCreationManagerInputWire() {
+        return requireNonNull(clearCreationManagerInputWire, "Not initialized");
     }
 }

@@ -12,8 +12,6 @@ import java.util.List;
 
 /** Validates every record's valid start is at or before its consensus time. */
 public class ValidStartValidator implements RecordStreamValidator {
-    public ValidStartValidator() {}
-
     @Override
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         streamOfItemsFrom(recordsWithSidecars).map(item -> item.getRecord()).forEach(this::assertValidStartAtOrBefore);
@@ -38,7 +36,7 @@ public class ValidStartValidator implements RecordStreamValidator {
 
     private static boolean isAtOrBefore(final Timestamp validStart, final Timestamp consensusTime) {
         return validStart.getSeconds() < consensusTime.getSeconds()
-                || (validStart.getSeconds() == consensusTime.getSeconds()
-                        && validStart.getNanos() <= consensusTime.getNanos());
+                || validStart.getSeconds() == consensusTime.getSeconds()
+                        && validStart.getNanos() <= consensusTime.getNanos();
     }
 }

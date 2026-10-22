@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_PARENT_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.support.StreamFileAccess.STREAM_FILE_ACCESS;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -19,28 +21,31 @@ import static java.util.stream.Collectors.joining;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
-import com.hedera.node.config.types.BlockStreamWriterMode;
-import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.BlockNodeMode;
 import com.hedera.services.bdd.junit.hedera.BlockNodeNetwork;
+import com.hedera.services.bdd.junit.hedera.BlockNodeReader;
 import com.hedera.services.bdd.junit.hedera.containers.BlockNodeContainer;
 import com.hedera.services.bdd.junit.hedera.containers.BlockNodeSubscribeClient;
 import com.hedera.services.bdd.junit.hedera.simulator.SimulatedBlockNodeServer;
+import com.hedera.services.bdd.junit.support.BlockSourceFactory;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.junit.support.validators.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
+import com.hedera.services.bdd.junit.support.validators.RunningHashChainValidator;
 import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.support.validators.ValidStartValidator;
 import com.hedera.services.bdd.junit.support.validators.WrappedRecordHashesByRecordFilesValidator;
+import com.hedera.services.bdd.junit.support.validators.block.BinaryStateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.BlockContentsValidator;
 import com.hedera.services.bdd.junit.support.validators.block.BlockNumberSequenceValidator;
 import com.hedera.services.bdd.junit.support.validators.block.EventHashBlockStreamValidator;
 import com.hedera.services.bdd.junit.support.validators.block.RedactingEventHashBlockStreamValidator;
 import com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator;
 import com.hedera.services.bdd.junit.support.validators.block.TransactionRecordParityValidator;
+import com.hedera.services.bdd.junit.support.validators.block.WrbRecordFileValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
@@ -58,7 +63,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -76,8 +83,15 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
     private static final String ERROR_PREFIX = "\n  - ";
     private static final Duration STREAM_FILE_WAIT = Duration.ofSeconds(2);
-    private static final int BLOCK_NODE_READ_MAX_ATTEMPTS = 5;
     private static final long BLOCK_NODE_READ_RETRY_MS = 2000L;
+    // Under writerMode=GRPC the freeze block's proof finalizes asynchronously and the block node
+    // serves it only after the proof completes (the consensus node flushes its in-memory pending
+    // block to .pnd.gz only on a fatal shutdown, so it is NOT on disk after a normal freeze). The
+    // StateChanges/BinaryStateChanges validators reconstruct the saved-state root, which needs that
+    // freeze block, so the GRPC read waits until a served block reaches the saved-state round (the
+    // freeze round). Bounded by STREAM_SETTLE_TIMEOUT; if the freeze block never arrives the BLOCKS
+    // branch skips those two validators rather than mismatching on a short stream.
+    private static final Duration STREAM_SETTLE_TIMEOUT = Duration.ofSeconds(90);
 
     private final List<RecordStreamValidator> recordStreamValidators;
     private final WrappedRecordHashesByRecordFilesValidator wrappedRecordHashesValidator =
@@ -86,14 +100,51 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
     private static final List<BlockStreamValidator.Factory> BLOCK_STREAM_VALIDATOR_FACTORIES = List.of(
             TransactionRecordParityValidator.FACTORY,
             StateChangesValidator.FACTORY,
+            BinaryStateChangesValidator.FACTORY,
             BlockContentsValidator.FACTORY,
             BlockNumberSequenceValidator.FACTORY,
             EventHashBlockStreamValidator.FACTORY,
             RedactingEventHashBlockStreamValidator.FACTORY);
 
+    // WRB blocks contain only a header, a single RecordFileItem, and a proof — none of the
+    // transaction/event/state-change content that the full validator set expects.
+    private static final List<BlockStreamValidator.Factory> WRB_BLOCK_VALIDATOR_FACTORIES = List.of(
+            BlockNumberSequenceValidator.FACTORY, WrbRecordFileValidator.FACTORY, BlockContentsValidator.FACTORY);
+
     private record DataOrException(
             @Nullable StreamFileAccess.RecordStreamData data,
             @Nullable Exception e) {}
+
+    /**
+     * Bundles parsed blocks split by source layer. {@link #active} are the blocks read from the
+     * live block-stream directory (post-cutover, or the only layer when cutover did not run).
+     * {@link #archived} are the blocks moved into the sibling {@code *-preview-archive} directory
+     * by {@link com.hedera.node.app.blocks.schemas.V0740BlockStreamSchema} at cutover (always
+     * pre-cutover preview blocks; empty otherwise). Block nodes don't have an archive concept, so
+     * blocks sourced from a block node always populate only {@link #active}.
+     */
+    record DiskBlocks(@NonNull List<Block> active, @NonNull List<Block> archived) {
+        /** Empty bundle marker for when no blocks were found. */
+        static DiskBlocks empty() {
+            return new DiskBlocks(List.of(), List.of());
+        }
+
+        /** True when neither layer has any blocks. */
+        boolean isEmpty() {
+            return active.isEmpty() && archived.isEmpty();
+        }
+
+        /** Returns archived (pre-cutover) followed by active (post-cutover), preserving order. */
+        List<Block> all() {
+            if (archived.isEmpty()) {
+                return active;
+            }
+            final var combined = new ArrayList<Block>(archived.size() + active.size());
+            combined.addAll(archived);
+            combined.addAll(active);
+            return combined;
+        }
+    }
 
     public StreamValidationOp() {
         this.recordStreamValidators = List.of(
@@ -101,7 +152,8 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
                 new TransactionBodyValidator(),
                 new ValidStartValidator(),
                 new BalanceReconciliationValidator(),
-                new TokenReconciliationValidator());
+                new TokenReconciliationValidator(),
+                new RunningHashChainValidator());
     }
 
     @Override
@@ -117,33 +169,35 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
                 cryptoTransfer((ignore, b) -> {}).payingWith(GENESIS),
                 // Wait for the final record file to be created
                 sleepFor(2 * BUFFER_MS));
-        // Validate the record streams
+        final var streamMode = spec.startupProperties().getStreamMode("blockStream.streamMode");
         final AtomicReference<StreamFileAccess.RecordStreamData> dataRef = new AtomicReference<>();
-        readMaybeRecordStreamDataFor(spec)
-                .ifPresentOrElse(
-                        dataOrException -> {
-                            final var data = dataOrException.data();
-                            if (data == null) {
-                                Assertions.fail(
-                                        "Unable to read stream data at " + recordStreamLocationsOf(spec),
-                                        dataOrException.e());
-                            }
-                            final var maybeErrors = recordStreamValidators.stream()
-                                    .flatMap(v -> v.validationErrorsIn(data))
-                                    .peek(t -> log.error("Record stream validation error!", t))
-                                    .map(Throwable::getMessage)
-                                    .collect(joining(ERROR_PREFIX));
-                            if (!maybeErrors.isBlank()) {
-                                throw new AssertionError(
-                                        "Record stream validation failed:" + ERROR_PREFIX + maybeErrors);
-                            }
-                            dataRef.set(data);
-                        },
-                        () -> Assertions.fail(
-                                "Aborted reading record stream data at " + recordStreamLocationsOf(spec)));
+        if (streamMode != BLOCKS) {
+            readMaybeRecordStreamDataFor(spec)
+                    .ifPresentOrElse(
+                            dataOrException -> {
+                                final var data = dataOrException.data();
+                                if (data == null) {
+                                    Assertions.fail(
+                                            "Unable to read stream data at " + recordStreamLocationsOf(spec),
+                                            dataOrException.e());
+                                }
+                                dataRef.set(data);
+                                final var maybeErrors = recordStreamValidators.stream()
+                                        .flatMap(v -> v.validationErrorsIn(data))
+                                        .peek(t -> log.error("Record stream validation error!", t))
+                                        .map(Throwable::getMessage)
+                                        .collect(joining(ERROR_PREFIX));
+                                if (!maybeErrors.isBlank()) {
+                                    throw new AssertionError(
+                                            "Record stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                                }
+                            },
+                            () -> Assertions.fail(
+                                    "Aborted reading record stream data at " + recordStreamLocationsOf(spec)));
+        }
 
         // If there are no block streams to validate, we are done
-        if (spec.startupProperties().getStreamMode("blockStream.streamMode") == RECORDS) {
+        if (streamMode == RECORDS) {
             return false;
         }
         // Freeze the network
@@ -156,123 +210,292 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
         readMaybeBlockStreamsFor(spec)
                 .ifPresentOrElse(
                         blocks -> {
-                            // Re-read the record streams since they may have been updated
-                            readMaybeRecordStreamDataFor(spec)
-                                    .ifPresentOrElse(
-                                            dataOrException -> {
-                                                final var data = dataOrException.data();
-                                                if (data == null) {
-                                                    Assertions.fail(
-                                                            "Unable to re-read stream data at "
-                                                                    + recordStreamLocationsOf(spec),
-                                                            dataOrException.e());
-                                                }
-                                                dataRef.set(data);
-                                            },
-                                            () -> Assertions.fail("No record stream data found"));
-                            final var data = requireNonNull(dataRef.get());
-                            final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
-                                    .filter(factory -> factory.appliesTo(spec))
-                                    .map(factory -> factory.create(spec))
-                                    .flatMap(v -> v.validationErrorsIn(blocks, data))
-                                    .peek(t -> log.error("Block stream validation error", t))
-                                    .map(Throwable::getMessage)
-                                    .collect(joining(ERROR_PREFIX));
-                            if (!maybeErrors.isBlank()) {
-                                throw new AssertionError(
-                                        "Block stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                            if (streamMode != BLOCKS) {
+                                // Re-read the record streams since they may have been updated
+                                readMaybeRecordStreamDataFor(spec)
+                                        .ifPresentOrElse(
+                                                dataOrException -> {
+                                                    final var data = dataOrException.data();
+                                                    if (data == null) {
+                                                        Assertions.fail(
+                                                                "Unable to re-read stream data at "
+                                                                        + recordStreamLocationsOf(spec),
+                                                                dataOrException.e());
+                                                    }
+                                                    dataRef.set(data);
+                                                },
+                                                () -> Assertions.fail("No record stream data found"));
+                                final var data = requireNonNull(dataRef.get());
+                                final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
+                                        .filter(factory -> factory.appliesTo(spec))
+                                        .flatMap(factory -> {
+                                            final var validator = factory.create(spec);
+                                            // Validators that walk the event chain across the cutover
+                                            // boundary (EventHash + RedactingEventHash) need the archived
+                                            // preview prefix; all others receive only the active
+                                            // (post-cutover) blocks. Validators that need pre-cutover
+                                            // state replay read it from the test's preservedPreviewBlocks
+                                            // snapshot directly.
+                                            final List<Block> input = (validator
+                                                                    instanceof EventHashBlockStreamValidator
+                                                            || validator
+                                                                    instanceof RedactingEventHashBlockStreamValidator)
+                                                    ? blocks.all()
+                                                    : blocks.active();
+                                            return validator.validationErrorsIn(input, data);
+                                        })
+                                        .peek(t -> log.error("Block stream validation error", t))
+                                        .map(Throwable::getMessage)
+                                        .collect(joining(ERROR_PREFIX));
+                                if (!maybeErrors.isBlank()) {
+                                    throw new AssertionError(
+                                            "Block stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                                }
+                            } else {
+                                // BLOCKS mode: there is no record stream to compare against, so run the
+                                // data-independent block validators (state-changes replay vs the saved-state
+                                // root hash, block contents, block-number sequence, event hashes) directly
+                                // against the block stream. Parity validators that need records
+                                // (TransactionRecordParityValidator) override only validateBlockVsRecords, so
+                                // their validateBlocks is the no-op default and they are naturally inert here.
+                                //
+                                // StateChanges/BinaryStateChanges reconstruct the saved-state root and so need
+                                // the freeze block (the block at the saved-state round). Under writerMode=GRPC
+                                // the block node serves it only once its proof finalizes, which can lag; if the
+                                // served stream hasn't reached the saved-state round, skip just those two (a
+                                // short stream would otherwise mismatch the saved-state root for a reason that
+                                // is not a real defect). The structural/event validators still run.
+                                final long savedStateRound = latestSavedStateRound(spec);
+                                final boolean freezeBlockServed =
+                                        savedStateRound < 0 || highestRoundIn(blocks.active()) >= savedStateRound;
+                                if (!freezeBlockServed) {
+                                    log.warn(
+                                            "Block stream reached round {} but saved state is at round {}; skipping "
+                                                    + "state-replay validators (freeze block not served by the block node)",
+                                            highestRoundIn(blocks.active()),
+                                            savedStateRound);
+                                }
+                                final var maybeErrors = BLOCK_STREAM_VALIDATOR_FACTORIES.stream()
+                                        .filter(factory -> factory.appliesTo(spec))
+                                        .filter(factory -> freezeBlockServed || !requiresSavedState(factory))
+                                        .flatMap(factory -> {
+                                            final var validator = factory.create(spec);
+                                            final List<Block> input = (validator
+                                                                    instanceof EventHashBlockStreamValidator
+                                                            || validator
+                                                                    instanceof RedactingEventHashBlockStreamValidator)
+                                                    ? blocks.all()
+                                                    : blocks.active();
+                                            return validator.validationErrorsIn(input);
+                                        })
+                                        .peek(t -> log.error("Block stream validation error", t))
+                                        .map(Throwable::getMessage)
+                                        .collect(joining(ERROR_PREFIX));
+                                if (!maybeErrors.isBlank()) {
+                                    throw new AssertionError(
+                                            "Block stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                                }
                             }
                         },
                         () -> Assertions.fail("No block streams found"));
-        validateProofs(spec);
 
-        // CI-focused cross-node validation of wrapped record hashes for nodes with identical record stream files
-        final var maybeWrappedHashesErrors = wrappedRecordHashesValidator
-                .validationErrorsIn(spec)
-                .peek(t -> log.error("Wrapped record hashes validation error!", t))
-                .map(Throwable::getMessage)
-                .collect(joining(ERROR_PREFIX));
-        if (!maybeWrappedHashesErrors.isBlank()) {
-            throw new AssertionError(
-                    "Wrapped record hashes validation failed:" + ERROR_PREFIX + maybeWrappedHashesErrors);
+        if (streamMode != BLOCKS) {
+            // If WRBs are streaming to block nodes, also validate the block node stream independently
+            if (isStreamingWrappedRecordBlocks(spec)) {
+                readMaybeBlockNodeStreamsFor(spec).ifPresent(blockNodeBlocks -> {
+                    final var data = requireNonNull(dataRef.get());
+                    // Block node streams don't have an archive layer; pass the active list.
+                    final var blockNodeList = blockNodeBlocks.active();
+                    final var maybeErrors = WRB_BLOCK_VALIDATOR_FACTORIES.stream()
+                            .filter(factory -> factory.appliesTo(spec))
+                            .map(factory -> factory.create(spec))
+                            .flatMap(v -> v.validationErrorsIn(blockNodeList, data))
+                            .peek(t -> log.error("Block node WRB stream validation error", t))
+                            .map(Throwable::getMessage)
+                            .collect(joining(ERROR_PREFIX));
+                    if (!maybeErrors.isBlank()) {
+                        throw new AssertionError(
+                                "Block node WRB stream validation failed:" + ERROR_PREFIX + maybeErrors);
+                    }
+                });
+            } else {
+                validateProofs(spec);
+            }
+
+            // CI-focused cross-node validation of wrapped record hashes for nodes with identical record stream files
+            final var maybeWrappedHashesErrors = wrappedRecordHashesValidator
+                    .validationErrorsIn(spec)
+                    .peek(t -> log.error("Wrapped record hashes validation error!", t))
+                    .map(Throwable::getMessage)
+                    .collect(joining(ERROR_PREFIX));
+            if (!maybeWrappedHashesErrors.isBlank()) {
+                throw new AssertionError(
+                        "Wrapped record hashes validation failed:" + ERROR_PREFIX + maybeWrappedHashesErrors);
+            }
+        } else {
+            validateProofs(spec);
         }
 
         return false;
     }
 
-    static Optional<List<Block>> readMaybeBlockStreamsFor(@NonNull final HapiSpec spec) {
-        // Try ThreadLocal first, then fall back to the shared AtomicReference
-        // (DynamicTest execution threads in concurrent mode don't inherit ThreadLocal values)
-        var blockNodeNetwork = HapiSpec.TARGET_BLOCK_NODE_NETWORK.get();
-        if (blockNodeNetwork == null) {
-            blockNodeNetwork = NetworkTargetingExtension.SHARED_BLOCK_NODE_NETWORK.get();
-        }
-        if (isWriterModeGrpcOnly(spec) && blockNodeNetwork != null) {
-            // Retry reading from block nodes — blocks may still be in-flight after freeze,
-            // especially with TSS/state proofs enabled where block finalization is async
-            for (int attempt = 1; attempt <= BLOCK_NODE_READ_MAX_ATTEMPTS; attempt++) {
+    static Optional<DiskBlocks> readMaybeBlockStreamsFor(@NonNull final HapiSpec spec) {
+        final var blockNodeNetwork = BlockNodeReader.activeNetwork();
+        if (BlockSourceFactory.isWriterModeGrpcOnly(spec) && blockNodeNetwork != null) {
+            // Wait until the block node has served the FREEZE BLOCK before validating. After a freeze
+            // the freeze block's proof finalizes asynchronously and the block node serves only
+            // proof-bearing blocks, so the freeze block — whose state changes produce the saved-state
+            // root that StateChanges/BinaryStateChanges replay against — is served late (or, if its
+            // proof never finalizes this run, not at all). The deterministic target is the latest
+            // saved-state round (the freeze round); poll until a served block reaches that round, then
+            // the freeze block is present. Bounded by STREAM_SETTLE_TIMEOUT; on timeout we return the
+            // short stream and the BLOCKS branch skips the state-replay validators (so a not-yet-served
+            // freeze block can never produce a false root mismatch). Poll the un-dumped read; dump once.
+            final long targetRound = latestSavedStateRound(spec);
+            Optional<DiskBlocks> latest = Optional.empty();
+            final long deadlineNanos = System.nanoTime() + STREAM_SETTLE_TIMEOUT.toNanos();
+            while (System.nanoTime() < deadlineNanos) {
                 final var result = readBlocksFromBlockNodes(spec, blockNodeNetwork);
                 if (result.isPresent()) {
-                    return result;
-                }
-                if (attempt < BLOCK_NODE_READ_MAX_ATTEMPTS) {
-                    log.info(
-                            "No blocks from block nodes on attempt {}, retrying in {}ms",
-                            attempt,
-                            BLOCK_NODE_READ_RETRY_MS);
-                    try {
-                        Thread.sleep(BLOCK_NODE_READ_RETRY_MS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
+                    latest = result;
+                    // targetRound < 0 means no saved state was found (can't compute the freeze round);
+                    // fall back to the first non-empty read rather than spinning to the timeout.
+                    if (targetRound < 0 || highestRoundIn(result.get().active()) >= targetRound) {
+                        dumpBlockNodeBlocksToDisk(spec, blockNodeNetwork);
+                        return result;
                     }
                 }
+                try {
+                    Thread.sleep(BLOCK_NODE_READ_RETRY_MS);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
-            return Optional.empty();
+            if (latest.isPresent()) {
+                log.warn(
+                        "Block-node stream never reached saved-state round {} within {}s; state-replay "
+                                + "validators will be skipped (freeze block not served)",
+                        targetRound,
+                        STREAM_SETTLE_TIMEOUT.toSeconds());
+                dumpBlockNodeBlocksToDisk(spec, blockNodeNetwork);
+            }
+            return latest;
         }
+        // Dump whatever is available from block nodes for debugging before reading from disk
+        readMaybeBlockNodeStreamsFor(spec);
         return readBlocksFromDisk(spec);
     }
 
-    private static Optional<List<Block>> readBlocksFromDisk(@NonNull final HapiSpec spec) {
+    /**
+     * The latest saved-state round across the network's nodes — the freeze round whose state the
+     * {@link StateChangesValidator}/{@link BinaryStateChangesValidator} validators reconstruct. The
+     * saved-state directory is named by round number. Returns -1 if no saved state directory is found.
+     */
+    private static long latestSavedStateRound(@NonNull final HapiSpec spec) {
+        long latest = -1;
+        for (final var node : spec.getNetworkNodes()) {
+            final var savedStatesDir = node.getExternalPath(SAVED_STATES_DIR).toAbsolutePath();
+            if (!Files.isDirectory(savedStatesDir)) {
+                continue;
+            }
+            try (final var stream = Files.newDirectoryStream(savedStatesDir)) {
+                for (final var dir : stream) {
+                    if (!Files.isDirectory(dir)) {
+                        continue;
+                    }
+                    try {
+                        latest = Math.max(
+                                latest, Long.parseLong(dir.getFileName().toString()));
+                    } catch (final NumberFormatException ignore) {
+                        // Not a round directory (e.g. a temp dir); skip.
+                    }
+                }
+            } catch (final IOException e) {
+                log.warn("Failed to scan saved-state directory {}", savedStatesDir, e);
+            }
+        }
+        return latest;
+    }
+
+    /**
+     * The highest consensus round covered by the given blocks (from their round headers), or -1 if
+     * none carry a round header. Used to detect whether the freeze block (at the saved-state round)
+     * has been served by the block node yet.
+     */
+    private static long highestRoundIn(@NonNull final List<Block> blocks) {
+        long highest = -1;
+        for (final var block : blocks) {
+            for (final var item : block.items()) {
+                if (item.hasRoundHeader()) {
+                    highest = Math.max(highest, item.roundHeaderOrThrow().roundNumber());
+                }
+            }
+        }
+        return highest;
+    }
+
+    /**
+     * Whether the given factory builds a validator that reconstructs the saved-state root and so
+     * requires the freeze block to be present ({@link StateChangesValidator}/{@link
+     * BinaryStateChangesValidator}). Such validators are skipped under {@code writerMode=GRPC} when
+     * the block node has not yet served the freeze block.
+     */
+    private static boolean requiresSavedState(@NonNull final BlockStreamValidator.Factory factory) {
+        return factory == StateChangesValidator.FACTORY || factory == BinaryStateChangesValidator.FACTORY;
+    }
+
+    private static Optional<DiskBlocks> readBlocksFromDisk(@NonNull final HapiSpec spec) {
         final var blockStreamDirs = spec.getNetworkNodes().stream()
                 .map(node -> node.getExternalPath(BLOCK_STREAMS_PARENT_DIR))
                 .map(Path::toAbsolutePath)
                 .distinct()
                 .toList();
-        // Pick the node directory with the most block files (compare by count first,
-        // then sort only the winner to avoid unnecessary sorting of discarded lists)
+        // Pick the node with the most total block files across its active + archive layers.
         Path bestDir = null;
-        List<Path> bestPaths = null;
+        BlockPaths bestPaths = null;
         for (final var dir : blockStreamDirs) {
-            try (final var stream = Files.walk(dir)) {
-                final var paths = stream.filter(p -> BlockStreamAccess.isBlockFile(p, true))
-                        .toList();
-                if (bestPaths == null || paths.size() > bestPaths.size()) {
-                    bestDir = dir;
-                    bestPaths = paths;
-                }
-            } catch (Exception ignore) {
-                // We will try the next node's directory
+            final var paths = collectBlockPaths(dir);
+            if (bestPaths == null || paths.total() > bestPaths.total()) {
+                bestDir = dir;
+                bestPaths = paths;
             }
         }
-        if (bestPaths == null || bestPaths.isEmpty()) {
+        if (bestPaths == null || bestPaths.total() == 0) {
             return Optional.empty();
         }
-        bestPaths = bestPaths.stream()
-                .sorted(Comparator.comparing(BlockStreamAccess::extractBlockNumber))
-                .toList();
-        // Parse the winner's block files and pair each block with its source path
         final var otherDirs = new ArrayList<>(blockStreamDirs);
         otherDirs.remove(bestDir);
-        final var result = new ArrayList<Block>(bestPaths.size());
-        for (final var blockPath : bestPaths) {
-            final var relativePath = bestDir.relativize(blockPath);
+        final var activeBlocks = parseBlocks(bestDir, bestPaths.active(), otherDirs);
+        final var archivedBlocks = parseBlocks(bestDir, bestPaths.archived(), otherDirs);
+        if (activeBlocks.isEmpty() && archivedBlocks.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new DiskBlocks(activeBlocks, archivedBlocks));
+    }
+
+    /**
+     * Dedups the given paths by block number (first wins), parses each, and falls back to a
+     * peer node directory if a block is unreadable or incomplete.
+     */
+    private static List<Block> parseBlocks(
+            @NonNull final Path baseDir, @NonNull final List<Path> paths, @NonNull final List<Path> otherDirs) {
+        if (paths.isEmpty()) {
+            return List.of();
+        }
+        final var byBlockNumber = new TreeMap<Long, Path>();
+        for (final var p : paths) {
+            byBlockNumber.putIfAbsent(BlockStreamAccess.extractBlockNumber(p), p);
+        }
+        final var deduped = new ArrayList<>(byBlockNumber.values());
+        final var result = new ArrayList<Block>(deduped.size());
+        for (final var blockPath : deduped) {
+            final var relativePath = baseDir.relativize(blockPath);
             Block block;
             try {
                 block = BlockStreamAccess.blockFrom(blockPath);
             } catch (Exception e) {
                 log.warn("Failed to parse block file {}", blockPath, e);
-                // Try the same file from other node directories to avoid a gap
                 final var fallback = findCompleteBlockIn(otherDirs, relativePath);
                 if (fallback != null) {
                     result.add(fallback);
@@ -284,11 +507,61 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
                 result.add(block);
                 continue;
             }
-            // Incomplete block — try the same relative path under other node directories
             final var replacement = findCompleteBlockIn(otherDirs, relativePath);
             result.add(replacement != null ? replacement : block);
         }
-        return result.isEmpty() ? Optional.empty() : Optional.of(result);
+        return result;
+    }
+
+    /**
+     * Holds block file paths split by source layer for a single node directory.
+     *
+     * @param active paths from the live block-stream directory
+     * @param archived paths from the sibling {@code *-preview-archive} directory (may be empty)
+     */
+    private record BlockPaths(
+            @NonNull List<Path> active, @NonNull List<Path> archived) {
+        int total() {
+            return active.size() + archived.size();
+        }
+    }
+
+    /**
+     * Collects block file paths from the active block-stream directory and, separately, from any
+     * sibling preview archive populated by cutover (see {@code V0740BlockStreamSchema} and issue
+     * 25424). When cutover happened, the active dir holds authoritative post-cutover blocks
+     * numbered from the cutover block onward, while the archive holds the entire pre-cutover
+     * stream — which may run past the cutover block number because cutover synchronizes the
+     * block stream number to the record stream's last block. Anything archived at or above the
+     * first active block number is a transient pre-cutover overshoot that doesn't continue the
+     * post-cutover chain, so we drop it; only archived blocks strictly below the active range
+     * chain cleanly into the post-cutover suffix.
+     */
+    private static BlockPaths collectBlockPaths(@NonNull final Path activeDir) {
+        final var activePaths = new ArrayList<Path>();
+        try (final var stream = Files.walk(activeDir)) {
+            stream.filter(p -> BlockStreamAccess.isBlockFile(p, true)).forEach(activePaths::add);
+        } catch (Exception ignore) {
+            // Empty or unreadable active dir falls through; archive (if any) is still consulted.
+        }
+        final Path archiveDir = activeDir.resolveSibling(activeDir.getFileName() + "-preview-archive");
+        if (!Files.isDirectory(archiveDir)) {
+            return new BlockPaths(activePaths, List.of());
+        }
+        final long minActiveBlockNumber = activePaths.stream()
+                .mapToLong(BlockStreamAccess::extractBlockNumber)
+                .filter(n -> n >= 0)
+                .min()
+                .orElse(Long.MAX_VALUE);
+        final var archivedPaths = new ArrayList<Path>();
+        try (final var stream = Files.walk(archiveDir)) {
+            stream.filter(p -> BlockStreamAccess.isBlockFile(p, true))
+                    .filter(p -> BlockStreamAccess.extractBlockNumber(p) < minActiveBlockNumber)
+                    .forEach(archivedPaths::add);
+        } catch (Exception ignore) {
+            // Skip if we can't walk the archive; absence is normal pre-cutover.
+        }
+        return new BlockPaths(activePaths, archivedPaths);
     }
 
     /**
@@ -312,45 +585,48 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
             if (!Files.exists(dir)) {
                 continue;
             }
-            final List<Path> candidates;
-            // Depth 2 is enough for the actual layout: blockStreams/block-<...>/<N>.blk.gz.
-            try (final var stream = Files.walk(dir, 2)) {
-                candidates = stream.filter(p -> BlockStreamAccess.isBlockFile(p, true))
-                        .filter(p -> BlockStreamAccess.extractBlockNumber(p) == targetBlockNumber)
-                        .toList();
-            } catch (Exception ignore) {
-                continue;
+            // Scan the active dir and (if present) its preview archive populated at cutover.
+            final var roots = new ArrayList<Path>();
+            roots.add(dir);
+            final Path archive = dir.resolveSibling(dir.getFileName() + "-preview-archive");
+            if (Files.isDirectory(archive)) {
+                roots.add(archive);
             }
-            for (final var candidatePath : candidates) {
-                try {
-                    final var block = BlockStreamAccess.blockFrom(candidatePath);
-                    final var items = block.items();
-                    if (!items.isEmpty() && items.getLast().hasBlockProof()) {
-                        return block;
-                    }
+            for (final var root : roots) {
+                final List<Path> candidates;
+                // Depth 2 is enough for the actual layout: blockStreams/block-<...>/<N>.blk.gz.
+                try (final var stream = Files.walk(root, 2)) {
+                    candidates = stream.filter(p -> BlockStreamAccess.isBlockFile(p, true))
+                            .filter(p -> BlockStreamAccess.extractBlockNumber(p) == targetBlockNumber)
+                            .toList();
                 } catch (Exception ignore) {
-                    // Try the next candidate
+                    continue;
+                }
+                for (final var candidatePath : candidates) {
+                    try {
+                        final var block = BlockStreamAccess.blockFrom(candidatePath);
+                        final var items = block.items();
+                        if (!items.isEmpty() && items.getLast().hasBlockProof()) {
+                            return block;
+                        }
+                    } catch (Exception ignore) {
+                        // Try the next candidate
+                    }
                 }
             }
         }
+        log.warn(
+                "No proof-bearing block found for block #{} across {} dir(s): {}",
+                BlockStreamAccess.extractBlockNumber(relativePath),
+                otherDirs.size(),
+                otherDirs);
         return null;
     }
 
-    private static Optional<List<Block>> readBlocksFromBlockNodes(
+    private static Optional<DiskBlocks> readBlocksFromBlockNodes(
             @NonNull final HapiSpec spec, @NonNull final BlockNodeNetwork blockNodeNetwork) {
-        // Determine the configured block node mode from the first entry
-        final var mode = blockNodeNetwork.getBlockNodeModeById().values().stream()
-                .findFirst()
-                .orElse(BlockNodeMode.NONE);
-
-        List<Block> blocks = null;
-        if (mode == BlockNodeMode.SIMULATOR) {
-            blocks = readBlocksFromSimulators(blockNodeNetwork);
-        } else if (mode == BlockNodeMode.REAL) {
-            blocks = readBlocksFromRealContainers(blockNodeNetwork);
-        }
-
-        if (blocks == null || blocks.isEmpty()) {
+        List<Block> blocks = BlockNodeReader.of(blockNodeNetwork).allBlocks();
+        if (blocks.isEmpty()) {
             return Optional.empty();
         }
 
@@ -360,70 +636,21 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
         if (!pendingBlocks.isEmpty()) {
             final var existingNumbers = new HashSet<Long>();
             for (final var block : blocks) {
-                existingNumbers.add(blockNumberOf(block));
+                existingNumbers.add(BlockNodeReader.blockNumberOf(block));
             }
             final var allBlocks = new ArrayList<>(blocks);
             for (final var block : pendingBlocks) {
-                if (existingNumbers.add(blockNumberOf(block))) {
+                if (existingNumbers.add(BlockNodeReader.blockNumberOf(block))) {
                     allBlocks.add(block);
                 }
             }
-            allBlocks.sort(Comparator.comparingLong(StreamValidationOp::blockNumberOf));
+            allBlocks.sort(Comparator.comparingLong(BlockNodeReader::blockNumberOf));
             blocks = allBlocks;
             log.info("Merged {} pending blocks from disk, {} total blocks", pendingBlocks.size(), blocks.size());
         }
 
-        return Optional.of(blocks);
-    }
-
-    @Nullable
-    private static List<Block> readBlocksFromSimulators(@NonNull final BlockNodeNetwork blockNodeNetwork) {
-        for (final Map.Entry<Long, SimulatedBlockNodeServer> entry :
-                blockNodeNetwork.getSimulatedBlockNodeById().entrySet()) {
-            try {
-                final var blocks = entry.getValue().getAllVerifiedBlocks();
-                log.info("Read {} blocks from simulator block node {}", blocks.size(), entry.getKey());
-                if (!blocks.isEmpty()) {
-                    return blocks;
-                }
-            } catch (Exception e) {
-                log.warn("Failed to read blocks from simulator block node {}", entry.getKey(), e);
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    private static List<Block> readBlocksFromRealContainers(@NonNull final BlockNodeNetwork blockNodeNetwork) {
-        final var containers = blockNodeNetwork.getBlockNodeContainerById();
-        if (containers.isEmpty()) {
-            log.warn("No block node containers available");
-            return null;
-        }
-        for (final Map.Entry<Long, BlockNodeContainer> entry : containers.entrySet()) {
-            try {
-                final var container = entry.getValue();
-                try (final var client = new BlockNodeSubscribeClient(container.getHost(), container.getPort())) {
-                    final long lastBlock = client.getLastAvailableBlock();
-                    if (lastBlock >= 0) {
-                        final var blocks = client.subscribeBlocks(0, lastBlock);
-                        log.info(
-                                "Read {} blocks from real block node {} (blocks 0-{})",
-                                blocks.size(),
-                                entry.getKey(),
-                                lastBlock);
-                        if (!blocks.isEmpty()) {
-                            return blocks;
-                        }
-                    } else {
-                        log.info("Block node {} reports no available blocks yet", entry.getKey());
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Failed to read blocks from real block node {}", entry.getKey(), e);
-            }
-        }
-        return null;
+        // Block-node sources don't carry a preview-archive layer.
+        return Optional.of(new DiskBlocks(blocks, List.of()));
     }
 
     private static List<Block> readPendingBlocksFromDisk(@NonNull final HapiSpec spec) {
@@ -461,20 +688,100 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
         return pendingBlocks;
     }
 
-    private static boolean isWriterModeGrpcOnly(@NonNull final HapiSpec spec) {
+    private static void dumpBlockNodeBlocksToDisk(
+            @NonNull final HapiSpec spec, @NonNull final BlockNodeNetwork blockNodeNetwork) {
+        final var nodes = spec.getNetworkNodes();
+        if (nodes.isEmpty()) {
+            return;
+        }
+        final var node0 = nodes.getFirst();
+        final var outputRoot = node0.getExternalPath(BLOCK_STREAMS_PARENT_DIR)
+                .toAbsolutePath()
+                .getParent()
+                .resolve("blockStreams-blocknode");
+
+        final var mode = blockNodeNetwork.getBlockNodeModeById().values().stream()
+                .findFirst()
+                .orElse(BlockNodeMode.NONE);
+
+        if (mode == BlockNodeMode.SIMULATOR) {
+            for (final Map.Entry<Long, SimulatedBlockNodeServer> entry :
+                    blockNodeNetwork.getSimulatedBlockNodeById().entrySet()) {
+                final long blockNodeId = entry.getKey();
+                final Path nodeDir = outputRoot.resolve("blocknode-" + blockNodeId);
+                try {
+                    Files.createDirectories(nodeDir);
+                    final var blocks = entry.getValue().getAllVerifiedBlocks();
+                    for (final Block block : blocks) {
+                        writeBlockFileToDisk(nodeDir, block);
+                    }
+                    log.info("Dumped {} blocks from simulator {} to {}", blocks.size(), blockNodeId, nodeDir);
+                } catch (Exception e) {
+                    log.warn("Failed to dump blocks from simulator block node {} to {}", blockNodeId, nodeDir, e);
+                }
+            }
+        } else if (mode == BlockNodeMode.REAL) {
+            for (final Map.Entry<Long, BlockNodeContainer> entry :
+                    blockNodeNetwork.getBlockNodeContainerById().entrySet()) {
+                final long blockNodeId = entry.getKey();
+                final Path nodeDir = outputRoot.resolve("blocknode-" + blockNodeId);
+                try {
+                    Files.createDirectories(nodeDir);
+                    final var container = entry.getValue();
+                    try (final var client = new BlockNodeSubscribeClient(container.getHost(), container.getPort())) {
+                        final long nextExpected = client.getNextExpectedBlock();
+                        final long lastBlock = nextExpected == -1L ? -1L : nextExpected - 1L;
+                        if (lastBlock >= 0) {
+                            final var blocks = client.subscribeBlocks(0, lastBlock);
+                            for (final Block block : blocks) {
+                                writeBlockFileToDisk(nodeDir, block);
+                            }
+                            log.info(
+                                    "Dumped {} blocks from real block node {} to {}",
+                                    blocks.size(),
+                                    blockNodeId,
+                                    nodeDir);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to dump blocks from real block node {} to {}", blockNodeId, nodeDir, e);
+                }
+            }
+        }
+    }
+
+    private static void writeBlockFileToDisk(@NonNull final Path dir, @NonNull final Block block) throws IOException {
+        final long blockNumber = BlockNodeReader.blockNumberOf(block);
+        if (blockNumber == Long.MAX_VALUE) {
+            log.warn("Skipping block without header; cannot determine block number");
+            return;
+        }
+        final String baseName = String.format("%036d", blockNumber);
+        final Path blockFile = dir.resolve(baseName + ".blk.gz");
+        try (final var out = new GZIPOutputStream(Files.newOutputStream(blockFile))) {
+            out.write(Block.PROTOBUF.toBytes(block).toByteArray());
+        }
+        Files.createFile(dir.resolve(baseName + ".mf"));
+    }
+
+    private static boolean isStreamingWrappedRecordBlocks(@NonNull final HapiSpec spec) {
         try {
-            final var writerMode = spec.startupProperties().get("blockStream.writerMode");
-            return BlockStreamWriterMode.GRPC.name().equals(writerMode);
+            return Boolean.parseBoolean(spec.startupProperties().get("blockStream.streamWrappedRecordBlocks"));
         } catch (Exception e) {
             return false;
         }
     }
 
-    private static long blockNumberOf(@NonNull final Block block) {
-        if (!block.items().isEmpty() && block.items().getFirst().hasBlockHeader()) {
-            return block.items().getFirst().blockHeader().number();
+    static Optional<DiskBlocks> readMaybeBlockNodeStreamsFor(@NonNull final HapiSpec spec) {
+        final var blockNodeNetwork = BlockNodeReader.activeNetwork();
+        if (blockNodeNetwork == null) {
+            return Optional.empty();
         }
-        return Long.MAX_VALUE;
+        final var result = readBlocksFromBlockNodes(spec, blockNodeNetwork);
+        if (result.isPresent()) {
+            dumpBlockNodeBlocksToDisk(spec, blockNodeNetwork);
+        }
+        return result;
     }
 
     private static Optional<DataOrException> readMaybeRecordStreamDataFor(@NonNull final HapiSpec spec) {
@@ -512,7 +819,7 @@ public class StreamValidationOp extends UtilOp implements LifecycleTest {
     }
 
     private static void validateProofs(@NonNull final HapiSpec spec) {
-        if (!isWriterModeGrpcOnly(spec)) {
+        if (!BlockSourceFactory.isWriterModeGrpcOnly(spec)) {
             log.info("Beginning block proof validation for each node in the network");
             spec.getNetworkNodes().forEach(node -> {
                 try {

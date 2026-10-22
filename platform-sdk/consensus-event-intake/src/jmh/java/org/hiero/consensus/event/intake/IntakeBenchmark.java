@@ -1,35 +1,39 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.event.intake;
 
-import com.hedera.hapi.node.state.roster.RoundRosterPair;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.component.framework.WiringConfig;
-import com.swirlds.component.framework.model.WiringModel;
-import com.swirlds.component.framework.model.WiringModelBuilder;
+import static org.hiero.consensus.model.test.fixtures.roster.RosterWrapperHistoryFactory.createRosterWrapperHistory;
+
+import com.swirlds.base.time.Time;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.hiero.base.concurrent.ExecutorFactory;
-import org.hiero.consensus.crypto.SigningSchema;
+import org.hiero.base.crypto.SigningSchema;
 import org.hiero.consensus.event.NoOpIntakeEventCounter;
+import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator.GeneratorEventGraphSource;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator.GeneratorEventGraphSourceBuilder;
+import org.hiero.consensus.metrics.config.ConsensusLayerMetricsConfig_;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.event.PlatformEvent;
+import org.hiero.consensus.model.roster.RosterWrapperHistory;
 import org.hiero.consensus.model.test.fixtures.event.EventCounter;
-import org.hiero.consensus.roster.RosterHistory;
-import org.hiero.consensus.roster.test.fixtures.RandomRosterBuilder;
-import org.hiero.consensus.roster.test.fixtures.RosterWithKeys;
+import org.hiero.consensus.model.test.fixtures.roster.RosterWithKeys;
+import org.hiero.consensus.model.test.fixtures.roster.RosterWrapperFactory;
+import org.hiero.consensus.test.fixtures.WeightGenerators;
 import org.hiero.consensus.transaction.TransactionLimits;
+import org.hiero.consensus.wiring.framework.WiringConfig;
+import org.hiero.consensus.wiring.framework.model.WiringModel;
+import org.hiero.consensus.wiring.framework.model.WiringModelBuilder;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -108,13 +112,13 @@ public class IntakeBenchmark {
 
     @Setup(Level.Invocation)
     public void beforeInvocation() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        final RosterWithKeys rosterWithKeys = RandomRosterBuilder.create(new Random(SEED))
-                .withSize(numNodes)
-                .withRealKeysEnabled(true)
-                .withSigningSchema(signingSchema)
-                .buildWithKeys();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(ConsensusLayerMetricsConfig_.LATENCY_ENABLED, false)
+                .getOrCreateConfig();
+        final Metrics metrics = new NoOpMetrics();
+        final Time time = Time.getCurrent();
+        final RosterWithKeys rosterWithKeys = RosterWrapperFactory.randomRosterWithKeys(
+                new Random(SEED), numNodes, WeightGenerators.GAUSSIAN, signingSchema);
         final GeneratorEventGraphSource generator = GeneratorEventGraphSourceBuilder.builder()
                 .rosterWithKeys(rosterWithKeys)
                 .maxOtherParents(1)
@@ -124,24 +128,23 @@ public class IntakeBenchmark {
         final List<PlatformEvent> uniqueEvents = generator.nextEvents(NUMBER_OF_EVENTS);
         events = shuffleBatches(injectDuplicates(uniqueEvents));
 
-        model = WiringModelBuilder.create(platformContext.getMetrics(), platformContext.getTime())
+        model = WiringModelBuilder.create(metrics, time)
                 .enableJvmAnchor()
                 .withDefaultPool(threadPool)
-                .withWiringConfig(platformContext.getConfiguration().getConfigData(WiringConfig.class))
+                .withWiringConfig(configuration.getConfigData(WiringConfig.class))
                 .build();
-        final RosterHistory rosterHistory = new RosterHistory(
-                List.of(new RoundRosterPair(0L, Bytes.EMPTY)), Map.of(Bytes.EMPTY, rosterWithKeys.getRoster()));
+        final RosterWrapperHistory rosterHistory = createRosterWrapperHistory(0L, rosterWithKeys.roster());
 
         intake = createIntakeModule(intakeModule);
         intake.initialize(
                 model,
-                platformContext.getConfiguration(),
-                platformContext.getMetrics(),
-                platformContext.getTime(),
+                configuration,
+                metrics,
+                time,
                 rosterHistory,
                 new NoOpIntakeEventCounter(),
                 new TransactionLimits(1000, 1000),
-                new EventPipelineTracker(platformContext.getMetrics()));
+                EventPipelineTracker.create(metrics, configuration, time));
         counter = new EventCounter(NUMBER_OF_EVENTS);
         intake.validatedEventsOutputWire().solderForMonitoring(counter);
         intake.unhashedEventsInputWire();

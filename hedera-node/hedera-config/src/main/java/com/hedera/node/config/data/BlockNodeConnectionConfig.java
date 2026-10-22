@@ -3,13 +3,15 @@ package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
 import com.hedera.node.config.NodeProperty;
+import com.hedera.node.config.types.BlockStreamGrpcCompressionType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Min;
 import java.time.Duration;
 
 /**
- * Configuration for Connecting to Block Nodes.
+ * Configuration for connecting to Block Nodes.
+ *
  * @param blockNodeConnectionFileDir the directory to get the block node configuration file
  * @param maxEndOfStreamsAllowed the limit of EndOfStream responses allowed within a time frame
  * @param endOfStreamTimeFrame the time frame in seconds to check for EndOfStream responses
@@ -23,16 +25,29 @@ import java.time.Duration;
  * @param grpcOverallTimeout single timeout configuration for gRPC Client construction, connectTimeout, readTimeout and pollWaitTime
  * @param connectionWorkerSleepDuration the amount of time a connection worker will sleep between handling block items (should be less than {@link #maxRequestDelay})
  * @param maxRequestDelay the maximum amount of time between sending a request to a block node
- * @param pipelineOperationTimeout timeout for pipeline onNext() and onComplete() operations to detect unresponsive block nodes
+ * @param connectionManagementTimeout timeout for connection management operations (e.g. connection create and destroy)
  * @param streamingRequestPaddingBytes the base overhead (in bytes) that is applied to every pending request when estimating the request size
  * @param streamingRequestItemPaddingBytes the amount of additional bytes to include for each block item when estimating the request size
  * @param blockNodeStatusTimeout the timeout for retrieving block node server status (millisecond precision)
- * @param defaultMessageHardLimitBytes the default message hard limit (in bytes) used when a block node does not specify its own hard limit. Default is 37748736 bytes (36 MB).
+ * @param defaultMessageHardLimitBytes the default message hard limit (in bytes) used when a block node does not specify its own hard limit. Default is 131072000 bytes (125 MB).
  * @param connectionMonitorCheckIntervalMillis the amount of time (in milliseconds) between checking the health of block node connectivity
  * @param connectionStallThresholdMillis the amount of time needed to elapse (in milliseconds) between connection worker loop invocations before a connection is considered stalled
  * @param globalCoolDownSeconds the minimum amount of time (in seconds) between switching block node connections
  * @param basicNodeCoolDownSeconds the minimum amount of time (in seconds) to permit reconnecting to a block node for basic scenarios
  * @param extendedNodeCoolDownSeconds the minimum amount of time (in seconds) to permit reconnecting to a block node for extended scenarios
+ * @param wantedBlockExpirationMillis the maximum amount of time (in milliseconds) allowed to elapse between when a block node's
+ *                                    wanted block is determined versus when the streaming connection is created and uses the wanted block
+ * @param numBlocksBehindLowThreshold number of blocks (as a percentage - 0.0 to 100.0 - of the max number of blocks allowed in the buffer
+ *                                    via {@link BlockBufferConfig#maxBlocks()}) a block node can be behind before the node is placed in a basic cool down
+ * @param numBlocksBehindHighThreshold number of blocks (as a percentage - 0.0 to 100.0 - of the max number of blocks allowed in the buffer
+ *                                     via {@link BlockBufferConfig#maxBlocks()}) a block node can be behind before the node is placed in an extended cool down
+ * @param slowRequestThresholdMillis amount of time (in milliseconds) a request will take to send before it is considered slow (should be less than {@link #opTimeoutBaseMillis()})
+ * @param opTimeoutBaseMillis the minimum amount of time (in milliseconds) to set for dynamic timeouts when sending requests to a block node
+ * @param opTimeoutMicrosPerKilobyte the amount of time (in microseconds) to add for dynamic timeouts for each kilobyte being sent to a block node in one request
+ * @param opTimeoutMaxMillis the maximum amount of time (in milliseconds) to set for dynamic timeouts when sending requests to a block node
+ * @param opTimeoutMaxAttemptsPerWindow the maximum number of times requests are allowed to timeout within a given window before the connection is closed
+ * @param opTimeoutWindowDuration the sliding window duration used for checking if too many request timeouts have occurred
+ * @param grpcCompressionType the type of compression to use while communicating to the block node
  */
 // spotless:off
 @ConfigData("blockNode")
@@ -40,7 +55,7 @@ public record BlockNodeConnectionConfig(
         @ConfigProperty(defaultValue = "data/config") @NodeProperty String blockNodeConnectionFileDir,
         @ConfigProperty(defaultValue = "5") @NodeProperty int maxEndOfStreamsAllowed,
         @ConfigProperty(defaultValue = "30s") @NodeProperty Duration endOfStreamTimeFrame,
-        @ConfigProperty(defaultValue = "1") @NodeProperty int maxBehindPublishersAllowed,
+        @ConfigProperty(defaultValue = "3") @NodeProperty int maxBehindPublishersAllowed,
         @ConfigProperty(defaultValue = "30s") @NodeProperty Duration behindPublisherTimeFrame,
         @ConfigProperty(defaultValue = "5s") @NodeProperty Duration behindPublisherIgnorePeriod,
         @ConfigProperty(defaultValue = "24h") @NodeProperty Duration streamResetPeriod,
@@ -50,15 +65,25 @@ public record BlockNodeConnectionConfig(
         @ConfigProperty(defaultValue = "30s") @NodeProperty Duration grpcOverallTimeout,
         @ConfigProperty(defaultValue = "10ms") @NetworkProperty Duration connectionWorkerSleepDuration,
         @ConfigProperty(defaultValue = "100ms") @NetworkProperty Duration maxRequestDelay,
-        @ConfigProperty(defaultValue = "3s") @NodeProperty Duration pipelineOperationTimeout,
+        @ConfigProperty(defaultValue = "3s") @NodeProperty Duration connectionManagementTimeout,
         @ConfigProperty(defaultValue = "100") @Min(0) @NetworkProperty int streamingRequestPaddingBytes,
         @ConfigProperty(defaultValue = "5") @Min(0) @NetworkProperty int streamingRequestItemPaddingBytes,
         @ConfigProperty(defaultValue = "1s") @NodeProperty Duration blockNodeStatusTimeout,
-        @ConfigProperty(defaultValue = "37748736") @Min(1) @NodeProperty long defaultMessageHardLimitBytes,
+        @ConfigProperty(defaultValue = "131072000") @Min(1) @NodeProperty long defaultMessageHardLimitBytes,
         @ConfigProperty(defaultValue = "200") @Min(1) @NetworkProperty int connectionMonitorCheckIntervalMillis,
-        @ConfigProperty(defaultValue = "250") @Min(10) @NetworkProperty int connectionStallThresholdMillis,
+        @ConfigProperty(defaultValue = "500") @Min(10) @NetworkProperty int connectionStallThresholdMillis,
         @ConfigProperty(defaultValue = "10") @Min(0) @NetworkProperty int globalCoolDownSeconds,
         @ConfigProperty(defaultValue = "15") @Min(0) @NetworkProperty int basicNodeCoolDownSeconds,
-        @ConfigProperty(defaultValue = "30") @Min(0) @NetworkProperty int extendedNodeCoolDownSeconds) {
+        @ConfigProperty(defaultValue = "30") @Min(0) @NetworkProperty int extendedNodeCoolDownSeconds,
+        @ConfigProperty(defaultValue = "2000") @Min(10) @NetworkProperty long wantedBlockExpirationMillis,
+        @ConfigProperty(defaultValue = "20.0") @Min(0) @NetworkProperty double numBlocksBehindLowThreshold,
+        @ConfigProperty(defaultValue = "35.0") @Min(0) @NetworkProperty double numBlocksBehindHighThreshold,
+        @ConfigProperty(defaultValue = "250") @Min(1) @NetworkProperty long slowRequestThresholdMillis,
+        @ConfigProperty(value = "operationTimeout.baseMillis", defaultValue = "2000") @Min(0) @NetworkProperty long opTimeoutBaseMillis,
+        @ConfigProperty(value = "operationTimeout.microsPerKilobyte", defaultValue = "250") @Min(0) @NetworkProperty long opTimeoutMicrosPerKilobyte,
+        @ConfigProperty(value = "operationTimeout.maxMillis", defaultValue = "30000") @Min(1) @NetworkProperty long opTimeoutMaxMillis,
+        @ConfigProperty(value = "operationTimeout.maxTimeoutsPerWindow", defaultValue = "3") @Min(1) @NetworkProperty int opTimeoutMaxAttemptsPerWindow,
+        @ConfigProperty(value = "operationTimeout.timeoutWindowDuration", defaultValue = "60s") @NetworkProperty Duration opTimeoutWindowDuration,
+        @ConfigProperty(defaultValue = "ZSTD") @NetworkProperty BlockStreamGrpcCompressionType grpcCompressionType) {
 }
 // spotless:on

@@ -16,12 +16,12 @@ import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.MerklePathUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import org.hiero.base.crypto.DigestType;
+import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 
 /**
@@ -59,8 +59,8 @@ public record PullVirtualTreeRequest(
      */
     public PullVirtualTreeRequest(final long path, @Nullable final Hash hash) {
         // Null hash for the terminating requests, non-null otherwise
-        assert path == Path.INVALID_PATH || (path >= 0 && hash != null);
-        assert hash == null || hash.getDigestType() == DigestType.SHA_384;
+        assert path == MerklePathUtils.INVALID_PATH || (path >= 0 && hash != null);
+        assert hash == null || hash.getDigestType() == Cryptography.DEFAULT_DIGEST_TYPE;
         this.path = path;
         this.hash = hash;
     }
@@ -76,7 +76,7 @@ public record PullVirtualTreeRequest(
             size += sizeOfTag(FIELD_PULLREQUEST_PATH) + Long.BYTES;
         }
         if (hash != null) {
-            final int hashLen = DigestType.SHA_384.digestLength();
+            final int hashLen = Cryptography.DEFAULT_DIGEST_TYPE.digestLength();
             size += sizeOfDelimited(FIELD_PULLREQUEST_HASH, hashLen);
         }
         return size;
@@ -129,7 +129,7 @@ public record PullVirtualTreeRequest(
             }
         }
 
-        final Hash hash = (hashBytes != null) ? new Hash(hashBytes, DigestType.SHA_384) : null;
+        final Hash hash = (hashBytes != null) ? new Hash(hashBytes, Cryptography.DEFAULT_DIGEST_TYPE) : null;
         return new PullVirtualTreeRequest(path, hash);
     }
 }

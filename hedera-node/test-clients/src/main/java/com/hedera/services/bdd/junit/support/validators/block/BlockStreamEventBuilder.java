@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.MAX_PBJ_RECORD_SIZE;
+import static com.hedera.pbj.runtime.Codec.DEFAULT_MAX_DEPTH;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Fail.fail;
 
@@ -30,6 +32,7 @@ import java.util.Map;
 import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.HashingOutputStream;
+import org.hiero.consensus.model.event.EventHashFactory;
 import org.hiero.consensus.model.event.EventOrigin;
 import org.hiero.consensus.model.event.PlatformEvent;
 
@@ -79,7 +82,7 @@ public class BlockStreamEventBuilder {
         /** Returns the parent event hash. */
         @NonNull
         public Hash parentHash() {
-            return new Hash(parentDescriptor.hash());
+            return EventHashFactory.hash(parentDescriptor.hash(), parentDescriptor.birthRound());
         }
     }
 
@@ -114,10 +117,24 @@ public class BlockStreamEventBuilder {
      */
     public static TransactionBody getTransactionBody(@NonNull final Bytes transactionBytes) {
         try {
-            final SignedTransaction signedTransaction = SignedTransaction.PROTOBUF.parse(transactionBytes);
-            return TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes());
+            // The default PBJ max message size (2 MiB) rejects node-generated history proof votes,
+            // which carry the ~32 MB uncompressed WRAPS proof; parse with the same raised ceiling
+            // used by BlockStreamAccess to read the blocks these transactions come from
+            final SignedTransaction signedTransaction = SignedTransaction.PROTOBUF.parse(
+                    transactionBytes.toReadableSequentialData(), false, false, DEFAULT_MAX_DEPTH, MAX_PBJ_RECORD_SIZE);
+            return TransactionBody.PROTOBUF.parse(
+                    signedTransaction.bodyBytes().toReadableSequentialData(),
+                    false,
+                    false,
+                    DEFAULT_MAX_DEPTH,
+                    MAX_PBJ_RECORD_SIZE);
         } catch (final ParseException e) {
-            throw new RuntimeException("Unable to parse transaction bytes", e);
+            throw new RuntimeException(
+                    "Unable to parse transaction bytes (" + transactionBytes.length() + " bytes, prefix 0x"
+                            + transactionBytes
+                                    .slice(0, Math.min(48, transactionBytes.length()))
+                                    .toHex() + ")",
+                    e);
         }
     }
 
@@ -306,7 +323,7 @@ public class BlockStreamEventBuilder {
                     final PlatformEvent parent = eventIndexToHash.get(parentIndex);
 
                     if (parent != null) {
-                        resolvedParents.add(parent.getDescriptor().eventDescriptor());
+                        resolvedParents.add(parent.getDescriptor().toPbj());
                     } else {
                         fail("Unable to find a parent event for index %d", parentIndex);
                     }
@@ -334,10 +351,15 @@ public class BlockStreamEventBuilder {
     }
 
     private static class RedactedEventHasher {
-        /** The hashing stream for the event. */
-        private final MessageDigest eventDigest = DigestType.SHA_384.buildDigest();
 
-        final WritableSequentialData eventStream = new WritableStreamingData(new HashingOutputStream(eventDigest));
+        private final MessageDigest sha256EventDigest = DigestType.SHA_256.buildDigest();
+        private final MessageDigest sha384EventDigest = DigestType.SHA_384.buildDigest();
+
+        private final WritableSequentialData sha256EventStream =
+                new WritableStreamingData(new HashingOutputStream(sha256EventDigest));
+        private final WritableSequentialData sha384EventStream =
+                new WritableStreamingData(new HashingOutputStream(sha384EventDigest));
+
         /** The hashing stream for the transactions. */
         private final MessageDigest transactionDigest = DigestType.SHA_384.buildDigest();
 
@@ -349,23 +371,35 @@ public class BlockStreamEventBuilder {
                 @NonNull final EventCore eventCore,
                 @NonNull final List<EventDescriptor> parents,
                 @NonNull final List<TransactionWrapper> wrappedTransactions) {
-
+            final DigestType digestType;
+            final MessageDigest eventDigest;
+            final WritableSequentialData eventStream;
+            if (EventHashFactory.isBirthRoundPostCutover(eventCore.birthRound())) {
+                digestType = DigestType.SHA_256;
+                eventDigest = sha256EventDigest;
+                eventStream = sha256EventStream;
+            } else {
+                digestType = DigestType.SHA_384;
+                eventDigest = sha384EventDigest;
+                eventStream = sha384EventStream;
+            }
             try {
                 EventCore.PROTOBUF.write(eventCore, eventStream);
                 for (final EventDescriptor parent : parents) {
                     EventDescriptor.PROTOBUF.write(parent, eventStream);
                 }
                 for (final TransactionWrapper transaction : wrappedTransactions) {
-                    processTransactionHash(transaction);
+                    processTransactionHash(eventStream, transaction);
                 }
             } catch (final IOException e) {
                 throw new RuntimeException("An exception occurred while trying to hash an event!", e);
             }
 
-            return new Hash(eventDigest.digest(), DigestType.SHA_384);
+            return new Hash(eventDigest.digest(), digestType);
         }
 
-        private void processTransactionHash(@NonNull final TransactionWrapper wrappedTransaction) {
+        private void processTransactionHash(
+                final WritableSequentialData eventStream, @NonNull final TransactionWrapper wrappedTransaction) {
             if (wrappedTransaction.isTransaction()) {
                 transactionStream.writeBytes(wrappedTransaction.transaction());
                 final byte[] hash = transactionDigest.digest();

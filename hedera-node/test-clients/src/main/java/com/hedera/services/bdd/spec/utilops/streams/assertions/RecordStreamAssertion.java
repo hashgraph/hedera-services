@@ -11,7 +11,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
  *
  * <p>Typical implementations will be stateful, and will be constructed with their "parent" {@link HapiSpec}.
  */
-public interface RecordStreamAssertion {
+public interface RecordStreamAssertion extends StreamAssertion {
     /**
      * Returns true if this assertion is applicable to the given item. (There is no reason to call
      * {@link #test(RecordStreamItem)} if this method returns false.)
@@ -34,6 +34,19 @@ public interface RecordStreamAssertion {
      */
     default boolean test(RecordStreamItem item) throws AssertionError {
         return true;
+    }
+
+    /**
+     * Re-checks any items this assertion buffered pending later transaction-ID registration and
+     * re-evaluates whether it has now passed, independent of a new item arriving. Invoked once per
+     * delivered block by {@link RecordStreamToBlockAssertionAdapter} — including blocks that translate
+     * to no records — so a buffered match is not stranded while the block stream is otherwise idle.
+     *
+     * @throws AssertionError if the assertion has failed
+     * @return true if the assertion has succeeded
+     */
+    default boolean recheckPending() throws AssertionError {
+        return false;
     }
 
     /**

@@ -15,6 +15,8 @@ import static com.hedera.node.app.service.roster.impl.ActiveRosters.Phase.TRANSI
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,9 +65,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import org.hiero.consensus.metrics.noop.NoOpMetrics;
+import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -138,7 +141,15 @@ class WritableHistoryStoreImplTest {
 
     @Test
     void expectedWrapsProvingKeyHashIsNullUntilSet() {
-        assertNull(subject.getWrapsProvingKeyHash());
+        // After doGenesisSetup() with the default config (which now has a non-blank
+        // wrapsProvingKeyHash), the store is pre-populated with the configured hash.
+        // getWrapsProvingKeyHash() returns null only when the stored value is Bytes.EMPTY.
+        final var configuredHash = TSS_CONFIG.wrapsProvingKeyHash();
+        if (configuredHash.isBlank()) {
+            assertNull(subject.getWrapsProvingKeyHash());
+        } else {
+            assertEquals(Bytes.fromHex(configuredHash), subject.getWrapsProvingKeyHash());
+        }
 
         final var hash = Bytes.wrap("proving-key-hash");
         subject.setWrapsProvingKeyHash(hash);
@@ -153,7 +164,7 @@ class WritableHistoryStoreImplTest {
         assertNull(subject.getConstructionFor(activeRosters));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG));
+                () -> subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, false));
     }
 
     @Test
@@ -168,7 +179,7 @@ class WritableHistoryStoreImplTest {
         setConstructions(active, HistoryProofConstruction.DEFAULT);
 
         assertSame(active, subject.getConstructionFor(activeRosters));
-        assertSame(active, subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG));
+        assertSame(active, subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, false));
     }
 
     @Test
@@ -198,7 +209,7 @@ class WritableHistoryStoreImplTest {
         given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
         given(activeRosters.targetRosterHash()).willReturn(A_ROSTER_HASH);
 
-        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG);
+        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, false);
 
         assertEquals(1L, construction.constructionId());
         final var expectedGracePeriodEndTime =
@@ -232,7 +243,7 @@ class WritableHistoryStoreImplTest {
         final var newKey = Bytes.wrap("THREE");
         assertTrue(subject.setProofKey(newKeyNodeId, newKey, CONSENSUS_NOW.minusSeconds(1L)));
 
-        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG);
+        final var construction = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, false);
 
         assertEquals(3L, construction.constructionId());
         final var expectedGracePeriodEndTime =
@@ -321,7 +332,7 @@ class WritableHistoryStoreImplTest {
                         .get(WRAPS_MESSAGE_HISTORIES_STATE_ID)
                         .size());
 
-        final var updated = subject.restartWrapsSigning(123L, Set.of(1L, 2L));
+        final var updated = subject.restartWrapsSigning(123L, new TreeSet<>(List.of(1L, 2L)));
 
         assertEquals(2, updated.wrapsRetryCount());
         assertFalse(updated.hasFailureReason());
@@ -371,6 +382,62 @@ class WritableHistoryStoreImplTest {
                 state.getWritableStates(HistoryService.NAME)
                         .get(PROOF_KEY_SETS_STATE_ID)
                         .size());
+    }
+
+    @Test
+    void forceHandoffStillRefusesIncompleteConstructionWithMismatchedRosterHash() {
+        final var activeConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(123L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .build();
+        final var nextConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(456L)
+                .targetRosterHash(C_ROSTER_HASH)
+                .build();
+        setConstructions(activeConstruction, nextConstruction);
+
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, A_ROSTER_HASH, true));
+        assertSame(activeConstruction, this.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_STATE_ID));
+        assertSame(nextConstruction, this.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_STATE_ID));
+    }
+
+    @Test
+    void forceHandoffAllowsCompleteConstructionWithMismatchedRosterHash() {
+        final var activeConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(123L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .build();
+        final var nextConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(456L)
+                .targetRosterHash(C_ROSTER_HASH)
+                .targetProof(HistoryProof.DEFAULT)
+                .build();
+        setConstructions(activeConstruction, nextConstruction);
+
+        assertTrue(subject.handoff(A_ROSTER, C_ROSTER, A_ROSTER_HASH, true));
+        assertSame(nextConstruction, this.<HistoryProofConstruction>getSingleton(ACTIVE_PROOF_CONSTRUCTION_STATE_ID));
+        assertEquals(
+                HistoryProofConstruction.DEFAULT,
+                this.<HistoryProofConstruction>getSingleton(NEXT_PROOF_CONSTRUCTION_STATE_ID));
+    }
+
+    @Test
+    void clearProofVotesRemovesPersistedVotesForGivenNodesOnly() {
+        // finishProof purges a construction's persisted votes on completion so a node rebuilding its
+        // controller during a WRAPS conversion does not reload now-superseded votes (which would
+        // make it skip the conversion vote as already counted and diverge ACTIVE_PROOF_CONSTRUCTION).
+        subject.addProofVote(0L, 123L, DEFAULT_VOTE);
+        subject.addProofVote(1L, 123L, DEFAULT_VOTE);
+        subject.addProofVote(0L, 456L, DEFAULT_VOTE);
+        assertEquals(2, subject.getVotes(123L, Set.of(0L, 1L)).size());
+
+        subject.clearProofVotes(123L, new TreeSet<>(List.of(0L, 1L)));
+
+        assertEquals(0, subject.getVotes(123L, Set.of(0L, 1L)).size());
+        // Votes for a different construction are untouched.
+        assertEquals(1, subject.getVotes(456L, Set.of(0L)).size());
     }
 
     private void givenARosterLookup() {
@@ -438,5 +505,37 @@ class WritableHistoryStoreImplTest {
         historyService.doGenesisSetup(writableStates, DEFAULT_CONFIG);
         ((CommittableWritableStates) writableStates).commit();
         return state;
+    }
+
+    @Test
+    void replacesACompletedConstructionOnlyWhenAFreshGenesisIsRequested() {
+        // The completed construction grounding the chain of trust has the same roster as source and target,
+        // so it is matched again by the phase entered to build a fresh genesis proof; it holds the very proof
+        // to be replaced, so it must give way to a new construction
+        given(activeRosters.phase()).willReturn(BOOTSTRAP);
+        given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.findRelatedRoster(A_ROSTER_HASH)).willReturn(Roster.DEFAULT);
+        final var completed = HistoryProofConstruction.newBuilder()
+                .constructionId(1L)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .targetProof(HistoryProof.newBuilder()
+                        .chainOfTrustProof(ChainOfTrustProof.newBuilder().wrapsProof(Bytes.wrap("COMPRESSED")))
+                        .uncompressedWrapsProof(Bytes.wrap("UNCOMPRESSED"))
+                        .build())
+                .build();
+        setConstructions(completed, HistoryProofConstruction.DEFAULT);
+
+        assertSame(completed, subject.getConstructionFor(activeRosters));
+        assertSame(completed, subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, false));
+
+        final var created = subject.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, TSS_CONFIG, true);
+
+        assertNotSame(completed, created);
+        assertNotEquals(completed.constructionId(), created.constructionId());
+        assertFalse(created.hasTargetProof());
+        // The fresh construction is placed alongside the active one, whose proof it will replace
+        assertSame(created, getSingleton(NEXT_PROOF_CONSTRUCTION_STATE_ID));
     }
 }

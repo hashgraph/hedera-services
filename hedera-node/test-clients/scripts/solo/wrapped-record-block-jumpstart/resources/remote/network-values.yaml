@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Solo network-deploy value overrides for the REMOTE multi-tenant cluster (e.g. solo-sdlt-n6).
+#
+# Scheduling: each pod spec names the Chewie allocation group it runs on with a "chewie-group"
+# placeholder, which 103-user-solo-tests-adhoc renders into that group's labels (nodeSelector) and
+# tolerations via .github/workflows/support/chewie/apply-allocation-scheduling.sh. Unrendered, the
+# placeholder matches no node, so the pods stay Pending rather than land on another allocation's
+# machines.
+#
+# Storage: the cluster has no default StorageClass and MinIO defaults to a non-existent "standard"
+# class, so we pin MinIO to "local-path". Consensus nodes deploy with --pvcs false (emptyDir), so
+# they need no StorageClass for a single short jumpstart run.
+#
+# Resources are right-sized for a lightweight records-mode jumpstart (NOT the 256Gi perf profile).
+
+defaults:
+  root:
+    resources:
+      requests:
+        cpu: "1"
+        memory: 4Gi
+      limits:
+        cpu: "8"
+        memory: 16Gi
+
+deployment:
+  nodeSelector:
+    chewie-group: cn
+
+haproxyDeployment:
+  nodeSelector:
+    chewie-group: aux
+
+envoyDeployment:
+  nodeSelector:
+    chewie-group: aux
+
+minio-server:
+  tenant:
+    pools:
+      - servers: 1
+        name: pool-1
+        volumesPerServer: 1
+        size: 50Gi
+        storageClassName: local-path
+        nodeSelector:
+          chewie-group: aux

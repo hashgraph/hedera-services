@@ -3,6 +3,7 @@ package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.reducedFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -12,11 +13,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getDeduction;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getNonFeeDeduction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -29,17 +28,23 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
+import com.hedera.services.bdd.junit.RepeatableHapiTest;
+import com.hedera.services.bdd.junit.RepeatableReason;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateEncodingException;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +53,6 @@ import org.junit.jupiter.api.DynamicTest;
 public class DuplicateManagementTest {
     private static final String REPEATED = "repeated";
     public static final String TXN_ID = "txnId";
-    private static final String TO = "3";
     private static final String CIVILIAN = "civilian";
     private static final long MS_TO_WAIT_FOR_CONSENSUS = 6_000L;
     private static final long DUPLICATE_FEE_TOLERANCE_TINYBARS = 25L;
@@ -58,13 +62,21 @@ public class DuplicateManagementTest {
         return hapiTest(
                 cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                 usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
-                uncheckedSubmit(cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID))
+                cryptoCreate(REPEATED)
                         .payingWith(CIVILIAN)
-                        .fee(ONE_HBAR)
-                        .hasPrecheckFrom(NOT_SUPPORTED, BUSY),
-                uncheckedSubmit(cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
-                uncheckedSubmit(cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
-                uncheckedSubmit(cryptoCreate(REPEATED).payingWith(CIVILIAN).txnId(TXN_ID)),
+                        .txnId(TXN_ID)
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll(),
+                cryptoCreate(REPEATED)
+                        .payingWith(CIVILIAN)
+                        .txnId(TXN_ID)
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll(),
+                cryptoCreate(REPEATED)
+                        .payingWith(CIVILIAN)
+                        .txnId(TXN_ID)
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll(),
                 sleepFor(MS_TO_WAIT_FOR_CONSENSUS),
                 getReceipt(TXN_ID)
                         .andAnyDuplicates()
@@ -87,9 +99,6 @@ public class DuplicateManagementTest {
                                 recordWith().status(DUPLICATE_TRANSACTION))),
                 sleepFor(MS_TO_WAIT_FOR_CONSENSUS),
                 withOpContext((spec, opLog) -> {
-                    final var flag =
-                            spec.targetNetworkOrThrow().startupProperties().get("fees.simpleFeesEnabled");
-
                     var cheapGet = getTxnRecord("cheapTxn").assertingNothingAboutHashes();
                     var costlyGet = getTxnRecord("costlyTxn").assertingNothingAboutHashes();
                     allRunFor(spec, cheapGet, costlyGet);
@@ -97,40 +106,30 @@ public class DuplicateManagementTest {
                     var costlyRecord = costlyGet.getResponseRecord();
                     opLog.info("cheapRecord: {}", cheapRecord);
                     opLog.info("costlyRecord: {}", costlyRecord);
-                    if ("true".equals(flag)) {
-                        var cheapPrice = getDeduction(
-                                        cheapRecord.getTransferList(),
-                                        cheapRecord.getTransactionID().getAccountID())
-                                .orElse(0);
-                        var costlyPrice = getDeduction(
-                                        costlyRecord.getTransferList(),
-                                        costlyRecord.getTransactionID().getAccountID())
-                                .orElse(0);
-                        final var expectedCostly = 3 * cheapPrice;
-                        assertTrue(
-                                Math.abs(expectedCostly - costlyPrice) <= DUPLICATE_FEE_TOLERANCE_TINYBARS,
-                                String.format(
-                                        "Costly (%d) should be about 3x more expensive than cheap (%d)!",
-                                        costlyPrice, cheapPrice));
-
-                    } else {
-                        var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
-                        var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
-                        final var expectedCostly = 3 * cheapPrice - 1;
-                        assertTrue(
-                                Math.abs(expectedCostly - costlyPrice) <= DUPLICATE_FEE_TOLERANCE_TINYBARS,
-                                String.format(
-                                        "Costly (%d) should be about 3x more expensive than cheap (%d)!",
-                                        costlyPrice, cheapPrice));
-                    }
+                    var cheapPrice = getDeduction(
+                                    cheapRecord.getTransferList(),
+                                    cheapRecord.getTransactionID().getAccountID())
+                            .orElse(0);
+                    var costlyPrice = getDeduction(
+                                    costlyRecord.getTransferList(),
+                                    costlyRecord.getTransactionID().getAccountID())
+                            .orElse(0);
+                    final var expectedCostly = 3 * cheapPrice;
+                    assertTrue(
+                            Math.abs(expectedCostly - costlyPrice) <= DUPLICATE_FEE_TOLERANCE_TINYBARS,
+                            String.format(
+                                    "Costly (%d) should be about 3x more expensive than cheap (%d)!",
+                                    costlyPrice, cheapPrice));
                 }));
     }
 
     @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
     @DisplayName("if a node submits an authorized transaction without payer signature, it is charged the network fee")
-    final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsAuthorizedTransactionWithoutPayerSignature() {
+    final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsAuthorizedTransactionWithoutPayerSignature()
+            throws CertificateEncodingException {
         final var submittingNodeAccountId = "4";
         final var nodeAccount = "nodeAccount";
+        final var gossipCertificate = generateX509Certificates(1).getFirst().getEncoded();
         return hapiTest(
                 newKeyNamed("notTreasuryKey"),
                 cryptoCreate(nodeAccount),
@@ -140,10 +139,27 @@ public class DuplicateManagementTest {
                 // Bypass ingest using a non-default node to submit a privileged transaction that claims
                 // 0.0.2 as the payer, but signs with the wrong key
                 nodeCreate("newNode", nodeAccount)
+                        .gossipCaCertificate(gossipCertificate)
                         .signedBy("notTreasuryKey")
                         .setNode(submittingNodeAccountId)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE),
                 // And verify that the node is charged the network fee for submitting this transaction
+                getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
+    }
+
+    @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
+    @DisplayName("if a node submits a transaction with an invalid gossip certificate, it is charged the network fee")
+    final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsInvalidGossipCertificate() {
+        final var submittingNodeAccountId = "4";
+        final var nodeAccount = "nodeAccount";
+        return hapiTest(
+                cryptoCreate(nodeAccount),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, submittingNodeAccountId, ONE_HBAR)),
+                balanceSnapshot("preConsensus", submittingNodeAccountId),
+                nodeCreate("newNode", nodeAccount)
+                        .gossipCaCertificate("invalidCert".getBytes(StandardCharsets.UTF_8))
+                        .setNode(submittingNodeAccountId)
+                        .hasKnownStatus(INVALID_GOSSIP_CA_CERTIFICATE),
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
     }
 
@@ -190,41 +206,69 @@ public class DuplicateManagementTest {
                 newKeyNamed("wrongKey"),
                 cryptoCreate(CIVILIAN),
                 usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, TO, ONE_HBAR)),
-                uncheckedSubmit(
-                        cryptoCreate("nope").payingWith(CIVILIAN).txnId(TXN_ID).signedBy("wrongKey")),
-                sleepFor(500), // time to reach consensus
-                getReceipt(TXN_ID).hasPriorityStatus(INVALID_PAYER_SIGNATURE),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, "4", ONE_HBAR)),
+                cryptoCreate("nope")
+                        .payingWith(CIVILIAN)
+                        .txnId(TXN_ID)
+                        .signedBy("wrongKey")
+                        .setNode(4) // for skipping ingest
+                        .hasKnownStatus(INVALID_PAYER_SIGNATURE),
                 getTxnRecord(TXN_ID)
                         .assertingNothingAboutHashes()
                         .hasPriority(recordWith()
                                 .status(INVALID_PAYER_SIGNATURE)
-                                .transfers(includingDeduction("node payment", TO))));
+                                .transfers(includingDeduction("node payment", "4"))));
     }
 
     @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> classifiableTakesPriorityOverUnclassifiable() {
         return hapiTest(
+                newKeyNamed("wrongKey"),
                 cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),
                 usableTxnIdNamed(TXN_ID).payerId(CIVILIAN),
-                cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)),
-                uncheckedSubmit(cryptoCreate("nope")
-                                .txnId(TXN_ID)
-                                .payingWith(CIVILIAN)
-                                .setNode("4"))
-                        .logged(),
-                uncheckedSubmit(
-                        cryptoCreate("sure").txnId(TXN_ID).payingWith(CIVILIAN).setNode(TO)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, "4", 100_000_000L)),
+                cryptoCreate("nope")
+                        .txnId(TXN_ID)
+                        .payingWith(CIVILIAN)
+                        .signedBy("wrongKey")
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll(),
+                cryptoCreate("sure")
+                        .txnId(TXN_ID)
+                        .payingWith(CIVILIAN)
+                        .setNode("4") // for skipping ingest
+                        .hasAnyStatusAtAll(),
                 sleepFor(MS_TO_WAIT_FOR_CONSENSUS),
                 getReceipt(TXN_ID)
                         .andAnyDuplicates()
                         .logged()
                         .hasPriorityStatus(SUCCESS)
-                        .hasDuplicateStatuses(INVALID_NODE_ACCOUNT),
+                        .hasDuplicateStatuses(INVALID_PAYER_SIGNATURE),
                 getTxnRecord(TXN_ID)
                         .assertingNothingAboutHashes()
                         .andAnyDuplicates()
                         .hasPriority(recordWith().status(SUCCESS))
-                        .hasDuplicates(inOrder(recordWith().status(INVALID_NODE_ACCOUNT))));
+                        .hasDuplicates(inOrder(recordWith().status(INVALID_PAYER_SIGNATURE))));
+    }
+
+    @RepeatableHapiTest({NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION, RepeatableReason.MUST_SKIP_INGEST})
+    @DisplayName("a far-future valid start submitted by a node does not stop later receipts from being purged")
+    final Stream<DynamicTest> farFutureValidStartFromNodeDoesNotStopReceiptPurging() {
+        return hapiTest(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, "4", ONE_HBAR)),
+                usableTxnIdNamed(TXN_ID)
+                        .modifyValidStart(Duration.ofDays(100 * 365L).toSeconds())
+                        .payerId(GENESIS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                        .txnId(TXN_ID)
+                        .setNode("4") // for skipping ingest
+                        .hasKnownStatus(INVALID_TRANSACTION_START),
+                cryptoCreate("misc").via("success"),
+                // Reach consensus more than 180 seconds after the valid start of the "success" transaction
+                sleepFor(179_000L),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND),
+                // The far-future id is not kept in the deduplication cache either
+                getReceipt(TXN_ID).hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 }

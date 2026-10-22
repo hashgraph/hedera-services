@@ -2,6 +2,7 @@
 package org.hiero.consensus.model.event;
 
 import static org.hiero.base.concurrent.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+import static org.hiero.consensus.model.event.EventConstants.SEQUENCE_NUMBER_UNDEFINED;
 import static org.hiero.consensus.model.hashgraph.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
@@ -39,6 +40,16 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private final EventOrigin origin;
     /** The time this event was received via gossip */
     private Instant timeReceived;
+    /**
+     * The time this event left the last stage of the event pipeline that measured it, or the time it entered the
+     * pipeline. The latency of a stage is the time from this value until the event leaves the stage.
+     */
+    private Instant lastStageTime;
+    /**
+     * The times the transactions of this event without priority were received by the transaction pool, if this node
+     * created the event in this run, otherwise empty. They are neither hashed nor serialized.
+     */
+    private final List<Instant> transactionReceivedTimes;
 
     /**
      * The id of the node which sent us this event
@@ -67,21 +78,12 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private long nGen = NonDeterministicGeneration.GENERATION_UNDEFINED;
 
     /**
-     * Represents an unassigned sequence number in a {@code PlatformEvent}. This constant is used as a placeholder to
-     * indicate that a specific sequence number has not yet been assigned to an event.
-     * <p>
-     * The value of {@code UNASSIGNED_SEQUENCE_NUMBER} is defined as {@code -1}. This value is chosen because sequence
-     * numbers are non-negative, making {@code -1} a clear and unambiguous indicator of the unassigned state.
-     */
-    public static final long UNASSIGNED_SEQUENCE_NUMBER = -1;
-
-    /**
      * Represents the sequence number assigned to this event. The sequence number is unique and increments with each
      * event released from orphan buffer, providing a way to identify the order of events, which can be used for
      * topological ordering. If the sequence number is not assigned, it will hold the value of
      * {@code UNASSIGNED_SEQUENCE_NUMBER}.
      */
-    private long sequenceNumber = UNASSIGNED_SEQUENCE_NUMBER;
+    private long sequenceNumber = EventConstants.SEQUENCE_NUMBER_UNDEFINED;
 
     /**
      * Construct a new instance from an unsigned event and a signature.
@@ -99,11 +101,16 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
                                 .getEventCore(),
                         Objects.requireNonNull(signature, "The signature must not be null"),
                         unsignedEvent.getTransactionsBytes(),
-                        unsignedEvent.getParents()),
+                        unsignedEvent.getParents().stream()
+                                .map(EventDescriptorWrapper::toPbj)
+                                .toList()),
                 unsignedEvent.getMetadata(),
                 // for a newly created event, the time received is the same as the time created
                 unsignedEvent.getTimeCreated(),
-                Objects.requireNonNull(origin, "The origin must not be null"));
+                Objects.requireNonNull(origin, "The origin must not be null"),
+                unsignedEvent.getTransactionReceivedTimes());
+        // the first stage (event creation) starts when its transactions are taken from the pool
+        this.lastStageTime = unsignedEvent.getTimeTransactionsTaken();
     }
 
     /**
@@ -117,18 +124,22 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
                 Objects.requireNonNull(gossipEvent, "The gossipEvent must not be null"),
                 new EventMetadata(gossipEvent),
                 Instant.now(),
-                Objects.requireNonNull(origin, "The origin must not be null"));
+                Objects.requireNonNull(origin, "The origin must not be null"),
+                List.of());
     }
 
     private PlatformEvent(
             @NonNull final GossipEvent gossipEvent,
             @NonNull final EventMetadata metadata,
             @NonNull final Instant timeReceived,
-            @NonNull final EventOrigin origin) {
+            @NonNull final EventOrigin origin,
+            @NonNull final List<Instant> transactionReceivedTimes) {
         this.gossipEvent = gossipEvent;
         this.metadata = metadata;
         this.origin = origin;
         this.timeReceived = timeReceived;
+        this.lastStageTime = timeReceived;
+        this.transactionReceivedTimes = transactionReceivedTimes;
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
@@ -206,7 +217,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     /**
      * The non-deterministic generation of this event.
      *
-     * @return the non-deterministic generation of this event. A value of {@link EventConstants#GENERATION_UNDEFINED} if
+     * @return the non-deterministic generation of this event. A value of {@link NonDeterministicGeneration#GENERATION_UNDEFINED} if
      * none has been set yet.
      */
     public long getNGen() {
@@ -246,7 +257,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      * @return {@code true} if the sequence number is assigned, {@code false} otherwise.
      */
     public boolean hasSequenceNumber() {
-        return sequenceNumber != UNASSIGNED_SEQUENCE_NUMBER;
+        return sequenceNumber != SEQUENCE_NUMBER_UNDEFINED;
     }
 
     /**
@@ -290,6 +301,37 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      */
     public void setTimeReceived(@NonNull final Instant timeReceived) {
         this.timeReceived = timeReceived;
+    }
+
+    /**
+     * Get the time this event left the last stage of the event pipeline that measured it. Until a stage measures it,
+     * this is the time the event entered the pipeline, initially the time it was received.
+     *
+     * @return the time this event left the last measured stage
+     */
+    public @NonNull Instant getLastStageTime() {
+        return lastStageTime;
+    }
+
+    /**
+     * Set the time this event left the last stage of the event pipeline that measured it, or the time it entered the
+     * pipeline.
+     *
+     * @param lastStageTime the time this event left the last measured stage
+     */
+    public void setLastStageTime(@NonNull final Instant lastStageTime) {
+        this.lastStageTime = lastStageTime;
+    }
+
+    /**
+     * Get the times the transactions of this event without priority were received by the transaction pool. Only an
+     * event this node created in this run has them; for any other event, including one read back from storage, the
+     * list is empty.
+     *
+     * @return the times the transactions without priority were received
+     */
+    public @NonNull List<Instant> getTransactionReceivedTimes() {
+        return transactionReceivedTimes;
     }
 
     /**
@@ -358,14 +400,17 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     /**
      * Set the consensus timestamp on the transaction wrappers for this event. This must be done after the consensus
      * time is set for this event.
+     *
+     * @param transactionOffsetNanos nanoseconds to add to the event consensus timestamp before the first user
+     *                           transaction, reserving space for preceding and system records
      */
-    public void setConsensusTimestampsOnTransactions() {
+    public void setConsensusTimestampsOnTransactions(final long transactionOffsetNanos) {
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
 
         for (int i = 0; i < metadata.getTransactions().size(); i++) {
-            metadata.getTransactions().get(i).setConsensusTimestamp(getTransactionTime(i));
+            metadata.getTransactions().get(i).setConsensusTimestamp(getTransactionTime(i, transactionOffsetNanos));
         }
     }
 
@@ -374,19 +419,21 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     }
 
     /**
-     * Returns the timestamp of the transaction with given index in this event
+     * Returns the timestamp of the transaction with given index in this event.
      *
-     * @param transactionIndex index of the transaction in this event
+     * @param transactionIndex   index of the transaction in this event
+     * @param transactionOffsetNanos nanoseconds to add to the event consensus timestamp before the first user
+     *                           transaction, reserving space for preceding and system records
      * @return timestamp of the given index transaction
      */
-    public @NonNull Instant getTransactionTime(final int transactionIndex) {
+    public @NonNull Instant getTransactionTime(final int transactionIndex, final long transactionOffsetNanos) {
         if (consensusTimestamp == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
         if (transactionIndex >= getTransactionCount()) {
             throw new IllegalArgumentException("Event does not have a transaction with index: " + transactionIndex);
         }
-        return consensusTimestamp.plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
+        return consensusTimestamp.plusNanos(transactionOffsetNanos + MIN_TRANS_TIMESTAMP_INCR_NANOS * transactionIndex);
     }
 
     /**

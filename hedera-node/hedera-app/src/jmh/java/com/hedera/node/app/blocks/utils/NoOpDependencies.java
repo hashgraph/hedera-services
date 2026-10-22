@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks.utils;
 
+import static com.hedera.node.app.blocks.BlockHashSigner.Request.SUCCINCT_SIGNATURE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
@@ -21,9 +24,7 @@ import com.hedera.node.config.data.*;
 import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.hedera.node.internal.network.PendingProof;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -32,6 +33,7 @@ import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.metrics.api.MetricType;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.context.PlatformContext;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,7 +71,12 @@ public final class NoOpDependencies {
         }
 
         @Override
-        public Attempt sign(@NonNull Bytes blockHash) {
+        public Attempt sign(@NonNull final Bytes blockHash, @NonNull final Request request) {
+            requireNonNull(blockHash);
+            requireNonNull(request);
+            if (request != SUCCINCT_SIGNATURE) {
+                throw new IllegalArgumentException("Realistic benchmark signer only supports succinct signatures");
+            }
             // Simulate production behavior: async SHA-384 hash computation
             // This matches TssBlockHashSigner when TSS is disabled (no hintsService)
             return new Attempt(
@@ -90,20 +97,6 @@ public final class NoOpDependencies {
         }
     }
 
-    /** No-op BlockHashSigner (deprecated - use createRealTssBlockHashSigner() for production realism) */
-    @Deprecated
-    public static class NoOpBlockHashSigner implements BlockHashSigner {
-        @Override
-        public boolean isReady() {
-            return true;
-        }
-
-        @Override
-        public Attempt sign(@NonNull Bytes blockHash) {
-            return new Attempt(null, null, CompletableFuture.completedFuture(Bytes.wrap(new byte[64])));
-        }
-    }
-
     /** No-op BlockItemWriter */
     public static class NoOpBlockItemWriter implements BlockItemWriter {
         @Override
@@ -120,6 +113,9 @@ public final class NoOpDependencies {
 
         @Override
         public void flushPendingBlock(@NonNull PendingProof pendingProof) {}
+
+        @Override
+        public void flushIncompleteBlock() {}
     }
 
     /** No-op StoreMetricsService - can be used with real BoundaryStateChangeListener */
@@ -150,11 +146,6 @@ public final class NoOpDependencies {
         @Override
         public @NonNull NodeId getSelfId() {
             throw new UnsupportedOperationException("NoOpPlatform.getSelfId() not implemented");
-        }
-
-        @Override
-        public @NonNull <T extends State> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String reason) {
-            throw new UnsupportedOperationException("NoOpPlatform.getLatestImmutableState() not implemented");
         }
 
         @Override
@@ -339,7 +330,8 @@ public final class NoOpDependencies {
                 .withValue("networkAdmin.diskNetworkExportFile", "/tmp/benchmark-network-export")
                 .withValue("version.hapiVersion", "0.56.0")
                 .withValue("staking.periodMins", "1440")
-                .withValue("blockRecordStream.numOfBlockHashesInState", "256");
+                .withValue("blockRecordStream.numOfBlockHashesInState", "256")
+                .withValue("blockStream.enhancedObservabilityEnabled", "false");
 
         return ConfigurationBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)

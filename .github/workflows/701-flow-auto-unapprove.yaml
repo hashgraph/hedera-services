@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: Apache-2.0
+name: "701: [FLOW] Auto Unapprove PR"
+on:
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-unapprove:
+    name: Auto Unapprove PR
+    runs-on: hl-cn-default-lin-sm
+    steps:
+      - name: Initialize Job
+        uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
+        with:
+          checkout: "true"
+          checkout-token: "${{ secrets.GITHUB_TOKEN }}"
+          setup-node: "true"
+          node-version: "24"
+
+      - name: Dismiss Reviews from Code Owners and Teams
+        uses: PandasWhoCode/auto-unapprove-plus@36bb632e2eae781a680849b99db7f477772ae1f3 # v1.1.0
+        with:
+          github-token: ${{ secrets.GH_AUTO_UNAPPROVE_TOKEN }}
+          team-token: ${{ secrets.TEAM_MEMBERS_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          dry-run: "false"
+          code-owners-file: ".codeowners"
+          target-branch: ${{ github.event.pull_request.base.ref }}
+          # "%" expands to "@<this repository's organization>/", matching the
+          # "%<team>" entries in .codeowners.
+          team-start-with: "%"

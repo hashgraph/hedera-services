@@ -7,9 +7,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.internal.WrappedRecordFileBlockHashes;
 import com.hedera.hapi.block.internal.WrappedRecordFileBlockHashesLog;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.metrics.BlockStreamMetrics;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -19,6 +22,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,6 +68,13 @@ public class WrappedRecordFileBlockHashesDiskWriter implements AutoCloseable {
         this.executor = Executors.newSingleThreadExecutor();
     }
 
+    private MessageDigest digestOrThrow() {
+        return CommonUtils.digestOrThrow(configProvider
+                .getConfiguration()
+                .getConfigData(BlockStreamConfig.class)
+                .digestType());
+    }
+
     /**
      * Enqueues an async task that computes and appends a single entry to the on-disk log file.
      * The task also updates min/max/gap metrics for the file after a successful append.
@@ -99,7 +110,7 @@ public class WrappedRecordFileBlockHashesDiskWriter implements AutoCloseable {
                         () -> {
                             final WrappedRecordFileBlockHashes entry;
                             try {
-                                entry = WrappedRecordFileBlockHashesCalculator.compute(input);
+                                entry = WrappedRecordFileBlockHashesCalculator.compute(input, this::digestOrThrow);
                             } catch (final Exception e) {
                                 logger.error(
                                         "Failed to compute wrapped record-file block hashes for block {}",
@@ -180,12 +191,13 @@ public class WrappedRecordFileBlockHashesDiskWriter implements AutoCloseable {
 
             // The file contents are an append-only sequence of occurrences of the `entries` field,
             // which is a valid protobuf encoding of the container message.
+            // parseStrict shorthand omitted: we also need to validate max length, requiring the multi-arg overload.
             final var log = WrappedRecordFileBlockHashesLog.PROTOBUF.parse(
                     com.hedera.pbj.runtime.io.buffer.Bytes.wrap(allBytes).toReadableSequentialData(),
+                    true,
                     false,
-                    false,
-                    512,
-                    allBytes.length);
+                    Codec.DEFAULT_MAX_DEPTH,
+                    allBytes.length + allBytes.length / 10);
             for (final var entry : log.entries()) {
                 index.add(entry.blockNumber());
             }

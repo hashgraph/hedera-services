@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.model.event.ConsensusEvent;
 import org.hiero.consensus.model.event.Event;
 import org.hiero.consensus.model.hashgraph.Round;
@@ -36,7 +37,7 @@ public class PlatformStateService implements OtterService {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static final String NAME = "PlatformStateService";
+    private static final String NAME = org.hiero.consensus.platformstate.PlatformStateService.NAME;
 
     private static final PlatformStateSpecification STATE_SPECIFICATION = new PlatformStateSpecification();
 
@@ -48,6 +49,7 @@ public class PlatformStateService implements OtterService {
             @NonNull final InitTrigger trigger,
             @NonNull final NodeId selfId,
             @NonNull final Configuration configuration,
+            @NonNull final FileSystemManager fileSystemManager,
             @NonNull final VirtualMapState state) {
         log.info(STARTUP.getMarker(), "PlatformStateService initialized");
     }

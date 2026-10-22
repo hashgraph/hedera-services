@@ -12,7 +12,7 @@ import static com.hedera.statevalidation.validator.Validator.ALL_GROUP;
 import static com.hedera.statevalidation.validator.ValidatorRegistry.createAndInitIndividualValidators;
 import static com.hedera.statevalidation.validator.ValidatorRegistry.createAndInitValidators;
 
-import com.hedera.statevalidation.report.SlackReportBuilder;
+import com.hedera.statevalidation.report.ErrorsFileReport;
 import com.hedera.statevalidation.util.StateUtils;
 import com.hedera.statevalidation.validator.Validator;
 import com.hedera.statevalidation.validator.listener.ValidationExecutionListener;
@@ -20,7 +20,7 @@ import com.hedera.statevalidation.validator.listener.ValidationListener;
 import com.hedera.statevalidation.validator.model.DiskDataItem.Type;
 import com.hedera.statevalidation.validator.pipeline.ValidationPipelineExecutor;
 import com.hedera.statevalidation.validator.util.ValidationException;
-import com.swirlds.merkledb.MerkleDbDataSource;
+import com.swirlds.merkledb.internal.MerkleDbDataSource;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
@@ -164,13 +164,7 @@ public class ValidateCommand implements Callable<Integer> {
 
             // Return result
             if (!pipelineSuccess || validationExecutionListener.isFailed()) {
-                // Generate Slack report for failures
-                final List<SlackReportBuilder.ValidationFailure> failures =
-                        validationExecutionListener.getFailedValidations().stream()
-                                .map(e ->
-                                        new SlackReportBuilder.ValidationFailure(e.getValidatorName(), e.getMessage()))
-                                .toList();
-                SlackReportBuilder.generateReport(failures);
+                ErrorsFileReport.writeErrorsToFile(validationExecutionListener.getFailedValidations());
 
                 // Log final results
                 if (!pipelineSuccess) {

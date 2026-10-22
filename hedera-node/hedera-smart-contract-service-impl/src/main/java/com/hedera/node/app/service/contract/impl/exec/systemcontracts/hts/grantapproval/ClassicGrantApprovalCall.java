@@ -6,6 +6,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static java.util.Objects.requireNonNullElse;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
@@ -20,8 +21,8 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuild
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Log;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.log.Log;
 
 /**
  * Implements the token redirect {@code approve()} call of the HTS system contract
@@ -63,7 +64,8 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
         if (tokenId == null) {
             return reversionWith(INVALID_TOKEN_ID, gasCalculator.canonicalGasRequirement(DispatchType.APPROVE));
         }
-        final var body = synthApprovalBody();
+        final var nftOwnerId = tokenType == TokenType.NON_FUNGIBLE_UNIQUE ? getMaybeOwnerId() : null;
+        final var body = synthApprovalBody(nftOwnerId);
         final var recordBuilder = systemContractOperations()
                 .dispatch(body, verificationStrategy, senderId, ContractCallStreamBuilder.class);
         final var status = recordBuilder.status();
@@ -75,7 +77,8 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             if (tokenType.equals(TokenType.FUNGIBLE_COMMON)) {
                 frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
             } else {
-                frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
+                // The owner of the NFT may differ from the sender when the sender is an approved-for-all operator
+                frame.addLog(getLogForNftAdjustAllowance(tokenAddress, requireNonNullElse(nftOwnerId, senderId)));
             }
             final var encodedOutput = tokenType.equals(TokenType.FUNGIBLE_COMMON)
                     ? GrantApprovalTranslator.GRANT_APPROVAL.getOutputs().encode(Tuple.of(status.protoOrdinal(), true))
@@ -96,11 +99,11 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
                 .build();
     }
 
-    private Log getLogForNftAdjustAllowance(@NonNull final Address logger) {
+    private Log getLogForNftAdjustAllowance(@NonNull final Address logger, @NonNull final AccountID ownerId) {
         return LogBuilder.logBuilder()
                 .forLogger(logger)
                 .forEventSignature(APPROVAL_EVENT)
-                .forIndexedArgument(asLongZeroAddress(senderId.accountNumOrThrow()))
+                .forIndexedArgument(asLongZeroAddress(ownerId.accountNumOrThrow()))
                 .forIndexedArgument(asLongZeroAddress(spenderId.accountNumOrThrow()))
                 .forIndexedArgument(amount)
                 .build();

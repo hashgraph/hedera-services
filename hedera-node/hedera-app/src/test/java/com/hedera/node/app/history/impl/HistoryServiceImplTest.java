@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.history.impl;
 
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.roster.impl.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.service.roster.impl.ActiveRosters.Phase.HANDOFF;
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -21,20 +23,34 @@ import com.hedera.hapi.node.state.history.ChainOfTrustProof;
 import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.hapi.node.state.history.ProofKeySet;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
+import com.hedera.node.app.history.schemas.V071HistorySchema;
+import com.hedera.node.app.history.schemas.V0730HistorySchema;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeTssMetadata;
+import com.hedera.node.internal.network.TssMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import java.util.concurrent.ForkJoinPool;
-import org.hiero.consensus.metrics.noop.NoOpMetrics;
+import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -68,6 +84,24 @@ class HistoryServiceImplTest {
 
     @Mock
     private WritableHistoryStore store;
+
+    @Mock
+    private WritableStates writableStates;
+
+    @Mock
+    private WritableSingletonState<ProtoBytes> ledgerIdState;
+
+    @Mock
+    private WritableSingletonState<HistoryProofConstruction> activeConstructionState;
+
+    @Mock
+    private WritableSingletonState<HistoryProofConstruction> nextConstructionState;
+
+    @Mock
+    private WritableSingletonState<ProtoBytes> wrapsProvingKeyHashState;
+
+    @Mock
+    private WritableKVState<NodeId, ProofKeySet> proofKeys;
 
     private HistoryServiceImpl subject;
 
@@ -114,22 +148,39 @@ class HistoryServiceImplTest {
     }
 
     @Test
+    void stopsControllersWorkWhenAsked() {
+        withMockSubject();
+        given(component.controllers()).willReturn(controllers);
+
+        subject.stop();
+
+        verify(controllers).stop();
+    }
+
+    @Test
     void handoffIsNoop() {
         withMockSubject();
         given(activeRosters.phase()).willReturn(HANDOFF);
-        subject.reconcile(activeRosters, Bytes.EMPTY, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, null);
+        subject.reconcile(activeRosters, Bytes.EMPTY, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, null, false);
     }
 
     @Test
     void noopReconciliationIfBootstrapHasProof() {
         withMockSubject();
         given(activeRosters.phase()).willReturn(BOOTSTRAP);
-        given(store.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, DEFAULT_TSS_CONFIG))
+        // isCompleted() requires an uncompressed WRAPS proof when tss.wrapsEnabled=true (new default),
+        // so supply a wraps-extensible proof to keep the test asserting what it's meant to:
+        // that reconcile is a no-op once a proof is complete.
+        final var wrapsExtensibleProof = HistoryProof.newBuilder()
+                .uncompressedWrapsProof(Bytes.wrap("uncompressed"))
+                .chainOfTrustProof(ChainOfTrustProof.DEFAULT)
+                .build();
+        given(store.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, false))
                 .willReturn(HistoryProofConstruction.newBuilder()
-                        .targetProof(HistoryProof.DEFAULT)
+                        .targetProof(wrapsExtensibleProof)
                         .build());
 
-        subject.reconcile(activeRosters, null, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, null);
+        subject.reconcile(activeRosters, null, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, null, false);
 
         verifyNoMoreInteractions(component);
     }
@@ -138,7 +189,7 @@ class HistoryServiceImplTest {
     void activeReconciliationIfTransitionHasNoProofYet() {
         withMockSubject();
         given(activeRosters.phase()).willReturn(TRANSITION);
-        given(store.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, DEFAULT_TSS_CONFIG))
+        given(store.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, false))
                 .willReturn(HistoryProofConstruction.DEFAULT);
         given(store.getActiveConstruction()).willReturn(HistoryProofConstruction.DEFAULT);
         given(component.controllers()).willReturn(controllers);
@@ -152,7 +203,14 @@ class HistoryServiceImplTest {
                 .willReturn(controller);
 
         subject.reconcile(
-                activeRosters, CURRENT_VK, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, HintsConstruction.DEFAULT);
+                activeRosters,
+                CURRENT_VK,
+                store,
+                CONSENSUS_NOW,
+                DEFAULT_TSS_CONFIG,
+                true,
+                HintsConstruction.DEFAULT,
+                false);
 
         verify(controller).advanceConstruction(CONSENSUS_NOW, CURRENT_VK, store, true, DEFAULT_TSS_CONFIG);
     }
@@ -163,7 +221,7 @@ class HistoryServiceImplTest {
         given(activeRosters.phase()).willReturn(HANDOFF);
 
         subject.reconcile(
-                activeRosters, null, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, HintsConstruction.DEFAULT);
+                activeRosters, null, store, CONSENSUS_NOW, DEFAULT_TSS_CONFIG, true, HintsConstruction.DEFAULT, false);
 
         verify(store, never()).getConstructionFor(activeRosters);
     }
@@ -175,6 +233,115 @@ class HistoryServiceImplTest {
         given(component.library()).willReturn(library);
         given(library.wrapsVerificationKey()).willReturn(mockKey);
         assertEquals(Bytes.wrap(mockKey), subject.historyProofVerificationKey());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"DEV", "TEST", "PROD"})
+    void respectsProfileWhenInitializingGenesisFromStartupNetworkTssMetadata(final String profile) {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("hedera.profiles.active", profile)
+                .getOrCreateConfig();
+        final var ledgerId = Bytes.wrap("LEDGER");
+        final var wrapsProvingKeyHash = Bytes.wrap("HASH");
+        final var proofKey = Bytes.wrap("startup-proof-key");
+        final var targetProof = HistoryProof.newBuilder()
+                .targetHistory(History.newBuilder().metadata(CURRENT_VK))
+                .chainOfTrustProof(ChainOfTrustProof.DEFAULT)
+                .build();
+        final var activeConstruction = HistoryProofConstruction.newBuilder()
+                .constructionId(123L)
+                .targetProof(targetProof)
+                .build();
+        final var network = Network.newBuilder()
+                .ledgerId(ledgerId)
+                .tssMetadata(TssMetadata.newBuilder()
+                        .activeProofConstruction(activeConstruction)
+                        .wrapsProvingKeyHash(wrapsProvingKeyHash))
+                .nodeTssMetadata(
+                        NodeTssMetadata.newBuilder().schnorrPublicKey(proofKey).build())
+                .build();
+        subject = new HistoryServiceImpl(component, () -> network);
+        given(writableStates.<ProtoBytes>getSingleton(V071HistorySchema.LEDGER_ID_STATE_ID))
+                .willReturn(ledgerIdState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(
+                        V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(activeConstructionState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(V071HistorySchema.NEXT_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(nextConstructionState);
+        given(writableStates.<ProtoBytes>getSingleton(V0730HistorySchema.WRAPS_PROVING_KEY_HASH_STATE_ID))
+                .willReturn(wrapsProvingKeyHashState);
+        if (!profile.equals("PROD")) {
+            given(writableStates.<NodeId, ProofKeySet>get(V071HistorySchema.PROOF_KEY_SETS_STATE_ID))
+                    .willReturn(proofKeys);
+        }
+
+        assertTrue(subject.doGenesisSetup(writableStates, config));
+
+        verify(nextConstructionState).put(HistoryProofConstruction.DEFAULT);
+        if (profile.equals("PROD")) {
+            verify(ledgerIdState).put(ProtoBytes.DEFAULT);
+            verify(activeConstructionState).put(HistoryProofConstruction.DEFAULT);
+            verify(wrapsProvingKeyHashState)
+                    .put(new ProtoBytes(
+                            Bytes.fromHex(config.getConfigData(TssConfig.class).wrapsProvingKeyHash())));
+            verify(writableStates, never()).get(V071HistorySchema.PROOF_KEY_SETS_STATE_ID);
+            verifyNoInteractions(proofKeys);
+            assertFalse(subject.isReady());
+        } else {
+            verify(ledgerIdState).put(new ProtoBytes(ledgerId));
+            verify(activeConstructionState).put(activeConstruction);
+            verify(wrapsProvingKeyHashState).put(new ProtoBytes(wrapsProvingKeyHash));
+            verify(proofKeys)
+                    .put(
+                            new NodeId(0L),
+                            ProofKeySet.newBuilder()
+                                    .adoptionTime(asTimestamp(Instant.EPOCH))
+                                    .key(proofKey)
+                                    .build());
+            assertTrue(subject.isReady());
+            assertEquals(ChainOfTrustProof.DEFAULT, subject.getCurrentChainOfTrustProof(CURRENT_VK));
+        }
+    }
+
+    @Test
+    void doesGenesisSetupWithBlankWrapsProvingKeyHash() {
+        subject = new HistoryServiceImpl(component, () -> null);
+        given(writableStates.<ProtoBytes>getSingleton(V071HistorySchema.LEDGER_ID_STATE_ID))
+                .willReturn(ledgerIdState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(
+                        V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(activeConstructionState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(V071HistorySchema.NEXT_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(nextConstructionState);
+        given(writableStates.<ProtoBytes>getSingleton(V0730HistorySchema.WRAPS_PROVING_KEY_HASH_STATE_ID))
+                .willReturn(wrapsProvingKeyHashState);
+        final var blankHashConfig = HederaTestConfigBuilder.create()
+                .withConfigDataType(TssConfig.class)
+                .withValue("tss.wrapsProvingKeyHash", "")
+                .getOrCreateConfig();
+
+        assertTrue(subject.doGenesisSetup(writableStates, blankHashConfig));
+
+        verify(wrapsProvingKeyHashState).put(ProtoBytes.DEFAULT);
+    }
+
+    @Test
+    void doesGenesisSetupWithNonBlankWrapsProvingKeyHash() {
+        subject = new HistoryServiceImpl(component, () -> null);
+        given(writableStates.<ProtoBytes>getSingleton(V071HistorySchema.LEDGER_ID_STATE_ID))
+                .willReturn(ledgerIdState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(
+                        V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(activeConstructionState);
+        given(writableStates.<HistoryProofConstruction>getSingleton(V071HistorySchema.NEXT_PROOF_CONSTRUCTION_STATE_ID))
+                .willReturn(nextConstructionState);
+        given(writableStates.<ProtoBytes>getSingleton(V0730HistorySchema.WRAPS_PROVING_KEY_HASH_STATE_ID))
+                .willReturn(wrapsProvingKeyHashState);
+
+        assertTrue(subject.doGenesisSetup(writableStates, DEFAULT_CONFIG));
+
+        final var expectedHash = DEFAULT_CONFIG.getConfigData(TssConfig.class).wrapsProvingKeyHash();
+        verify(wrapsProvingKeyHashState).put(new ProtoBytes(Bytes.fromHex(expectedHash)));
     }
 
     private void withLiveSubject() {

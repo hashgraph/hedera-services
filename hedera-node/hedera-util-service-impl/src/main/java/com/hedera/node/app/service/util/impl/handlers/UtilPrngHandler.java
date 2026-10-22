@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.util.impl.handlers;
 
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.node.app.service.util.impl.records.PrngStreamBuilder;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
@@ -32,7 +32,8 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class UtilPrngHandler implements TransactionHandler {
     private static final Logger log = LogManager.getLogger(UtilPrngHandler.class);
-    private static final Bytes MISSING_N_MINUS_3_RUNNING_HASH = Bytes.wrap(new byte[48]);
+    /** Record stream running hashes are always SHA-384. */
+    private static final int RECORD_RUNNING_HASH_LENGTH = 48;
 
     @Inject
     public UtilPrngHandler() {
@@ -59,23 +60,6 @@ public class UtilPrngHandler implements TransactionHandler {
      * {@inheritDoc}
      */
     @Override
-    @NonNull
-    public Fees calculateFees(@NonNull FeeContext feeContext) {
-        // Determine the fees. If the range is specified (i.e. it isn't 0), then we charge for an additional 4 bytes
-        // (one integer), otherwise we don't charge for any additional bytes. Standard transaction usage has already
-        // been determined and loaded into the calculator.
-        final var range = feeContext.body().utilPrngOrThrow().range();
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
-                .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
-                .calculate();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void handle(@NonNull final HandleContext context) {
         final var op = context.body().utilPrngOrThrow();
         final var range = op.range();
@@ -87,8 +71,8 @@ public class UtilPrngHandler implements TransactionHandler {
         // just return whatever it is we are given. If we *do* happen to get back null, treat as empty zeros.
         var pseudoRandomBytes = context.blockRecordInfo().prngSeed();
         if (pseudoRandomBytes == null || pseudoRandomBytes.length() == 0) {
-            log.info("No n-3 record running hash available. Will use all zeros.");
-            pseudoRandomBytes = MISSING_N_MINUS_3_RUNNING_HASH;
+            log.info("No n-3 running hash available. Will use all zeros.");
+            pseudoRandomBytes = Bytes.wrap(new byte[runningHashLength(context)]);
         }
 
         // If `range` is provided then generate a random number in the given range from the pseudoRandomBytes,
@@ -100,6 +84,12 @@ public class UtilPrngHandler implements TransactionHandler {
         } else {
             recordBuilder.entropyBytes(pseudoRandomBytes);
         }
+    }
+
+    // The seed is the n-3 running hash of the stream being written, so the zeros take that hash's length
+    private static int runningHashLength(@NonNull final HandleContext context) {
+        final var config = context.configuration().getConfigData(BlockStreamConfig.class);
+        return config.streamMode() == BLOCKS ? config.digestType().digestLength() : RECORD_RUNNING_HASH_LENGTH;
     }
 
     /**

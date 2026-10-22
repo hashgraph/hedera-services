@@ -2,6 +2,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.FILE_SYSTEM_MANAGER;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
@@ -21,6 +22,7 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.tss.DualBlockHashSigner;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,6 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.constructable.ConstructableRegistry;
+import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.metrics.config.MetricsConfig;
 import org.hiero.consensus.metrics.platform.DefaultPlatformMetrics;
@@ -68,12 +71,14 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected static final NodeId MISSING_NODE_ID = NodeId.of(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 130;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
-    protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(new byte[48]);
+    protected static final Hash FAKE_START_OF_STATE_HASH = new Hash(Cryptography.DEFAULT_DIGEST_TYPE);
     protected static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
     protected static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
             new PlatformStatusChangeNotification(ACTIVE);
     protected static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
             new PlatformStatusChangeNotification(FREEZE_COMPLETE);
+    // 100 reserved system txn nanos + 3 max preceding records + 1
+    protected static final int TXN_OFFSET_NANOS = 104;
 
     protected final Map<AccountID, NodeId> nodeIds;
     protected final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
@@ -84,6 +89,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Metrics metrics;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    // Held so stop() can unregister it; otherwise the hook pins this instance for the life of the JVM
+    private final Thread shutdownHook = new Thread(executorService::shutdownNow);
 
     /**
      * A trigger for the Hedera platform to use when initializing the state.
@@ -114,8 +121,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected FakeHistoryService historyService;
     /**
      * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
-     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
-     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
+     * lambda we give the {@link Hedera} constructor will always set this.
      */
     protected LapsingBlockHashSigner blockHashSigner;
 
@@ -144,7 +150,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 metricsConfig);
         state = new FakeState();
         rebuildHedera();
-        Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
     @Override
@@ -157,16 +163,19 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     @Override
     public void start() {
+        hedera.setTxnOffsetNanos(TXN_OFFSET_NANOS);
         hedera.initializeStatesApi(state, trigger, ServicesMain.buildPlatformConfig());
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), trigger, version);
-        fakePlatform().start();
         fakePlatform().notifyListeners(ACTIVE_NOTIFICATION);
         hedera.newPlatformStatus(ACTIVE_NOTIFICATION.getNewStatus());
         if (trigger == GENESIS) {
             // Trigger creation of system entities
             handleRoundWith(mockStateSignatureTxn());
         }
+        // Start the platform only after the genesis round, since a transaction submitted during it (e.g., a CLPR
+        // endpoint publication) would otherwise be handled in a round concurrent with it
+        fakePlatform().start();
     }
 
     @Override
@@ -184,6 +193,11 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         fakePlatform().notifyListeners(FREEZE_COMPLETE_NOTIFICATION);
         hedera.newPlatformStatus(FREEZE_COMPLETE_NOTIFICATION.getNewStatus());
         executorService.shutdownNow();
+        try {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        } catch (final IllegalStateException ignore) {
+            // The JVM is already shutting down
+        }
     }
 
     @Override
@@ -225,6 +239,14 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
         }
+        return parseQueryResponse(responseBuffer);
+    }
+
+    @Override
+    public Response sendQueryRaw(@NonNull final byte[] serializedQuery) {
+        requireNonNull(serializedQuery);
+        final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
+        hedera.queryWorkflow().handleQuery(Bytes.wrap(serializedQuery), responseBuffer);
         return parseQueryResponse(responseBuffer);
     }
 
@@ -279,12 +301,17 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
+                defaultNodeId,
                 DiskStartupNetworks::new,
-                (appContext, bootstrapConfig) -> this.hintsService = new FakeHintsService(appContext, bootstrapConfig),
-                (appContext, bootstrapConfig) -> this.historyService = new FakeHistoryService(appContext),
-                (hints, history, configProvider) ->
-                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider),
+                (appContext, bootstrapConfig, rsaContext, rsaSignings, genesisNetworkSupplier) ->
+                        this.hintsService = new FakeHintsService(
+                                appContext, bootstrapConfig, rsaContext, rsaSignings, genesisNetworkSupplier),
+                (appContext, bootstrapConfig, genesisNetworkSupplier) ->
+                        this.historyService = new FakeHistoryService(appContext, genesisNetworkSupplier),
+                (rsaContext, rsaSignings, submissions, delegate) -> this.blockHashSigner = new LapsingBlockHashSigner(
+                        new DualBlockHashSigner(rsaContext, rsaSignings, submissions, delegate)),
                 PLATFORM_CONFIG,
+                FILE_SYSTEM_MANAGER,
                 metrics,
                 new FakeTime());
         version = hedera.getSemanticVersion();
