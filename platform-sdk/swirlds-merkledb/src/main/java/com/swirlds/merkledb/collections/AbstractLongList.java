@@ -88,9 +88,6 @@ public abstract class AbstractLongList<C> implements LongList {
     /** The number for bytes to read for file header, v3 */
     protected static final int FILE_HEADER_SIZE_V3 = VERSION_METADATA_SIZE + FORMAT_METADATA_SIZE_V3;
 
-    /// Shared immutable bytes for missing chunks; each writer uses its own buffer view.
-    private static final ByteBuffer ZERO_BUFFER = ByteBuffer.allocate(64 * 1024).asReadOnlyBuffer();
-
     /**
      * The number of longs to store in each allocated buffer. Must be a positive integer. If the
      * value is small, then we will end up allocating a very large number of buffers. If the value
@@ -504,10 +501,13 @@ public abstract class AbstractLongList<C> implements LongList {
                 sizedFile.setLength(fileLength);
             }
             if (longsToWrite > 0) {
+                // Share zero-filled bytes across writers; each write uses its own buffer view.
+                final ByteBuffer zeroBuffer =
+                        ByteBuffer.allocate(memoryChunkSize).asReadOnlyBuffer();
                 if (threadCount == 1) {
-                    writeLongsData(fc, firstIndex, endIndex, FILE_HEADER_SIZE_V3);
+                    writeLongsData(fc, zeroBuffer, firstIndex, endIndex, FILE_HEADER_SIZE_V3);
                 } else {
-                    writeLongsDataInParallel(fc, executor, threadCount, firstIndex, endIndex);
+                    writeLongsDataInParallel(fc, zeroBuffer, executor, threadCount, firstIndex, endIndex);
                 }
             }
         }
@@ -516,6 +516,7 @@ public abstract class AbstractLongList<C> implements LongList {
     /// Writes contiguous chunk ranges in parallel and waits for all submitted tasks to finish.
     ///
     /// @param fc target file channel
+    /// @param zeroBuffer read-only zero-filled chunk shared by the writers
     /// @param executor executor for the writer tasks
     /// @param threadCount maximum number of writer tasks
     /// @param firstIndex first valid list index, inclusive
@@ -523,6 +524,7 @@ public abstract class AbstractLongList<C> implements LongList {
     /// @throws IOException if a range cannot be written
     private void writeLongsDataInParallel(
             final FileChannel fc,
+            final ByteBuffer zeroBuffer,
             final Executor executor,
             final int threadCount,
             final long firstIndex,
@@ -560,7 +562,7 @@ public abstract class AbstractLongList<C> implements LongList {
                 tasks.add(CompletableFuture.runAsync(
                         () -> {
                             try {
-                                writeLongsData(fc, rangeStartIndex, rangeEndIndex, fileOffset);
+                                writeLongsData(fc, zeroBuffer, rangeStartIndex, rangeEndIndex, fileOffset);
                             } catch (final IOException e) {
                                 throw new UncheckedIOException(e);
                             }
@@ -598,11 +600,17 @@ public abstract class AbstractLongList<C> implements LongList {
     /// Writes the specified index range, clipping edge chunks and filling missing chunks with zeroes.
     ///
     /// @param fc target file channel
+    /// @param zeroBuffer read-only zero-filled chunk shared by the writers
     /// @param startIndex first list index to write, inclusive
     /// @param endIndex last list index to write, exclusive
     /// @param fileOffset target offset for `startIndex`
     /// @throws IOException if the range cannot be written
-    private void writeLongsData(final FileChannel fc, final long startIndex, final long endIndex, long fileOffset)
+    private void writeLongsData(
+            final FileChannel fc,
+            final ByteBuffer zeroBuffer,
+            final long startIndex,
+            final long endIndex,
+            long fileOffset)
             throws IOException {
         final int firstChunkIndex = toIntExact(startIndex / longsPerChunk);
         final int lastChunkIndex = toIntExact((endIndex - 1) / longsPerChunk);
@@ -613,7 +621,7 @@ public abstract class AbstractLongList<C> implements LongList {
             final int bytesToWrite = (endInChunk - startInChunk) * Long.BYTES;
             final C chunk = chunkList.get(chunkIndex);
             if (chunk == null) {
-                writeZeroes(fc, bytesToWrite, fileOffset);
+                writeZeroes(fc, zeroBuffer, bytesToWrite, fileOffset);
             } else {
                 writeChunkData(fc, chunk, startInChunk, endInChunk, fileOffset);
             }
@@ -621,15 +629,13 @@ public abstract class AbstractLongList<C> implements LongList {
         }
     }
 
-    /// Writes exactly the missing part of a chunk without allocating a chunk-sized zero buffer.
-    private static void writeZeroes(final FileChannel channel, int byteCount, long fileOffset) throws IOException {
-        final ByteBuffer zeroes = ZERO_BUFFER.duplicate();
-        while (byteCount > 0) {
-            zeroes.clear().limit(min(byteCount, zeroes.capacity()));
-            final int written = MerkleDbFileUtils.completelyWrite(channel, zeroes, fileOffset);
-            fileOffset += written;
-            byteCount -= written;
-        }
+    /// Writes the missing part of a chunk using an independent view of the shared zero buffer.
+    private static void writeZeroes(
+            final FileChannel channel, final ByteBuffer zeroBuffer, final int byteCount, final long fileOffset)
+            throws IOException {
+        final ByteBuffer zeroes = zeroBuffer.duplicate();
+        zeroes.limit(byteCount);
+        MerkleDbFileUtils.completelyWrite(channel, zeroes, fileOffset);
     }
 
     /**

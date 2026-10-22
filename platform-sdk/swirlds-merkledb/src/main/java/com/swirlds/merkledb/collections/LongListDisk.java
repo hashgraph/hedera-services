@@ -398,15 +398,6 @@ public class LongListDisk extends AbstractLongList<Long> {
         }
     }
 
-    /**
-     * Calculate the offset in the chunk for the given index.
-     * @param index the index to use
-     * @return the offset in the chunk for the given index
-     */
-    private long calculateOffsetInChunk(long index) {
-        return (index % longsPerChunk) * Long.BYTES;
-    }
-
     /// {@inheritDoc}
     @Override
     protected void writeChunkData(
