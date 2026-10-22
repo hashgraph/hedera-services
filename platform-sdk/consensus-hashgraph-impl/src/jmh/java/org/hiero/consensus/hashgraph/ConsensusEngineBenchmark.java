@@ -71,6 +71,19 @@ import org.openjdk.jmh.infra.Blackhole;
  * discarded passes.
  *
  * <p>Run with {@code -prof org.hiero.consensus.benchmark.tools.histogram.LatencyProfiler}.
+ *
+ * <h2>Calibration</h2>
+ * <ul>
+ *   <li>Date / commit: 2026-10-22, dc745a5d0a</li>
+ *   <li>Machine: hl-cn-benchmark-lin, AS-2115GT-HNTR, AMD EPYC 9254 24-Core Processor, JDK 25.0.2, -XX:ActiveProcessorCount=12 -Xms2g -Xmx2g -XX:+AlwaysPreTouch</li>
+ *   <li>Parameter sets: numNodes=4 / numNodes=10</li>
+ *   <li>Steady state after: 5 s / 5 s</li>
+ *   <li>Noise (latency.mean, CV): 0.22% / 0.17% per 5 s iteration, 0.39% / 0.27% between forks, 0.00% / 0.03% between runs (3 of 3 / 3 of 3 runs quiet)</li>
+ *   <li>Expected detectable regression: 0.35% / 0.26% (95 % CI half-width of one run)</li>
+ *   <li>Samples per iteration: 2.4 M / 1.5 M; expected stable: mean, p50, p90, p99, p99.9, p99.99 / mean, p50, p90, p99, p99.9, p99.99</li>
+ *   <li>Runtime: 4.0 / 4.2 min per parameter set</li>
+ *   <li>Raw data: https://github.com/hiero-ledger/hiero-consensus-node/actions/runs/39554184858, https://github.com/hiero-ledger/hiero-consensus-node/actions/runs/39554193381, https://github.com/hiero-ledger/hiero-consensus-node/actions/runs/39554201377</li>
+ * </ul>
  */
 @State(Scope.Thread)
 @Fork(
