@@ -49,7 +49,7 @@ class InFlightEventsTest {
 
         final BiPredicate<NodeId, NodeId> connected =
                 (sender, receiver) -> !downConnections.contains(Map.entry(sender, receiver));
-        inFlightEvents = new InFlightEvents(connected, nodeId -> eventWindow);
+        inFlightEvents = new InFlightEvents(connected, nodeId -> eventWindow, START);
 
         inFlightEvents.addNode(NODE_0);
         inFlightEvents.addNode(NODE_1);

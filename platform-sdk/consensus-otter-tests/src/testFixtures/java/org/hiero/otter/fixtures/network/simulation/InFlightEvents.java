@@ -3,10 +3,9 @@ package org.hiero.otter.fixtures.network.simulation;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.hiero.consensus.model.hashgraph.EventWindow;
@@ -39,31 +38,27 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
 
     /**
      * The connections into the receiver currently being delivered to whose next event has arrived, ordered by the
-     * arrival time of that event and then by the node that sent it. It is only used during
-     * {@link #deliverArrived(Instant, EventReceiver)} and is empty between calls.
+     * arrival time of that event and then by the node that sent it.
      *
-     * <p>This could be a local variable of {@link #deliverArrived(Instant, EventReceiver)}. It is an instance field
-     * only to avoid allocating a new heap on every call, which happens once per receiver per tick.
-     *
-     * <p>The order is read from the head of each connection's queue, so a connection's queue must not change while
-     * the connection is in the heap. A connection is therefore taken out before its head is removed, and put back
-     * afterwards if its new head has arrived too.
+     * <p>It is only used during {@link #deliverArrived(Instant, EventReceiver)} and is empty between calls. It could
+     * be a local variable of that method, and is an instance field only to avoid allocating a new heap on every call,
+     * which happens once per receiver per tick.
      */
-    private final PriorityQueue<InFlightQueue<EventInTransit>> connectionsByEarliestEvent =
-            new PriorityQueue<>(Comparator.<InFlightQueue<EventInTransit>, Instant>comparing(
-                            connection -> connection.peek().arrivalTime())
-                    .thenComparing(connection -> connection.peek().sender()));
+    private final ConnectionHeap<EventInTransit> connectionsByEarliestEvent = new ConnectionHeap<>();
 
     /**
      * Constructor.
      *
      * @param connected    reports whether the connection from a sender to a receiver is currently up
      * @param eventWindows gives the current event window of a node
+     * @param start        the instant arrival times are measured from, which should be close to the start of the
+     *                     simulation
      */
     public InFlightEvents(
             @NonNull final BiPredicate<NodeId, NodeId> connected,
-            @NonNull final Function<NodeId, EventWindow> eventWindows) {
-        super(connected);
+            @NonNull final Function<NodeId, EventWindow> eventWindows,
+            @NonNull final Instant start) {
+        super(connected, start);
         this.eventWindows = Objects.requireNonNull(eventWindows);
     }
 
@@ -89,19 +84,23 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
     @Override
     void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
+        final long nowNanos = nanosSinceStart(now);
+
         // empty after every call that returns normally; cleared in case a previous call ended with an exception
         connectionsByEarliestEvent.clear();
-        for (final Map.Entry<NodeId, InFlightQueue<EventInTransit>> entry :
-                incomingConnections(receiverId).entrySet()) {
-            final InFlightQueue<EventInTransit> connection = entry.getValue();
-            if (hasArrived(connection, now) && isUp(entry.getKey(), receiverId)) {
-                connectionsByEarliestEvent.add(connection);
+        final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections = incomingConnections(receiverId);
+        final List<NodeId> sortedNodeIds = sortedNodeIds();
+        for (int rank = 0; rank < sortedNodeIds.size(); rank++) {
+            final NodeId sender = sortedNodeIds.get(rank);
+            final InFlightQueue<EventInTransit> connection = incomingConnections.get(sender);
+            // there is no connection from the receiver to itself
+            if (connection != null && connection.hasArrived(nowNanos) && isUp(sender, receiverId)) {
+                connectionsByEarliestEvent.add(connection, rank);
             }
         }
 
-        InFlightQueue<EventInTransit> earliestConnection;
-        while ((earliestConnection = connectionsByEarliestEvent.poll()) != null) {
-            // the connection is out of the heap now, so its queue may change without corrupting the heap's order
+        while (!connectionsByEarliestEvent.isEmpty()) {
+            final InFlightQueue<EventInTransit> earliestConnection = connectionsByEarliestEvent.top();
             final EventInTransit head = earliestConnection.peek();
             if (eventWindows.apply(receiverId).isAncient(head.event())) {
                 // the event waited so long that the receiver would discard it, so it is not offered
@@ -111,24 +110,15 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
             } else {
                 // the receiver refused, so the event stays queued and the connection stays out of the heap until the
                 // next time this method is called
+                connectionsByEarliestEvent.removeTop();
                 continue;
             }
-            if (hasArrived(earliestConnection, now)) {
-                connectionsByEarliestEvent.add(earliestConnection);
+            if (earliestConnection.hasArrived(nowNanos)) {
+                // the connection's head is later than before, so it moves down to where it belongs now
+                connectionsByEarliestEvent.reorderTop();
+            } else {
+                connectionsByEarliestEvent.removeTop();
             }
         }
-    }
-
-    /**
-     * Reports whether the next event on a connection has arrived.
-     *
-     * @param connection the events in flight on one connection
-     * @param now        the current time
-     * @return {@code true} if the connection holds an event whose arrival time is not after {@code now}
-     */
-    private static boolean hasArrived(
-            @NonNull final InFlightQueue<EventInTransit> connection, @NonNull final Instant now) {
-        final EventInTransit head = connection.peek();
-        return head != null && !head.arrivalTime().isAfter(now);
     }
 }
