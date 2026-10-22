@@ -1199,13 +1199,15 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             try {
                 // Then flush the cache snapshot to the data source copy
                 flush(cacheSnapshot.getValue(), dataSourceCopy);
+                // flush() doesn't throw, if the thread is interrupted. The data source copy may be
+                // incomplete in this case, it must not be returned
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new IllegalStateException(
+                            "Interrupted while flushing the cache snapshot to the data source copy");
+                }
             } catch (final RuntimeException | Error e) {
                 // Don't leak the data source copy, if the flush failed
-                try {
-                    dataSourceCopy.close();
-                } catch (final IOException | RuntimeException closeException) {
-                    e.addSuppressed(closeException);
-                }
+                closeDataSourceCopy(dataSourceCopy, e);
                 throw e;
             }
             return dataSourceCopy;
@@ -1239,17 +1241,39 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             // Restore a data source into memory from the snapshot. It will use its own directory
             // to store data files
             final VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, false, false);
-            final int hashChunkHeight = dataSource.getHashChunkHeight();
-            return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot.getValue(), dataSourceCopy);
+            try {
+                final int hashChunkHeight = dataSource.getHashChunkHeight();
+                return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot.getValue(), dataSourceCopy);
+            } catch (final RuntimeException | Error e) {
+                // Don't leak the data source copy, if the record accessor can't be created
+                closeDataSourceCopy(dataSourceCopy, e);
+                throw e;
+            }
         } finally {
             deleteSnapshotDirectory(snapshotPath);
         }
     }
 
     /**
-     * Deletes a data source snapshot directory created in {@link #detach()} or
-     * {@link #detachAsDataSourceCopy()}. Failures are logged, but not thrown, as the data
-     * source copy built from the snapshot is still valid.
+     * Closes a data source copy, which can't be returned to the caller because of an error.
+     * Errors on close are added to the original error as suppressed.
+     *
+     * @param dataSourceCopy the data source copy to close
+     * @param cause the error that prevents the copy from being returned
+     */
+    private static void closeDataSourceCopy(
+            @NonNull final VirtualDataSource dataSourceCopy, @NonNull final Throwable cause) {
+        try {
+            dataSourceCopy.close();
+        } catch (final IOException | RuntimeException e) {
+            cause.addSuppressed(e);
+        }
+    }
+
+    /**
+     * Deletes a temporary data source snapshot directory, once a data source copy is built from
+     * it. Failures are logged, but not thrown. The data source copy is still valid, and the
+     * snapshot directory is in the temp directory, which is cleaned up on node restart.
      *
      * @param snapshotPath the snapshot directory to delete
      */
@@ -1430,11 +1454,17 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             dataSourceCopy = dataSourceBuilder.build(LABEL, snapshotPath, false, true);
             // Then flush the cache snapshot to the data source copy
             flush(cacheSnapshot.getValue(), dataSourceCopy);
+            // flush() doesn't throw, if the thread is interrupted. The data source copy may be
+            // incomplete in this case, it must not be snapshotted
+            if (Thread.currentThread().isInterrupted()) {
+                throw new IllegalStateException(
+                        "Interrupted while flushing the cache snapshot to the data source copy");
+            }
             // And finally snapshot the copy to the target dir
             dataSourceBuilder.snapshot(outputDirectory, dataSourceCopy);
         } finally {
             // Delete the snapshot directory
-            FileUtils.deleteDirectory(snapshotPath);
+            deleteSnapshotDirectory(snapshotPath);
             // And delete the data source copy directory
             if (dataSourceCopy != null) {
                 dataSourceCopy.close();

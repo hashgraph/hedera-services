@@ -32,6 +32,7 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import com.swirlds.virtualmap.datasource.VirtualHashChunk;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.VirtualMapStatistics;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -44,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -57,8 +59,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.exceptions.ReferenceCountException;
 import org.hiero.base.utility.test.fixtures.file.TestFileSystemManager;
@@ -71,6 +76,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings({"DataFlowIssue", "unchecked"})
@@ -1282,6 +1288,88 @@ class VirtualMapTests extends VirtualTestBase {
             assertDetachedDataSource(detached);
         } finally {
             detached.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Detached data source copy is closed and not returned when the flush is interrupted")
+    void detachedDataSourceCopyIsClosedWhenFlushIsInterrupted() {
+        assertDataSourceCopyIsClosedWhenFlushIsInterrupted(VirtualMap::detachAsDataSourceCopy);
+    }
+
+    @Test
+    @DisplayName("Snapshot is not created when the flush is interrupted")
+    void snapshotIsNotCreatedWhenFlushIsInterrupted() {
+        assertDataSourceCopyIsClosedWhenFlushIsInterrupted(map -> map.createSnapshot(testDirectory));
+    }
+
+    /**
+     * Runs the given operation with a data source builder that creates data source copies, which
+     * are interrupted on flush, like a file channel would be. The operation must fail, close the
+     * data source copy, preserve the interrupted flag, and not snapshot the data source copy.
+     *
+     * @param operation the operation to test, it builds a data source copy and flushes to it
+     */
+    private static void assertDataSourceCopyIsClosedWhenFlushIsInterrupted(
+            final ThrowingConsumer<VirtualMap> operation) {
+        final AtomicReference<InMemoryDataSource> dataSourceCopy = new AtomicReference<>();
+        final AtomicBoolean dataSourceCopySnapshotted = new AtomicBoolean(false);
+        final VirtualDataSourceBuilder builder = new InMemoryBuilder() {
+            @NonNull
+            @Override
+            public InMemoryDataSource build(
+                    final String label,
+                    @Nullable final Path sourceDir,
+                    final boolean compactionEnabled,
+                    final boolean offlineUse) {
+                final InMemoryDataSource dataSource = super.build(label, sourceDir, compactionEnabled, offlineUse);
+                if (sourceDir == null) {
+                    return dataSource;
+                }
+                final InMemoryDataSource copy = new InMemoryDataSource(dataSource) {
+                    @Override
+                    public void saveRecords(
+                            final long firstLeafPath,
+                            final long lastLeafPath,
+                            @NonNull final Stream<VirtualHashChunk> hashChunksToUpdate,
+                            @NonNull final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                            @NonNull final Stream<VirtualLeafBytes> leafRecordsToDelete,
+                            final boolean isReconnectContext)
+                            throws IOException {
+                        Thread.currentThread().interrupt();
+                        throw new ClosedByInterruptException();
+                    }
+                };
+                dataSourceCopy.set(copy);
+                return copy;
+            }
+
+            @NonNull
+            @Override
+            public Path snapshot(@Nullable final Path destinationDir, @NonNull final VirtualDataSource snapshotMe) {
+                if (snapshotMe == dataSourceCopy.get()) {
+                    dataSourceCopySnapshotted.set(true);
+                }
+                return super.snapshot(destinationDir, snapshotMe);
+            }
+        };
+
+        final VirtualMap map0 = new VirtualMap(builder, DEFAULT_CONFIGURATION);
+        map0.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        final VirtualMap map1 = map0.copy();
+        map0.getHash(); // forces copy to become hashed
+
+        try {
+            assertThrows(IllegalStateException.class, () -> operation.accept(map0));
+            assertTrue(Thread.interrupted(), "Interrupted flag should be preserved");
+            assertNotNull(dataSourceCopy.get(), "Data source copy should have been built");
+            assertTrue(dataSourceCopy.get().isClosed(), "Data source copy should be closed");
+            assertFalse(dataSourceCopySnapshotted.get(), "Data source copy should not be snapshotted");
+        } finally {
+            // Clear the interrupted flag, if the assertions above failed
+            Thread.interrupted();
+            map0.release();
+            map1.release();
         }
     }
 
