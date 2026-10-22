@@ -7,6 +7,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
+import static org.hiero.base.file.FileUtils.rethrowIO;
 
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -560,13 +561,8 @@ public abstract class AbstractLongList<C> implements LongList {
                 // The first valid list entry is stored immediately after the header.
                 final long fileOffset = FILE_HEADER_SIZE_V3 + (rangeStartIndex - firstIndex) * Long.BYTES;
                 tasks.add(CompletableFuture.runAsync(
-                        () -> {
-                            try {
-                                writeLongsData(fc, zeroBuffer, rangeStartIndex, rangeEndIndex, fileOffset);
-                            } catch (final IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        },
+                        () -> rethrowIO(
+                                () -> writeLongsData(fc, zeroBuffer, rangeStartIndex, rangeEndIndex, fileOffset)),
                         executor));
                 rangeFirstChunkInclusive = rangeLastChunkExclusive;
             }
