@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.swirlds.merkledb.collections;
 
+import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -37,9 +38,8 @@ import org.hiero.base.utility.MemoryUtils;
 @SuppressWarnings("unused")
 public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
-    /// A bounded direct transfer buffer reused by each snapshot worker.
-    private static final ThreadLocal<ByteBuffer> WRITE_BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> allocateDirect(1024 * 1024).order(ByteOrder.LITTLE_ENDIAN));
+    /// The current writer range's buffer, reused by its chunk writes and released when the range finishes.
+    private static final ThreadLocal<ByteBuffer> WRITE_BUFFER_THREAD_LOCAL = new ThreadLocal<>();
 
     /** A buffer for reading chunk data from the file only during the initialization. */
     private ByteBuffer initReadBuffer;
@@ -156,6 +156,26 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /// {@inheritDoc}
     @Override
+    protected void writeLongsData(
+            final FileChannel fc,
+            final ByteBuffer zeroBuffer,
+            final long startIndex,
+            final long endIndex,
+            final long fileOffset)
+            throws IOException {
+        final ByteBuffer tempBuffer = allocateDirect(MEBIBYTES_TO_BYTES);
+        try {
+            tempBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            WRITE_BUFFER_THREAD_LOCAL.set(tempBuffer);
+            super.writeLongsData(fc, zeroBuffer, startIndex, endIndex, fileOffset);
+        } finally {
+            WRITE_BUFFER_THREAD_LOCAL.remove();
+            MemoryUtils.closeDirectByteBuffer(tempBuffer);
+        }
+    }
+
+    /// {@inheritDoc}
+    @Override
     protected void writeChunkData(
             @NonNull final FileChannel fc,
             @NonNull final AtomicLongArray chunk,
@@ -167,13 +187,16 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
         tempBuffer.clear();
         final LongBuffer tempLongBuffer = tempBuffer.asLongBuffer();
         for (int i = startIndexInChunk; i < endIndexInChunk; i++) {
+            // If the buffer is full, write it before adding the next value.
             if (!tempLongBuffer.hasRemaining()) {
                 tempBuffer.clear();
                 fileOffset += MerkleDbFileUtils.completelyWrite(fc, tempBuffer, fileOffset);
                 tempLongBuffer.clear();
             }
+            // Add the next value to the buffer.
             tempLongBuffer.put(chunk.get(i));
         }
+        // Write any remaining values.
         if (tempLongBuffer.position() > 0) {
             tempBuffer.position(0);
             tempBuffer.limit(tempLongBuffer.position() * Long.BYTES);

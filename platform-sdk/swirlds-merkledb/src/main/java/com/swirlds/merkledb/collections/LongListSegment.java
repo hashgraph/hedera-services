@@ -295,6 +295,7 @@ public final class LongListSegment extends AbstractLongList<LongListSegment.Segm
             final int endIndexInChunk,
             final long fileOffset)
             throws IOException {
+        // Create a buffer view of only the requested values, without copying the chunk's bytes.
         final ByteBuffer buffer = chunk.segment()
                 .asSlice(
                         (long) startIndexInChunk * Long.BYTES,

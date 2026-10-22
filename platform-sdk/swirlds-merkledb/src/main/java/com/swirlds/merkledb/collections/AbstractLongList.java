@@ -605,7 +605,7 @@ public abstract class AbstractLongList<C> implements LongList {
     /// @param endIndex last list index to write, exclusive
     /// @param fileOffset target offset for `startIndex`
     /// @throws IOException if the range cannot be written
-    private void writeLongsData(
+    protected void writeLongsData(
             final FileChannel fc,
             final ByteBuffer zeroBuffer,
             final long startIndex,

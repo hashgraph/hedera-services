@@ -591,6 +591,7 @@ public final class LongListDiskSegment extends AbstractLongList<LongListDiskSegm
             final int endIndexInChunk,
             final long fileOffset)
             throws IOException {
+        // Create a buffer view of only the requested values, without copying the chunk's bytes.
         final ByteBuffer buffer = chunk.segment()
                 .asSlice(
                         (long) startIndexInChunk * Long.BYTES,

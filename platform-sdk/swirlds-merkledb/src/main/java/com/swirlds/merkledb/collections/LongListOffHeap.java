@@ -150,6 +150,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
             final int endIndexInChunk,
             final long fileOffset)
             throws IOException {
+        // Slice the requested range so writing does not change the chunk's position or limit.
         final ByteBuffer buffer =
                 chunk.slice(startIndexInChunk * Long.BYTES, (endIndexInChunk - startIndexInChunk) * Long.BYTES);
         MerkleDbFileUtils.completelyWrite(fc, buffer, fileOffset);
