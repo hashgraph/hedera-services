@@ -866,21 +866,29 @@ public class BlockNodeConnectionManager {
         of a block node. So, we need to check the cause of the saturation to know if we need to take action or not.
          */
 
-        if (latestSaturationInfo != null
-                && (latestSaturationInfo.unackedBlocksSaturation().isAtActionStage()
-                        || latestSaturationInfo.unackedBytesSaturation().isAtActionStage())) {
-            /*
-            The most recent saturation information indicates that we are currently at or above the action stage, and
-            thus we should take some sort of action (i.e. switch to a different block node). However, we only want to
-            take action if the saturation level is the same or increasing. If saturation is going down, we are likely
-            recovering, and therefore we don't want to switch connections.
-             */
+        if (latestSaturationInfo == null) {
+            return false;
+        }
+
+        /*
+        If the most recent saturation information indicates that we are currently at or above the action stage, it will
+        typically imply that we want to take some sort of action such as switching to a different block node. However,
+        we only want to take action if the saturation action is steady or growing. If the saturation is going down, it
+        likely means we are recovering, and therefore we don't want to take action such as switching block nodes.
+         */
+
+        if (latestSaturationInfo.unackedBlocksSaturation().isAtActionStage()) {
             if (previousSaturationInfo == null
                     || latestSaturationInfo.unackedBlocksSaturation().percentage()
-                            >= previousSaturationInfo.unackedBlocksSaturation().percentage()
+                            >= previousSaturationInfo.unackedBlocksSaturation().percentage()) {
+                return true;
+            }
+        }
+
+        if (latestSaturationInfo.unackedBytesSaturation().isAtActionStage()) {
+            if (previousSaturationInfo == null
                     || latestSaturationInfo.unackedBytesSaturation().percentage()
                             >= previousSaturationInfo.unackedBytesSaturation().percentage()) {
-                // saturation was remained steady or increased... signal that we should take action
                 return true;
             }
         }

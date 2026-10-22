@@ -19,7 +19,7 @@ public record BlockBufferSaturationInfo(
         @NonNull SaturationDetail unackedBlocksSaturation,
         @NonNull SaturationDetail unackedBytesSaturation,
         @NonNull SaturationDetail inProgressBlocksSaturation) {
-    public static BlockBufferSaturationInfo NIL = new BlockBufferSaturationInfo(
+    public static final BlockBufferSaturationInfo NIL = new BlockBufferSaturationInfo(
             Instant.MIN, SaturationDetail.NIL, SaturationDetail.NIL, SaturationDetail.NIL);
 
     public BlockBufferSaturationInfo {
@@ -55,10 +55,10 @@ public record BlockBufferSaturationInfo(
      * @param maxAllowed the current maximum allowed for this facet
      */
     public record SaturationDetail(double percentage, boolean isAtActionStage, long current, long maxAllowed) {
-        public static SaturationDetail NIL = new SaturationDetail(0.0D, false, -1L, -1L);
+        public static final SaturationDetail NIL = new SaturationDetail(0.0D, false, -1L, -1L);
 
         public boolean isSaturated() {
-            return current >= maxAllowed;
+            return maxAllowed > 0 && current >= maxAllowed;
         }
     }
 }

@@ -392,6 +392,135 @@ class BlockNodeConnectionManagerTest extends BlockNodeCommunicationTestBase {
     }
 
     @Test
+    void testIsBufferUnhealthy_unackedBlocks() throws Throwable {
+        final BlockBufferSaturationInfo saturationInfoA = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(25.0D, false, 25, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoA);
+        bufferStatusRef().set(BlockBufferSaturationInfo.NIL);
+
+        final boolean isUnhealthyA = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyA).isFalse();
+
+        // transition from healthy to action stage
+        final BlockBufferSaturationInfo saturationInfoB = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(80.0D, true, 80, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoB);
+
+        final boolean isUnhealthyB = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyB).isTrue();
+
+        // transition to higher saturation
+        final BlockBufferSaturationInfo saturationInfoC = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(85.0D, true, 85, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoC);
+
+        final boolean isUnhealthyC = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyC).isTrue();
+
+        // transition from action stage to below action stage
+        final BlockBufferSaturationInfo saturationInfoD = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(10.0D, false, 10, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoD);
+
+        final boolean isUnhealthyD = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyD).isFalse();
+
+        // transition to higher saturation but still below action stage
+        final BlockBufferSaturationInfo saturationInfoE = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(20.0D, false, 20, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoE);
+
+        final boolean isUnhealthyE = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyE).isFalse();
+    }
+
+    @Test
+    void testIsBufferUnhealthy_unackedBytes() throws Throwable {
+        final BlockBufferSaturationInfo saturationInfoA = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(25.0D, false, 25, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoA);
+        bufferStatusRef().set(BlockBufferSaturationInfo.NIL);
+
+        final boolean isUnhealthyA = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyA).isFalse();
+
+        // transition from healthy to action stage
+        final BlockBufferSaturationInfo saturationInfoB = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(80.0D, true, 80, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoB);
+
+        final boolean isUnhealthyB = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyB).isTrue();
+
+        // transition to higher saturation
+        final BlockBufferSaturationInfo saturationInfoC = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(85.0D, true, 85, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoC);
+
+        final boolean isUnhealthyC = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyC).isTrue();
+
+        // transition from action stage to below action stage
+        final BlockBufferSaturationInfo saturationInfoD = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(10.0D, false, 10, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoD);
+
+        final boolean isUnhealthyD = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyD).isFalse();
+
+        // transition to higher saturation but still below action stage
+        final BlockBufferSaturationInfo saturationInfoE = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(20.0D, false, 20, 100),
+                new SaturationDetail(0.0D, false, 0, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfoE);
+
+        final boolean isUnhealthyE = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthyE).isFalse();
+    }
+
+    @Test
+    void testIsBufferUnhealthy_inProgressBlocksDoesNothing() throws Throwable {
+        final BlockBufferSaturationInfo saturationInfo = new BlockBufferSaturationInfo(
+                Instant.now(),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(0.0D, false, 0, 100),
+                new SaturationDetail(100.0D, true, 5, 5));
+        when(bufferService.latestBufferSaturationInfo()).thenReturn(saturationInfo);
+
+        final boolean isUnhealthy = invoke_isBufferUnhealthy();
+        assertThat(isUnhealthy).isFalse();
+    }
+
+    @Test
     void testIsConfigUpdated_configRemoved() throws Throwable {
         final VersionedBlockNodeConfigurationSet activeConfig =
                 new VersionedBlockNodeConfigurationSet(1, List.of(newBlockNodeConfig("localhost", 1234, 1)));

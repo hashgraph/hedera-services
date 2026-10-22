@@ -180,7 +180,7 @@ public class BlockBufferService extends BlockStreamingBase {
     }
 
     /**
-     * @return the most recent block buffer check result, else null if a check hasn't been performed yet
+     * @return the most recent block buffer check result
      */
     public @Nullable BlockBufferSaturationInfo latestBufferSaturationInfo() {
         final PruneResult latestResult = lastPruningResultRef.get();
@@ -1030,7 +1030,8 @@ public class BlockBufferService extends BlockStreamingBase {
         final BigDecimal percentage = BigDecimal.valueOf(current)
                 .divide(BigDecimal.valueOf(maxAllowed), 4, RoundingMode.HALF_EVEN)
                 .multiply(ONE_HUNDRED);
-        final boolean isAtActionStage = percentage.compareTo(BigDecimal.valueOf(actionStageThreshold)) >= 0;
+        final boolean isAtActionStage =
+                actionStageThreshold > 0 && percentage.compareTo(BigDecimal.valueOf(actionStageThreshold)) >= 0;
 
         return new SaturationDetail(percentage.doubleValue(), isAtActionStage, current, maxAllowed);
     }
@@ -1082,62 +1083,54 @@ public class BlockBufferService extends BlockStreamingBase {
         final StringBuilder sb = new StringBuilder("Block buffer has become unhealthy (reason:");
 
         // check unacked block count saturation
-        final SaturationDetail previousUnackedBlocksSaturation =
-                previousResult.saturationInfo.unackedBlocksSaturation();
-        final SaturationDetail latestUnackedBlocksSaturation = latestResult.saturationInfo.unackedBlocksSaturation();
-        if (!previousUnackedBlocksSaturation.isAtActionStage()) {
-            if (latestUnackedBlocksSaturation.isSaturated()) {
-                shouldLog = true;
-                sb.append(" unacked-blocks[Healthy->Saturated]");
-            } else if (latestUnackedBlocksSaturation.isAtActionStage()) {
-                shouldLog = true;
-                sb.append(" unacked-blocks[Healthy->ActionStage]");
-            }
-        } else if (!previousUnackedBlocksSaturation.isSaturated() && latestUnackedBlocksSaturation.isSaturated()) {
-            shouldLog = true;
-            sb.append(" unacked-blocks[ActionStage->Saturated]");
-        }
+        shouldLog |= appendLogIfNecessary(
+                sb,
+                "unacked-blocks",
+                previousResult.saturationInfo.unackedBlocksSaturation(),
+                latestResult.saturationInfo.unackedBlocksSaturation());
 
         // check unacked block bytes saturation
-        final SaturationDetail previousUnackedBytesSaturation = previousResult.saturationInfo.unackedBytesSaturation();
-        final SaturationDetail latestUnackedBytesSaturation = latestResult.saturationInfo.unackedBytesSaturation();
-        if (!previousUnackedBytesSaturation.isAtActionStage()) {
-            if (latestUnackedBytesSaturation.isSaturated()) {
-                shouldLog = true;
-                sb.append(" unacked-bytes[Healthy->Saturated]");
-            } else if (latestUnackedBytesSaturation.isAtActionStage()) {
-                shouldLog = true;
-                sb.append(" unacked-bytes[Healthy->ActionStage]");
-            }
-        } else if (!previousUnackedBytesSaturation.isSaturated() && latestUnackedBytesSaturation.isSaturated()) {
-            shouldLog = true;
-            sb.append(" unacked-bytes[ActionStage->Saturated]");
-        }
+        shouldLog |= appendLogIfNecessary(
+                sb,
+                "unacked-bytes",
+                previousResult.saturationInfo.unackedBytesSaturation(),
+                latestResult.saturationInfo.unackedBytesSaturation());
 
         // check in-progress blocks saturation
-        final SaturationDetail previousInProgressBlocksSaturation =
-                previousResult.saturationInfo.inProgressBlocksSaturation();
-        final SaturationDetail latestInProgressBlocksSaturation =
-                latestResult.saturationInfo.inProgressBlocksSaturation();
-        if (!previousInProgressBlocksSaturation.isAtActionStage()) {
-            if (latestInProgressBlocksSaturation.isSaturated()) {
-                shouldLog = true;
-                sb.append(" in-progress-blocks[Healthy->Saturated]");
-            } else if (latestInProgressBlocksSaturation.isAtActionStage()) {
-                shouldLog = true;
-                sb.append(" in-progress-blocks[Healthy->ActionStage]");
-            }
-        } else if (!previousInProgressBlocksSaturation.isSaturated()
-                && latestInProgressBlocksSaturation.isSaturated()) {
-            shouldLog = true;
-            sb.append(" in-progress-blocks[ActionStage->Saturated]");
-        }
+        shouldLog |= appendLogIfNecessary(
+                sb,
+                "in-progress-blocks",
+                previousResult.saturationInfo.inProgressBlocksSaturation(),
+                latestResult.saturationInfo.inProgressBlocksSaturation());
 
         sb.append(")");
 
         if (shouldLog) {
             logger.warn("{}", sb);
         }
+    }
+
+    private boolean appendLogIfNecessary(
+            final StringBuilder sb,
+            final String facet,
+            final SaturationDetail previous,
+            final SaturationDetail latest) {
+        boolean shouldLog = false;
+
+        if (!previous.isAtActionStage()) {
+            if (latest.isSaturated()) {
+                shouldLog = true;
+                sb.append(" ").append(facet).append("[Healthy->Saturated]");
+            } else if (latest.isAtActionStage()) {
+                shouldLog = true;
+                sb.append(" ").append(facet).append("[Healthy->ActionStage]");
+            }
+        } else if (!previous.isSaturated() && latest.isSaturated()) {
+            shouldLog = true;
+            sb.append(" ").append(facet).append("[ActionStage->Saturated]");
+        }
+
+        return shouldLog;
     }
 
     /**
@@ -1171,7 +1164,7 @@ public class BlockBufferService extends BlockStreamingBase {
                 /*
                 Zero -> Action Stage
                 The buffer has transitioned from zero/low saturation levels to exceeding the action stage threshold. We
-                don't need to engage back pressure, but we should take proactive measures and swap to a different
+                don't need to engage back pressure, but we should take proactive measures and maybe swap to a different
                 Block Node.
                  */
                 blockStreamMetrics.recordBackPressureActionStage();
