@@ -1410,8 +1410,17 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         if (blockStreamInfo == null || blockStreamInfo.blockNumber() != blockNumberOf(block)) {
             return null;
         }
-        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with
-        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
+        // For the first post-cutover block the trailing window holds the original record hash (kept for the EVM
+        // BLOCKHASH history), not the wrapped record block root production actually used as the parent. The wrapped
+        // root lives in that block's own BlockInfo update; provide it so reconstruction links to the correct parent.
+        // firstPostCutoverParentHash returns null for every other block (with or without a BlockInfo update),
+        // preserving the normal trailing-window behavior.
+        final var blockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
+                List.of(block), SingletonUpdateChange::blockInfoValue, StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+        final var providedParent = BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, blockStreamInfo);
+        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with. The
+        // trailing-window stride comes from the persisted trailing_block_hashes_compacted flag, not a window size.
+        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, providedParent);
     }
 
     private static @Nullable BlockProof proofFrom(@NonNull final Block block) {
