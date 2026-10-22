@@ -40,8 +40,8 @@ jobs:
       - name: Test Ref Resolution
         run: bash ./.github/workflows/support/tests/test-resolve-ref.sh
 
-  test-resolve-bn-versions:
-    name: Validate Block Node Version Resolution
+  test-resolve-cn-configs:
+    name: Validate Consensus Node Config Resolution
     runs-on: hl-cn-default-lin-sm
     steps:
       - name: Initialize GitHub Job
@@ -51,5 +51,5 @@ jobs:
           checkout-token: "${{ secrets.GITHUB_TOKEN }}"
           setup-jq: "true"
 
-      - name: Test Block Node Version Resolution
-        run: bash ./.github/workflows/support/tests/test-resolve-bn-versions.sh
+      - name: Test Consensus Node Config Resolution
+        run: bash ./.github/workflows/support/tests/test-resolve-cn-configs.sh
