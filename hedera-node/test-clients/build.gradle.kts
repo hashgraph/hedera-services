@@ -84,6 +84,18 @@ mainModuleInfo {
 
 sourceSets { create("rcdiff") }
 
+val unitTest =
+    tasks.register<Test>("unitTest") {
+        description = "Runs the test-client unit tests from src/test."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+        useJUnitPlatform()
+    }
+
+// The default test task runs HAPI suites from src/main; keep unit tests in its verification path.
+tasks.test { dependsOn(unitTest) }
+
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
 tasks.register<JavaExec>("runTestClient") {
@@ -719,6 +731,18 @@ fun TaskContainer.registerHapiTest(
             prCheckJunitMaxPoolSizes[name]?.let {
                 systemProperty("junit.jupiter.execution.parallel.config.fixed.max-pool-size", it)
             }
+        }
+        // MULTINETWORK groups run in parallel with both CLASSES and METHODS concurrent. Per-network
+        // serialization is JUnit's job via ClprNetworkLocksProvider (a @ResourceLock provider on
+        // @MultiNetworkHapiTest): same-network readers overlap, a @MultiNetworkLeakyHapiTest writer
+        // runs alone, and disjoint groups run in parallel. One worker per available processor; the
+        // node budget in MultiNetworkGroupQueue, not this, limits how many networks run at once.
+        if (name == "hapiTestClprMultinetwork") {
+            systemProperty("junit.jupiter.execution.parallel.enabled", true)
+            systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.config.strategy", "dynamic")
+            systemProperty("junit.jupiter.execution.parallel.config.dynamic.factor", "1")
         }
         if (embeddedMode != null) {
             systemProperty("hapi.spec.embedded.mode", embeddedMode)
