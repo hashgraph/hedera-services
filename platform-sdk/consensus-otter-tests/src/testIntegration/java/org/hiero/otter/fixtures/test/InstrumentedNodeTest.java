@@ -9,6 +9,7 @@ import org.hiero.otter.fixtures.InstrumentedNode;
 import org.hiero.otter.fixtures.Network;
 import org.hiero.otter.fixtures.TestEnvironment;
 import org.hiero.otter.fixtures.TimeManager;
+import org.hiero.otter.fixtures.container.ContainerTestEnvironment;
 import org.hiero.otter.fixtures.turtle.TurtleTestEnvironment;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +26,14 @@ final class InstrumentedNodeTest {
     @Test
     void testInstrumentationTurtle() {
         testInstrumentation(new TurtleTestEnvironment());
+    }
+
+    /**
+     * Test the instrumentation in the Container environment.
+     */
+    @Test
+    void testInstrumentationContainer() {
+        testInstrumentation(new ContainerTestEnvironment());
     }
 
     private void testInstrumentation(@NonNull final TestEnvironment env) {
