@@ -101,7 +101,7 @@ env:
   GRAFANA_SYSADM_DAL: https://grafana.lat.ope.eng.hashgraph.io/d/rYdddlPWk/node-exporter-single-node?orgId=1&timezone=utc&var-datasource=P5C24830FD6F1746E&var-job=performance-dallas-node-exporter
   GRAFANA_SYSADM_CHI: https://grafana.lat.ope.eng.hashgraph.io/d/rYdddlPWk/node-exporter-single-node?orgId=1&timezone=utc&var-datasource=P631E2BA859A814B3&var-job=performance-chicago-node-exporter
   NUM_OF_BLOCK_NODES: 3
-
+  NETEM: "delay 200ms 50ms loss 5%"
 jobs:
   get-chewie-jwt:
     uses: ./.github/workflows/858-call-get-chewie-jwt.yaml
@@ -759,6 +759,44 @@ jobs:
           echo "NODE                                      POD" | tee -a "${GITHUB_STEP_SUMMARY}"
           sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" get pods -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name | grep -v -w NODE |\
             perl -ne "if (/^([^\s]+)\s+([^\s]+)\s*$/) {print \"[\$1\](${{ steps.set-k8s-cluster.outputs.grafana-url }}&from=${start_date}&var-nodename=\$1) \$2\n\"}" | tee -a "${GITHUB_STEP_SUMMARY}"
+
+      - name: Add Chaos test
+        run: |
+          set +x
+          set +e
+
+          kubectl -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" get pods -o custom-columns=NAME:.metadata.name,IP:.status.podIP --no-headers | awk '{print $1" "$2}' | grep -E 'network-node|block-node' >ips.txt
+
+          apply() {
+            pod=$1
+            target=$2
+            shift;shift
+            kubectl -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" debug "$pod" -it --image=nicolaka/netshoot --profile=netadmin --target $target \
+            -- sh -c " \
+              tc qdisc replace dev eth0 root handle 1: prio; \
+              tc qdisc replace dev eth0 parent 1:3 handle 30: netem ${{ env.NETEM }}; \
+              for ip in $*; do tc filter replace dev eth0 protocol ip parent 1:0 prio 3 u32 match ip dst \${ip}/32 flowid 1:3; done; \
+              tc qdisc show dev eth0; \
+              tc filter show dev eth0;"
+          }
+
+          #Set
+          for pod in `awk '{print $1}' ips.txt`
+          do
+            echo "Setting pod $pod"
+            myownIP=`grep -F "$pod" ips.txt | awk '{print $2}'`
+
+            target="block-node-server"
+            echo $pod | grep "network-node" >/dev/null
+
+            if [ $? -eq 0 ]
+            then
+              target="root-container"
+            fi
+
+            list_of_ips=`grep -v -F "$myownIP" ips.txt | awk '{print $2}' | perl -pne '~s/\n/ /g'`
+            apply $pod $target "$list_of_ips"
+          done
 
       - name: Start Longevity test
         run: |
