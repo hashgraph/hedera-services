@@ -2018,6 +2018,8 @@ upgrade_stage3_cutover() {
     "blockStream.streamMode=BLOCKS" \
     "blockStream.writerMode=GRPC" \
     "blockStream.enableCutover=true" \
+    "blockStream.streamWrappedRecordBlocks=false" \
+    "blockStream.buffer.isBufferPersistenceEnabled=true" \
     "tss.hintsEnabled=true" \
     "tss.historyEnabled=true" \
     "tss.wrapsEnabled=true" \
