@@ -18,7 +18,7 @@ val hederaCryptography = "3.15.0"
 // FUTURE WORK: Merge the two hederaCryptography versions when equal.
 val hederaCryptographySecurity = "3.20.0"
 
-val helidon = "4.5.0"
+val helidon = "4.5.4"
 val jackson = "2.22.2"
 val junit5 = "6.1.3"
 val log4j = "2.26.0"
@@ -26,7 +26,7 @@ val mockito = "5.23.0"
 val pbj = pluginVersions.version("com.hedera.pbj.pbj-compiler")
 val protobuf = "4.34.1"
 val prometheusSimpleclient = "0.16.0"
-val blockNodeProtobufSources = "0.41.0"
+val blockNodeProtobufSources = "0.44.2"
 val testContainers = "2.0.5"
 val tuweni = "2.7.2"
 val vertx = "4.5.30"
@@ -51,7 +51,7 @@ dependencies.constraints {
     }
     api("com.github.ben-manes.caffeine:caffeine:3.2.4") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.7.1") { because("com.github.dockerjava.api") }
-    api("com.github.luben:zstd-jni:1.5.7-16") { because("com.github.luben.zstd_jni") }
+    api("com.github.luben:zstd-jni:1.5.7-22") { because("com.github.luben.zstd_jni") }
     api("com.github.spotbugs:spotbugs-annotations:4.9.8") {
         because("com.github.spotbugs.annotations")
     }

@@ -604,7 +604,8 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
 
         if (indirectProofSeq != null && indirectProofSeq.containsIndirectProofs()) {
             logger.info("Verifying contiguous indirect proofs prior to block {}", blockNumber);
-            indirectProofSeq.verify();
+            indirectProofSeq.verify(
+                    embeddedSignature -> isValidSignature(blockNumber, embeddedSignature, expectedBlockHash));
             for (final var pendingBlockNumber : pendingIndirectProofBlocks) {
                 System.out.printf("#%d proof valid: yes%n", pendingBlockNumber);
             }
@@ -666,6 +667,23 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
                 "partialValid=%s, party=%d, weight=%d".formatted(valid ? "yes" : "no", partyId, weight));
     }
 
+    /**
+     * Whether {@code signature} is a valid signature on {@code blockHash}: a {@code verificationKey || aggregateSig}
+     * signature is checked with the hinTS library, any other with {@code TSS.verifyTSS()}.
+     */
+    private boolean isValidSignature(
+            final long blockNumber, @NonNull final Bytes signature, @NonNull final Bytes blockHash) {
+        if (signature.length() == HintsLibraryImpl.VK_LENGTH + HINTS_SIGNATURE_LENGTH) {
+            final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
+            final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
+            return hintsLibrary.verifyAggregate(sig, blockHash, vk, 1, hintsThresholdDenominator);
+        }
+        requireNonNull(
+                ledgerIdFromState,
+                "Ledger id not available for composite TSS signature verification on block #" + blockNumber);
+        return TSS.verifyTSS(ledgerIdFromState.toByteArray(), signature.toByteArray(), blockHash.toByteArray());
+    }
+
     private void verifySignedBlockProof(
             final long firstRound, @NonNull final BlockProof proof, @NonNull final Bytes expectedBlockHash) {
         final var signature = proof.signedBlockProofOrThrow().blockSignature();
@@ -679,14 +697,8 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
             proofVkHash = shortSha384Hash(vk);
             verificationKey = vk;
             aggregateSignature = sig;
-            valid = hintsLibrary.verifyAggregate(sig, expectedBlockHash, vk, 1, hintsThresholdDenominator);
-        } else {
-            requireNonNull(
-                    ledgerIdFromState,
-                    "Ledger id not available for composite TSS signature verification on block #" + proof.block());
-            valid = TSS.verifyTSS(
-                    ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
         }
+        valid = isValidSignature(proof.block(), signature, expectedBlockHash);
         if (proofVkHash == null) {
             System.out.printf("#%d proof valid: %s%n", proof.block(), valid ? "yes" : "no");
         } else {
@@ -1398,8 +1410,17 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         if (blockStreamInfo == null || blockStreamInfo.blockNumber() != blockNumberOf(block)) {
             return null;
         }
-        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with
-        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
+        // For the first post-cutover block the trailing window holds the original record hash (kept for the EVM
+        // BLOCKHASH history), not the wrapped record block root production actually used as the parent. The wrapped
+        // root lives in that block's own BlockInfo update; provide it so reconstruction links to the correct parent.
+        // firstPostCutoverParentHash returns null for every other block (with or without a BlockInfo update),
+        // preserving the normal trailing-window behavior.
+        final var blockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
+                List.of(block), SingletonUpdateChange::blockInfoValue, StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+        final var providedParent = BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, blockStreamInfo);
+        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with. The
+        // trailing-window stride comes from the persisted trailing_block_hashes_compacted flag, not a window size.
+        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, providedParent);
     }
 
     private static @Nullable BlockProof proofFrom(@NonNull final Block block) {
