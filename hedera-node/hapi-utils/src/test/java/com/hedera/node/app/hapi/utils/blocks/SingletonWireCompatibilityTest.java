@@ -61,7 +61,7 @@ class SingletonWireCompatibilityTest {
 
     @Test
     void metadataUsesNextUnusedTags() {
-        assertThat(SingletonUpdateChangeSchema.PARTIAL.number()).isEqualTo(24);
-        assertThat(SingletonUpdateChangeSchema.CLEARED_FIELDS.number()).isEqualTo(25);
+        assertThat(SingletonUpdateChangeSchema.PARTIAL.number()).isEqualTo(10001);
+        assertThat(SingletonUpdateChangeSchema.CLEARED_FIELDS.number()).isEqualTo(10002);
     }
 }

@@ -653,10 +653,13 @@ message SingletonUpdateChange {
      * <p>
      * The same reader rules apply as for MapUpdateChange.partial.
      */
-    bool partial = 24;
+    bool partial = 10001;
 
     /** Sorted, unique top-level fields to reset; valid only when partial is true. */
-    repeated uint32 cleared_fields = 25;
+    repeated uint32 cleared_fields = 10002;
+
+    // Field numbers 24 through 10000 are intentionally left unused so that
+    // they remain available for future `new_value` singleton oneof members.
 
     oneof new_value {
         /**
