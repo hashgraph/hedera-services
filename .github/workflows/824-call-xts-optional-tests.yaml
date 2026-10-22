@@ -65,7 +65,7 @@ defaults:
     shell: bash
 
 # NOTE: There is deliberately no `build` (802 compile + spotless) job in this
-# workflow. Both optional panels (825 Migration Testing, 826 Solo Three-Stage Block Stream
+# workflow. Both optional panels (825 Migration Testing, 826 Solo 3-Stage
 # Cutover) build their own local hedera-node artifacts on their own runners, so
 # the 802 compile was a redundant second compile per cron cycle. The panel `if:`
 # conditions below are the 815 conditions with only the
@@ -185,7 +185,7 @@ jobs:
     needs:
       - commit-info
     if: ${{ inputs.enable-three-stage-block-stream-cutover-panel }}
-    uses: ./.github/workflows/826-call-solo-three-stage-block-stream-cutover.yaml
+    uses: ./.github/workflows/826-call-solo-three-stage-cutover.yaml
     with:
       ref: ${{ needs.commit-info.outputs.sha }}
       custom-job-name: "${{ inputs.custom-job-label }} Solo Three-Stage Block Stream Cutover"

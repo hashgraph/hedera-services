@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-name: "826: [CALL] Solo Three-Stage Block Stream Cutover"
+name: "826: [CALL] Solo 3-Stage Cutover"
 on:
   workflow_call:
     inputs:
@@ -45,7 +45,7 @@ env:
 
 jobs:
   solo-three-stage-block-stream-cutover:
-    name: ${{ inputs.custom-job-name || 'Solo Three-Stage Block Stream Cutover' }}
+    name: ${{ inputs.custom-job-name || 'Solo 3-Stage Cutover' }}
     runs-on: hl-cn-rpc-relay-lin-lg
     # Includes dependency installation and the final SDK TCK suite (up to one hour).
     timeout-minutes: 210
