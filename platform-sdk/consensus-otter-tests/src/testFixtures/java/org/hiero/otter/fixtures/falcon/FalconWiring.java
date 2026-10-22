@@ -147,9 +147,10 @@ public class FalconWiring implements TimeTickReceiver {
         eventWindowOutputWire = consensusRoundOutputWire.buildTransformer(
                 "EventWindow", "consensus round", ConsensusRound::getEventWindow);
 
-        eventWindowOutputWire.solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::setEventWindow));
-        eventWindowOutputWire.solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow));
-        eventWindowOutputWire.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow));
+        eventWindowOutputWire.solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(
+                eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
 
         final Duration eventCreationHeartbeat =
                 configuration.getConfigData(EventCreationConfig.class).period();
@@ -159,7 +160,7 @@ public class FalconWiring implements TimeTickReceiver {
                         OFFER);
         eventCreationManagerWiring
                 .getOutputWire()
-                .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
+                .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent), INJECT);
 
         final OutputWire<PlatformStatus> platformStatusOutputWire = statusMonitorModule.platformStatusOutputWire();
         platformStatusOutputWire.solderTo(
