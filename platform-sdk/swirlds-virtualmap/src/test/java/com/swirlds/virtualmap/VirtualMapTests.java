@@ -30,6 +30,7 @@ import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import com.swirlds.virtualmap.internal.VirtualMapStatistics;
@@ -39,6 +40,8 @@ import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.TestValueCodec;
 import com.swirlds.virtualmap.test.fixtures.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.datasource.InMemoryDataSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,8 +52,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.exceptions.ReferenceCountException;
@@ -1232,6 +1239,157 @@ class VirtualMapTests extends VirtualTestBase {
             assertEquals(testKey, leafRecord.keyBytes(), "Path does not match");
         } finally {
             detachedCopy.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Newer copies are merged while a detached copy is built")
+    void newerCopiesAreMergedWhileDetachedCopyIsBuilt() throws Exception {
+        final RecordAccessor detached = detachWhileProcessingNewerCopy(VirtualMap::detach, false);
+        try {
+            VirtualLeafBytes<TestValue> leaf;
+
+            leaf = detached.findLeafRecord(A_KEY);
+            assertNotNull(leaf);
+            assertEquals(APPLE, leaf.value(TestValueCodec.INSTANCE, Codec.DEFAULT_MAX_SIZE));
+
+            leaf = detached.findLeafRecord(B_KEY);
+            assertNotNull(leaf);
+            assertEquals(BANANA, leaf.value(TestValueCodec.INSTANCE, Codec.DEFAULT_MAX_SIZE));
+
+            assertNull(detached.findLeafRecord(E_KEY));
+        } finally {
+            detached.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Newer copies are merged while a detached data source copy is built")
+    void newerCopiesAreMergedWhileDetachedDataSourceCopyIsBuilt() throws Exception {
+        final VirtualDataSource detached = detachWhileProcessingNewerCopy(VirtualMap::detachAsDataSourceCopy, false);
+        try {
+            assertDetachedDataSource(detached);
+        } finally {
+            detached.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Detached data source copy is not affected when the detached copy is merged and flushed")
+    void detachedDataSourceCopyIsNotAffectedByMergeAndFlush() throws Exception {
+        final VirtualDataSource detached = detachWhileProcessingNewerCopy(VirtualMap::detachAsDataSourceCopy, true);
+        try {
+            assertDetachedDataSource(detached);
+        } finally {
+            detached.close();
+        }
+    }
+
+    private static void assertDetachedDataSource(final VirtualDataSource detached) throws IOException {
+        VirtualLeafBytes<TestValue> leaf;
+
+        leaf = detached.loadLeafRecord(A_KEY);
+        assertNotNull(leaf);
+        assertEquals(APPLE, leaf.value(TestValueCodec.INSTANCE, Codec.DEFAULT_MAX_SIZE));
+
+        leaf = detached.loadLeafRecord(B_KEY);
+        assertNotNull(leaf);
+        assertEquals(BANANA, leaf.value(TestValueCodec.INSTANCE, Codec.DEFAULT_MAX_SIZE));
+
+        assertNull(detached.loadLeafRecord(E_KEY));
+    }
+
+    /**
+     * Detaches the oldest copy of a map family using a data source builder that blocks when a data
+     * source copy is built from a snapshot. While the build is blocked, newer copies are processed
+     * by the virtual pipeline, which is only possible if the pipeline isn't paused during the build.
+     *
+     * @param detach the detach operation to test
+     * @param releaseDetachedCopy if false, the detached copy is kept alive, and a newer copy is released
+     *                            and must be merged into the next copy. If true, the detached copy is
+     *                            released too, it's merged into the newer copy, which must be flushed
+     * @return the detached copy, as returned by the detach operation
+     */
+    private static <T> T detachWhileProcessingNewerCopy(
+            final Function<VirtualMap, T> detach, final boolean releaseDetachedCopy) throws Exception {
+        final CountDownLatch buildStarted = new CountDownLatch(1);
+        final CountDownLatch buildUnblocked = new CountDownLatch(1);
+        final VirtualDataSourceBuilder builder = new InMemoryBuilder() {
+            @NonNull
+            @Override
+            public InMemoryDataSource build(
+                    final String label,
+                    @Nullable final Path sourceDir,
+                    final boolean compactionEnabled,
+                    final boolean offlineUse) {
+                // Only block data source copies built from snapshots, not the original data source
+                if (sourceDir != null) {
+                    buildStarted.countDown();
+                    try {
+                        if (!buildUnblocked.await(30, SECONDS)) {
+                            throw new IllegalStateException("Timed out waiting for the build to be unblocked");
+                        }
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Interrupted while waiting for the build to be unblocked", e);
+                    }
+                }
+                return super.build(label, sourceDir, compactionEnabled, offlineUse);
+            }
+        };
+
+        final VirtualMap map0 = new VirtualMap(builder, DEFAULT_CONFIGURATION);
+        map0.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+        map0.put(B_KEY, BANANA, TestValueCodec.INSTANCE);
+
+        final VirtualMap map1 = map0.copy();
+        map1.put(A_KEY, AARDVARK, TestValueCodec.INSTANCE);
+        map1.put(E_KEY, EGGPLANT, TestValueCodec.INSTANCE);
+
+        final VirtualMap map2 = map1.copy();
+        final VirtualMap map3 = map2.copy();
+
+        map0.getHash(); // forces copy to become hashed
+
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            final Future<T> detached = executor.submit(() -> detach.apply(map0));
+            assertTrue(buildStarted.await(10, SECONDS), "Data source copy build should have started");
+
+            if (releaseDetachedCopy) {
+                // Release the detached copy, it's merged into the newer copy, which then becomes
+                // the oldest copy in the pipeline and can be flushed
+                map0.release();
+                map1.enableFlush();
+                map1.release();
+                assertEventuallyTrue(
+                        map1::isFlushed,
+                        Duration.ofSeconds(10),
+                        "Newer copy should be flushed while the detached copy is built");
+            } else {
+                // Release a newer copy, it can be merged into the next copy, even if the detached
+                // copy is still alive
+                map1.release();
+                assertEventuallyTrue(
+                        map1::isMerged,
+                        Duration.ofSeconds(10),
+                        "Newer copy should be merged while the detached copy is built");
+            }
+            assertFalse(detached.isDone(), "Detach should still be blocked on the data source copy build");
+
+            buildUnblocked.countDown();
+            return detached.get(10, SECONDS);
+        } finally {
+            buildUnblocked.countDown();
+            executor.shutdown();
+            if (!map0.isDestroyed()) {
+                map0.release();
+            }
+            if (!map1.isDestroyed()) {
+                map1.release();
+            }
+            map2.release();
+            map3.release();
         }
     }
 

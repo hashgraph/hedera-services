@@ -1180,22 +1180,38 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * @return copy of underlying datasource with cache copy flushed into it, and running compaction
      */
     VirtualDataSource detachAsDataSourceCopy() {
-        return pipeline.pausePipelineAndExecute("detach", () -> {
-            final Path snapshotPath = dataSourceBuilder.snapshot(null, dataSource);
-            try {
-                VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, true, false);
-                flush(cache.snapshot(), dataSourceCopy);
-                return dataSourceCopy;
-            } finally {
-                try {
-                    // Delete the snapshot directory
-                    FileUtils.deleteDirectory(snapshotPath);
-                } catch (IOException e) {
-                    //noinspection ThrowFromFinallyBlock
-                    throw new UncheckedIOException("Unable to delete snapshot directory", e);
-                }
-            }
+        final ValueReference<VirtualNodeCache> cacheSnapshot = new ValueReference<>();
+        final Path snapshotPath = pipeline.pausePipelineAndExecute("detach", () -> {
+            // Lifecycle thread is paused, no cache flushes/merges, it's safe to take cache snapshot
+            cacheSnapshot.setValue(cache.snapshot());
+            // And make a data source snapshot. The snapshot is not loaded here, though, it is
+            // done below
+            return dataSourceBuilder.snapshot(null, dataSource);
         });
+
+        // build() and flush() below are called outside pausePipelineAndExecute() to unpause the
+        // lifecycle thread as quickly as possible. If the lifecycle thread is paused for too long,
+        // unhandled copies pile up in the virtual pipeline, which triggers size backpressure mechanism
+        try {
+            // Restore a data source into memory from the snapshot. It will use its own directory
+            // to store data files
+            final VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, true, false);
+            try {
+                // Then flush the cache snapshot to the data source copy
+                flush(cacheSnapshot.getValue(), dataSourceCopy);
+            } catch (final RuntimeException | Error e) {
+                // Don't leak the data source copy, if the flush failed
+                try {
+                    dataSourceCopy.close();
+                } catch (final IOException | RuntimeException closeException) {
+                    e.addSuppressed(closeException);
+                }
+                throw e;
+            }
+            return dataSourceCopy;
+        } finally {
+            deleteSnapshotDirectory(snapshotPath);
+        }
     }
 
     /**
@@ -1205,24 +1221,44 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
      * @return a reference to the detached state of virtual map at some moment
      */
     public RecordAccessor detach() {
-        return pipeline.pausePipelineAndExecute("detach", () -> {
-            final Path snapshotPath = dataSourceSnapshot();
-            try {
-                final VirtualDataSource dataSourceCopy =
-                        dataSourceBuilder.build(getLabel(), snapshotPath, false, false);
-                final VirtualNodeCache cacheSnapshot = cache.snapshot();
-                final int hashChunkHeight = dataSource.getHashChunkHeight();
-                return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot, dataSourceCopy);
-            } finally {
-                try {
-                    // Delete the snapshot directory
-                    FileUtils.deleteDirectory(snapshotPath);
-                } catch (IOException e) {
-                    //noinspection ThrowFromFinallyBlock
-                    throw new UncheckedIOException("Unable to delete snapshot directory", e);
-                }
-            }
+        final ValueReference<VirtualNodeCache> cacheSnapshot = new ValueReference<>();
+        final Path snapshotPath = pipeline.pausePipelineAndExecute("detach", () -> {
+            // Lifecycle thread is paused, no cache flushes/merges. Make a data source snapshot
+            // first, it also checks that this copy can be detached. The snapshot is not loaded
+            // here, though, it is done below
+            final Path path = dataSourceSnapshot();
+            // And then take cache snapshot
+            cacheSnapshot.setValue(cache.snapshot());
+            return path;
         });
+
+        // build() below is called outside pausePipelineAndExecute() to unpause the lifecycle thread
+        // as quickly as possible. If the lifecycle thread is paused for too long, unhandled copies
+        // pile up in the virtual pipeline, which triggers size backpressure mechanism
+        try {
+            // Restore a data source into memory from the snapshot. It will use its own directory
+            // to store data files
+            final VirtualDataSource dataSourceCopy = dataSourceBuilder.build(getLabel(), snapshotPath, false, false);
+            final int hashChunkHeight = dataSource.getHashChunkHeight();
+            return new RecordAccessor(metadata.copy(), hashChunkHeight, cacheSnapshot.getValue(), dataSourceCopy);
+        } finally {
+            deleteSnapshotDirectory(snapshotPath);
+        }
+    }
+
+    /**
+     * Deletes a data source snapshot directory created in {@link #detach()} or
+     * {@link #detachAsDataSourceCopy()}. Failures are logged, but not thrown, as the data
+     * source copy built from the snapshot is still valid.
+     *
+     * @param snapshotPath the snapshot directory to delete
+     */
+    private static void deleteSnapshotDirectory(@NonNull final Path snapshotPath) {
+        try {
+            FileUtils.deleteDirectory(snapshotPath);
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to delete snapshot directory {}", snapshotPath, e);
+        }
     }
 
     /**
