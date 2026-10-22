@@ -117,8 +117,9 @@ jobs:
       - extract-jdk-version
       - extract-citr-vars
     runs-on: hl-cn-rpc-relay-lin-lg
-    # Target: ~25 min network setup (including the consensus node build in test.sh) + ~60 min of tests.
-    timeout-minutes: 150
+    # Target under 2 hours: ~9 min network setup (including the consensus node build in test.sh), at most 95 min
+    # of tests (the Run the tests step limit) and ~3 min teardown.
+    timeout-minutes: 120
     env:
       GRADLE_CACHE_USERNAME: ${{ secrets.GRADLE_CACHE_USERNAME }}
       GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
@@ -374,13 +375,19 @@ jobs:
       # `-p no:cacheprovider` from writing the shared .pytest_cache concurrently.
       # Inside a process, pytest-xdist (`-n`) spreads the tests over several workers; the seed account funds one
       # sender per worker. The run time is dominated by waiting for receipts, so workers cut it almost linearly.
-      # Worker counts aim at ~60 min per fork, from the sequential run times in docs/hedera/hedera_<fork>.md:
-      #   frontier 4h45 → 5, prague ~3h30 → 4, istanbul 2h30 → 3, tangerine_whistle 1h50 / cancun 1h35 /
-      #   byzantium 1h20 → 2, everything else (berlin 52m and below) → 1.
-      # `--dist loadfile` keeps the tests of one file on one worker.
+      # Worker counts aim at ~50-60 min per fork. Sequential time (docs/hedera/hedera_<fork>.md) → workers:
+      #   frontier 4h45 → 6, prague ~3h30 → 5, istanbul 2h30 → 4, tangerine_whistle 1h50 → 3,
+      #   cancun 1h35 / byzantium 1h20 → 2 (measured in CI with 2 workers: 48m / 40m),
+      #   everything else (berlin 52m and below) → 1.
+      # Tests are handed out one by one (xdist's default `--dist load`), not per file: some folders keep most of their
+      # tests in one or two files (tangerine_whistle has 724 in one), and with per-file scheduling the extra workers
+      # sat idle. An idle worker never asks for its funded sender, so the other workers waited for funding until
+      # they timed out. `--worker-funding-timeout` is raised because all forks fund their workers at the same time.
+      # Exit code 5 means pytest collected no tests (e.g. tests/paris/ is fully deselected for Hedera) and is not
+      # counted as a failure.
       - name: Run the tests
         id: run-tests
-        timeout-minutes: 110
+        timeout-minutes: 95
         working-directory: ${{ env.SPEC_TESTS_DIR }}
         env:
           FORKS: ${{ steps.inputs.outputs.forks }}
@@ -394,10 +401,11 @@ jobs:
 
           fork_workers() {
             case "${1}" in
-              frontier) echo 5 ;;
-              prague) echo 4 ;;
-              istanbul) echo 3 ;;
-              tangerine_whistle | cancun | byzantium) echo 2 ;;
+              frontier) echo 6 ;;
+              prague) echo 5 ;;
+              istanbul) echo 4 ;;
+              tangerine_whistle) echo 3 ;;
+              cancun | byzantium) echo 2 ;;
               *) echo 1 ;;
             esac
           }
@@ -412,7 +420,7 @@ jobs:
             fi
             # A single worker runs without xdist, exactly like the documented manual runs.
             if [[ "${workers}" -gt 1 ]]; then
-              xdist_args=(-n "${workers}" --dist loadfile)
+              xdist_args=(-n "${workers}" --dist load --worker-funding-timeout=600)
             fi
             echo "[$(date -u +%H:%M:%S)] START tests/${fork}/ (${workers} worker(s))"
             local rc=0
@@ -445,7 +453,7 @@ jobs:
             echo "::group::tests/${fork}/ output (exit code ${rc})"
             cat "${RESULTS_DIR}/${fork}/output.log" || true
             echo "::endgroup::"
-            [[ "${rc}" == "0" ]] || failed+=("${fork}")
+            [[ "${rc}" == "0" || "${rc}" == "5" ]] || failed+=("${fork}")
           done
           if [[ "${#failed[@]}" -gt 0 ]]; then
             echo "::error::Ethereum spec tests failed for: ${failed[*]}"
@@ -470,11 +478,16 @@ jobs:
           for fork in forks:
               path = os.path.join(results_dir, fork, "junit.xml")
               if not os.path.isfile(path):
-                  print(f"| `{fork}` | no report | | | | |")
+                  # No exit code file means the fork was still running when the step limit stopped it.
+                  finished = os.path.isfile(os.path.join(results_dir, fork, "exit-code"))
+                  print(f"| `{fork}` | {'no report' if finished else 'did not finish'} | | | | |")
                   continue
               root = ET.parse(path).getroot()
               suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
               t = {k: sum(int(s.get(k, 0)) for s in suites) for k in ("tests", "failures", "errors", "skipped")}
+              if t["tests"] == 0:
+                  print(f"| `{fork}` | no tests (all deselected) | | | | |")
+                  continue
               passed = t["tests"] - t["failures"] - t["errors"] - t["skipped"]
               print(f"| `{fork}` | {t['tests']} | {passed} | {t['failures']} | {t['errors']} | {t['skipped']} |")
           EOF
