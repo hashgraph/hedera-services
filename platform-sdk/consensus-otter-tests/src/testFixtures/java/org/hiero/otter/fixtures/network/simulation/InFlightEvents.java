@@ -2,12 +2,11 @@
 package org.hiero.otter.fixtures.network.simulation;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.hiero.consensus.model.hashgraph.EventWindow;
@@ -23,7 +22,7 @@ import org.hiero.consensus.model.node.NodeId;
  *
  * <p>A connection's queue is a priority queue ordered by arrival time, with ties broken by the order the events were
  * added, so an event added later may be delivered before one added earlier. Delivery then merges the heads of the
- * queues to recover the arrival order across all of the senders.
+ * queues, kept in a heap of their own, to recover the arrival order across all of the senders.
  *
  * <p>A receiver can refuse the events of one sender without affecting the others: the refused connection is left out
  * for the rest of the delivery, its events stay queued, and they are offered again the next time delivery happens. An
@@ -37,6 +36,23 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
      * Gives the current event window of a node, which decides which events are ancient for it.
      */
     private final Function<NodeId, EventWindow> eventWindows;
+
+    /**
+     * The connections into the receiver currently being delivered to whose next event has arrived, ordered by the
+     * arrival time of that event and then by the node that sent it. It is only used during
+     * {@link #deliverArrived(Instant, EventReceiver)} and is empty between calls.
+     *
+     * <p>This could be a local variable of {@link #deliverArrived(Instant, EventReceiver)}. It is an instance field
+     * only to avoid allocating a new heap on every call, which happens once per receiver per tick.
+     *
+     * <p>The order is read from the head of each connection's queue, so a connection's queue must not change while
+     * the connection is in the heap. A connection is therefore taken out before its head is removed, and put back
+     * afterwards if its new head has arrived too.
+     */
+    private final PriorityQueue<InFlightQueue<EventInTransit>> connectionsByEarliestEvent =
+            new PriorityQueue<>(Comparator.<InFlightQueue<EventInTransit>, Instant>comparing(
+                            connection -> connection.peek().arrivalTime())
+                    .thenComparing(connection -> connection.peek().sender()));
 
     /**
      * Constructor.
@@ -55,9 +71,13 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
      * Delivers every event that has arrived at the receiving node, in the order the events arrived.
      *
      * <p>Each connection's queue hands out its events in arrival order, so repeatedly delivering the earliest of their
-     * heads walks the events in arrival order across all the senders. A connection whose head has not arrived yet, or
-     * which is down, is left out of the comparison rather than skipped over, so it holds up only its own events and
-     * this method always makes progress or returns.
+     * heads walks the events in arrival order across all the senders. The connections whose head can be delivered are
+     * kept in {@link #connectionsByEarliestEvent}, so finding the earliest head does not mean looking at every
+     * connection. A connection whose head has not arrived yet, or which is down, is never put there, so it holds up
+     * only its own events and this method always makes progress or returns.
+     *
+     * <p>Whether a connection is up is asked only once, before the first event is delivered. That is enough because
+     * nothing that happens during delivery changes the topology: the network only changes it between deliveries.
      *
      * <p>An event that is ancient for the receiver's current event window is dropped instead of delivered. When the
      * receiver refuses an event, only that sender's connection is left out for the remainder of this call;
@@ -69,78 +89,46 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
     @Override
     void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
-        final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections = incomingConnections(receiverId);
-        // senders still worth considering during this delivery; a sender that refuses is removed from it
-        final List<NodeId> candidateSenders = new ArrayList<>(sortedNodeIds());
-
-        while (true) {
-            final InFlightQueue<EventInTransit> earliestConnection =
-                    earliestArrivedConnection(receiverId, incomingConnections, now, candidateSenders);
-            if (earliestConnection == null) {
-                // every connection is either empty, holding events that have not arrived yet, down or refused
-                return;
+        // empty after every call that returns normally; cleared in case a previous call ended with an exception
+        connectionsByEarliestEvent.clear();
+        for (final Map.Entry<NodeId, InFlightQueue<EventInTransit>> entry :
+                incomingConnections(receiverId).entrySet()) {
+            final InFlightQueue<EventInTransit> connection = entry.getValue();
+            if (hasArrived(connection, now) && isUp(entry.getKey(), receiverId)) {
+                connectionsByEarliestEvent.add(connection);
             }
+        }
 
+        InFlightQueue<EventInTransit> earliestConnection;
+        while ((earliestConnection = connectionsByEarliestEvent.poll()) != null) {
+            // the connection is out of the heap now, so its queue may change without corrupting the heap's order
             final EventInTransit head = earliestConnection.peek();
             if (eventWindows.apply(receiverId).isAncient(head.event())) {
                 // the event waited so long that the receiver would discard it, so it is not offered
                 earliestConnection.poll();
-                continue;
-            }
-
-            // only remove the event from the queue if it was successfully delivered. If the receiver refuses it,
-            // stop delivering from that sender until the next time this method is called.
-            if (receiver.receiveEvent(head.event())) {
+            } else if (receiver.receiveEvent(head.event())) {
                 earliestConnection.poll();
             } else {
-                candidateSenders.remove(head.sender());
+                // the receiver refused, so the event stays queued and the connection stays out of the heap until the
+                // next time this method is called
+                continue;
+            }
+            if (hasArrived(earliestConnection, now)) {
+                connectionsByEarliestEvent.add(earliestConnection);
             }
         }
     }
 
     /**
-     * Finds the connection holding the event that arrived earliest among those that can be delivered right now.
+     * Reports whether the next event on a connection has arrived.
      *
-     * @param receiverId          the node the events are traveling to
-     * @param incomingConnections the events in flight towards the receiver, keyed by the node that sent them
-     * @param now                 the current time
-     * @param candidateSenders    the senders to consider, in node id order, without those the receiver has refused
-     *                            during this delivery
-     * @return the connection whose head should be delivered next, or {@code null} if there is nothing to deliver
+     * @param connection the events in flight on one connection
+     * @param now        the current time
+     * @return {@code true} if the connection holds an event whose arrival time is not after {@code now}
      */
-    @Nullable
-    private InFlightQueue<EventInTransit> earliestArrivedConnection(
-            @NonNull final NodeId receiverId,
-            @NonNull final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections,
-            @NonNull final Instant now,
-            @NonNull final List<NodeId> candidateSenders) {
-
-        InFlightQueue<EventInTransit> earliestConnection = null;
-        Instant earliestArrivalTime = null;
-
-        for (final NodeId sender : candidateSenders) {
-            final InFlightQueue<EventInTransit> connection = incomingConnections.get(sender);
-            if (connection == null) {
-                // the receiver is the sender, so there is no connection
-                continue;
-            }
-            final EventInTransit event = connection.peek();
-            if (event == null || event.arrivalTime().isAfter(now)) {
-                // nothing in flight on this connection has arrived yet
-                continue;
-            }
-            if (earliestArrivalTime != null && !event.arrivalTime().isBefore(earliestArrivalTime)) {
-                // another connection is holding an event that arrived earlier
-                continue;
-            }
-            if (!isUp(sender, receiverId)) {
-                // the connection is down, so its events are not deliverable
-                continue;
-            }
-            earliestConnection = connection;
-            earliestArrivalTime = event.arrivalTime();
-        }
-
-        return earliestConnection;
+    private static boolean hasArrived(
+            @NonNull final InFlightQueue<EventInTransit> connection, @NonNull final Instant now) {
+        final EventInTransit head = connection.peek();
+        return head != null && !head.arrivalTime().isAfter(now);
     }
 }
