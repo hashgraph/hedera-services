@@ -158,12 +158,23 @@ class ClprLedgerConfigurationFileTest {
                         .build());
     }
 
-    @Test
-    void initialThrottlesFallBackToBundledResourceForInvalidFile() throws IOException {
-        final var file = writeFile(ClprLedgerConfiguration.JSON.toJSON(ClprLedgerConfiguration.newBuilder()
-                .chainId("eip155:1")
-                .throttles(CUSTOM_THROTTLES)
-                .build()));
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                // Malformed JSON
+                "not json",
+                // Unknown field
+                "{\"throttles\": {\"maxMessagesPerBundle\": 500, \"unknownField\": 1}}",
+                // Non-throttle field
+                "{\"chainId\": \"eip155:1\", \"throttles\": {\"maxMessagesPerBundle\": 500,"
+                        + " \"maxMessagePayloadBytes\": 65536, \"maxGasPerMessage\": 15000000,"
+                        + " \"maxQueueDepth\": 20000, \"maxSyncBytes\": 4194304}}",
+                // Throttles that fail validation (max_sync_bytes leaves no room for the proof overhead)
+                "{\"throttles\": {\"maxMessagesPerBundle\": 500, \"maxMessagePayloadBytes\": 65536,"
+                        + " \"maxGasPerMessage\": 15000000, \"maxQueueDepth\": 20000, \"maxSyncBytes\": 65536}}",
+            })
+    void initialThrottlesFallBackToBundledResourceForInvalidFile(final String json) throws IOException {
+        final var file = writeFile(json);
 
         assertThat(ClprLedgerConfigurationFile.initialThrottles(configWithFile(file, 15_000_000L)))
                 .isEqualTo(BUNDLED_THROTTLES);

@@ -651,6 +651,48 @@ class SystemTransactionsTest {
         verify(systemContext, never()).dispatchAdmin(any(Consumer.class));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void postUpgradeSkipsInvalidClprLedgerConfigurationFile(@TempDir final Path upgradeDir) throws IOException {
+        given(givenAccountsState().get(CLPR_STAKING_ACCOUNT_ID)).willReturn(Account.DEFAULT);
+        // A file may only set throttles
+        Files.writeString(
+                upgradeDir.resolve("clprLedgerConfiguration.json"),
+                ClprLedgerConfiguration.JSON.toJSON(CLPR_LEDGER_CONFIGURATION
+                        .copyBuilder()
+                        .throttles(CLPR_THROTTLES
+                                .copyBuilder()
+                                .maxMessagesPerBundle(500)
+                                .build())
+                        .build()));
+
+        final var systemContext =
+                doPostUpgradeSetupWithMockContext(true, CLPR_LEDGER_CONFIGURATION, upgradeDir.toString());
+
+        verify(systemContext, never()).dispatchAdmin(any(Consumer.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void postUpgradeCapsClprMaxGasPerMessageAtMaxGasPerTransaction(@TempDir final Path upgradeDir) throws IOException {
+        given(givenAccountsState().get(CLPR_STAKING_ACCOUNT_ID)).willReturn(Account.DEFAULT);
+        Files.writeString(
+                upgradeDir.resolve("clprLedgerConfiguration.json"),
+                ClprLedgerConfiguration.JSON.toJSON(ClprLedgerConfiguration.newBuilder()
+                        .throttles(CLPR_THROTTLES
+                                .copyBuilder()
+                                .maxGasPerMessage(30_000_000L)
+                                .build())
+                        .build()));
+
+        // The file's 30M gas is capped at the default contracts.maxGasPerTransaction of 15M, matching the
+        // existing throttles, so nothing is dispatched
+        final var systemContext =
+                doPostUpgradeSetupWithMockContext(true, CLPR_LEDGER_CONFIGURATION, upgradeDir.toString());
+
+        verify(systemContext, never()).dispatchAdmin(any(Consumer.class));
+    }
+
     private static void writeClprLedgerConfigurationFile(@NonNull final Path dir, final int maxMessagesPerBundle)
             throws IOException {
         Files.writeString(
