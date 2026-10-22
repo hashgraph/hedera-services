@@ -8,6 +8,7 @@ import static org.hiero.otter.fixtures.OtterAssertions.assertContinuouslyThat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.hiero.consensus.hashgraph.config.ConsensusConfig_;
+import org.hiero.otter.fixtures.Capability;
 import org.hiero.otter.fixtures.Network;
 import org.hiero.otter.fixtures.Node;
 import org.hiero.otter.fixtures.OtterTest;
@@ -23,7 +24,7 @@ public class FallenBehindTurtleTest {
     /** Reducing the number of rounds non-expired allows a node to fall behind faster. */
     private static final long ROUNDS_EXPIRED = 100L;
 
-    @OtterTest
+    @OtterTest(requires = Capability.DETERMINISTIC_EXECUTION)
     void testIsolatedNodeFallsBehind(@NonNull final TestEnvironment env) {
         final Network network = env.network();
         final TimeManager timeManager = env.timeManager();
