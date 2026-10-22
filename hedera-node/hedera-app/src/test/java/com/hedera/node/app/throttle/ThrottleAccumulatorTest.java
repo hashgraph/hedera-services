@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -94,6 +95,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.ClprConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FeesConfig;
@@ -102,6 +104,7 @@ import com.hedera.node.config.data.JumboTransactionsConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.testfixtures.ClprConfigBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -1323,6 +1326,50 @@ public class ThrottleAccumulatorTest {
 
         // then
         assertTrue(ans);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = HederaFunctionality.class,
+            names = {"CLPR_COMPLETE_CHANNEL", "CLPR_SUBMIT_BUNDLE"})
+    void clprVerifierOperationsReserveVerifierGasLimit(final HederaFunctionality function)
+            throws IOException, ParseException {
+        // given
+        final long verifierGasLimit = 300_000L;
+        subject = new ThrottleAccumulator(
+                () -> CAPACITY_SPLIT,
+                configProvider::getConfiguration,
+                FRONTEND_THROTTLE,
+                throttleMetrics,
+                gasThrottle,
+                bytesThrottle,
+                opsDurationThrottle);
+        given(configProvider.getConfiguration()).willReturn(configuration);
+        // CLPR_SUBMIT_BUNDLE always consumes CLPR capacity, so it never consults the throttle-exempt range
+        lenient().when(configuration.getConfigData(AccountsConfig.class)).thenReturn(accountsConfig);
+        lenient().when(accountsConfig.lastThrottleExempt()).thenReturn(100L);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.throttleThrottleByGas()).willReturn(true);
+        given(configuration.getConfigData(JumboTransactionsConfig.class)).willReturn(jumboTransactionsConfig);
+        given(jumboTransactionsConfig.isEnabled()).willReturn(false);
+        given(configuration.getConfigData(ClprConfig.class))
+                .willReturn(ClprConfigBuilder.newBuilder()
+                        .verifierGasLimit(verifierGasLimit)
+                        .build());
+        lenient()
+                .when(transactionInfo.payerID())
+                .thenReturn(AccountID.newBuilder().accountNum(1234L).build());
+        given(transactionInfo.functionality()).willReturn(function);
+        given(transactionInfo.txBody()).willReturn(TransactionBody.DEFAULT);
+
+        // when
+        subject.rebuildFor(getThrottleDefs("bootstrap/throttles.json"));
+        final var ans = subject.checkAndEnforceThrottle(transactionInfo, TIME_INSTANT, state, null, false);
+
+        // then
+        assertTrue(ThrottleAccumulator.isGasThrottled(function));
+        assertTrue(ans);
+        verify(gasThrottle).allow(TIME_INSTANT, verifierGasLimit);
     }
 
     @ParameterizedTest

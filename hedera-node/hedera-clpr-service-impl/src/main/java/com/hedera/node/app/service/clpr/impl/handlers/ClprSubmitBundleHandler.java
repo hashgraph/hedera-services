@@ -37,6 +37,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.clpr.ClprChannelLifecycle;
 import com.hedera.node.app.service.clpr.ReadableLedgerConfigurationStore;
 import com.hedera.node.app.service.clpr.impl.ClprHashUtils;
+import com.hedera.node.app.service.clpr.impl.ClprPeerEndpoints;
 import com.hedera.node.app.service.clpr.impl.ClprServiceApiImpl;
 import com.hedera.node.app.service.clpr.impl.ClprSlashingUtils;
 import com.hedera.node.app.service.clpr.impl.WritableChannelStore;
@@ -239,6 +240,20 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                 penaltyAmount);
         log.debug("[ClprSubmitBundle] check passed: trust-anchor invariant");
 
+        // The successor anchor replaces the stored one, so bound it as ClprCompleteChannel bounds the
+        // initial anchor. This comes from the channel's verifier, not the submitting node, so no penalty.
+        if (newTrustAnchor.length() > clprConfig.maxTrustAnchorBytes()
+                || newTrustAnchorId.length() > clprConfig.maxTrustAnchorBytes()) {
+            log.warn(
+                    "[ClprSubmitBundle] successor trust anchor rejected: oversized conn={} trustAnchorBytes={} "
+                            + "trustAnchorIdBytes={} max={}",
+                    channelId,
+                    newTrustAnchor.length(),
+                    newTrustAnchorId.length(),
+                    clprConfig.maxTrustAnchorBytes());
+            throw new HandleException(CLPR_BUNDLE_VERIFICATION_FAILED);
+        }
+
         // Spec §4.2 Step 1b: apply new_endpoint_manifest, and Step 1c: install successor
         // trust anchor. Applied together in a single copyBuilder / put so a manifest update
         // and a trust-anchor rotation carried by the same bundle are atomic (they're already
@@ -271,18 +286,25 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                     return svc == null ? "?" : svc.ipAddress() + ":" + svc.port();
                                 })
                                 .collect(Collectors.joining(", ", "[", "]")));
-                // Apply this ledger's max_peer_endpoints policy before storing, mirroring
+                // Apply this ledger's endpoint storage policy before storing, mirroring
                 // ClprCompleteChannel — the peer's declared list must not override our storage
-                // bound (spec §3.10.5). Zero means no limit; entries beyond it are dropped in order.
-                final int rawPeerLimit = throttles.maxPeerEndpoints();
-                final var incomingEndpoints = newEndpointManifest.endpoints();
-                final var truncatedEndpoints = rawPeerLimit > 0 && incomingEndpoints.size() > rawPeerLimit
-                        ? incomingEndpoints.subList(0, rawPeerLimit)
-                        : incomingEndpoints;
-                final var storedManifest = newEndpointManifest
-                        .copyBuilder()
-                        .endpoints(truncatedEndpoints)
-                        .build();
+                // bound (spec §3.10.5): unsafe endpoints, endpoints past max_peer_endpoints (zero
+                // means no limit) and endpoints past the manifest byte budget are dropped in order.
+                final var storedManifest = ClprPeerEndpoints.boundedManifest(
+                        newEndpointManifest,
+                        clprConfig.publicPeerEndpointsOnly(),
+                        throttles.maxPeerEndpoints(),
+                        clprConfig.maxEndpointManifestBytes());
+                if (storedManifest == null) {
+                    log.warn(
+                            "[ClprSubmitBundle] endpoint manifest rejected: exceeds {} bytes without endpoints conn={} "
+                                    + "manifestServiceAddressBytes={}",
+                            clprConfig.maxEndpointManifestBytes(),
+                            channelId,
+                            newEndpointManifest.serviceAddress().length());
+                    throw new HandleException(CLPR_BUNDLE_VERIFICATION_FAILED);
+                }
+                final var truncatedEndpoints = storedManifest.endpoints();
                 updatedBuilder = updatedBuilder
                         .endpointManifest(storedManifest)
                         .endpointManifestVersion(storedManifest.version());

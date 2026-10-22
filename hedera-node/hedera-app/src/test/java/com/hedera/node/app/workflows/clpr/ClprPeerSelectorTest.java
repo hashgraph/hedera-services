@@ -18,6 +18,7 @@ import com.hedera.node.config.data.ClprConfig;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.testfixtures.ClprConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,12 +40,12 @@ class ClprPeerSelectorTest {
      */
     private static final int FAILURES_TO_OPEN = 5;
 
-    private static final ClprEndpoint PEER_1 = endpoint("10.0.0.1");
-    private static final ClprEndpoint PEER_2 = endpoint("10.0.0.2");
-    private static final ClprEndpoint PEER_3 = endpoint("10.0.0.3");
-    private static final String PEER_1_ID = "10.0.0.1:" + PEER_PORT;
-    private static final String PEER_2_ID = "10.0.0.2:" + PEER_PORT;
-    private static final String PEER_3_ID = "10.0.0.3:" + PEER_PORT;
+    private static final ClprEndpoint PEER_1 = endpoint("203.0.113.1");
+    private static final ClprEndpoint PEER_2 = endpoint("203.0.113.2");
+    private static final ClprEndpoint PEER_3 = endpoint("203.0.113.3");
+    private static final String PEER_1_ID = "203.0.113.1:" + PEER_PORT;
+    private static final String PEER_2_ID = "203.0.113.2:" + PEER_PORT;
+    private static final String PEER_3_ID = "203.0.113.3:" + PEER_PORT;
 
     @Mock
     private ConfigProvider configProvider;
@@ -145,8 +146,35 @@ class ClprPeerSelectorTest {
         }
 
         @Test
+        @DisplayName("given endpoints that are not public IP literals, then they are skipped")
+        void givenNonPublicEndpoints_thenTheyAreSkipped() {
+            final var nonPublic = List.of(
+                    endpoint("127.0.0.1"), endpoint("10.0.0.1"), endpoint("169.254.169.254"), endpoint("peer.example"));
+            final var withPublic = new ArrayList<>(nonPublic);
+            withPublic.add(PEER_2);
+
+            assertThat(requireNonNull(subject.selectEndpoint(channel(), withPublic))
+                            .peerId())
+                    .isEqualTo(PEER_2_ID);
+            assertThat(subject.selectEndpoint(channel(), nonPublic)).isNull();
+        }
+
+        @Test
+        @DisplayName("given non-public endpoints are allowed, then a private peer is selected")
+        void givenNonPublicEndpointsAllowed_thenPrivatePeerIsSelected() {
+            allowNonPublicEndpoints();
+            final var privatePeer = endpoint("10.0.0.1");
+
+            assertThat(requireNonNull(subject.selectEndpoint(channel(), List.of(privatePeer)))
+                            .peerId())
+                    .isEqualTo("10.0.0.1:" + PEER_PORT);
+        }
+
+        @Test
         @DisplayName("given this node's own endpoint, then it is skipped")
         void givenSelfEndpoint_thenItIsSkipped() {
+            // Self-detection matches a loopback host, which is only dialable when non-public endpoints are allowed
+            allowNonPublicEndpoints();
             final var self = endpoint("127.0.0.1")
                     .copyBuilder()
                     .serviceEndpoint(ClprServiceEndpoint.newBuilder()
@@ -307,6 +335,15 @@ class ClprPeerSelectorTest {
                 .channelId(CHANNEL_ID)
                 .status(ClprChannelStatus.ACTIVE)
                 .build();
+    }
+
+    private void allowNonPublicEndpoints() {
+        given(versionedConfig.getConfigData(ClprConfig.class))
+                .willReturn(ClprConfigBuilder.newBuilder()
+                        .enabled(true)
+                        .syncPeerExclusionEnabled(true)
+                        .publicPeerEndpointsOnly(false)
+                        .build());
     }
 
     private static ClprEndpoint endpoint(final String host) {

@@ -56,7 +56,7 @@ public record ClprConfig(
         // --- Local peer exclusion heuristics ---
         // When false, CLPR does not reject inbound requests or remove outbound candidates
         // due to local shunning or open circuit-breaker state.
-        @ConfigProperty(defaultValue = "false") boolean syncPeerExclusionEnabled,
+        @ConfigProperty(defaultValue = "true") boolean syncPeerExclusionEnabled,
         // --- Queue monopolization protection (CLPR-3.5) ---
         @ConfigProperty(defaultValue = "50") @NetworkProperty
         int connectorQueueQuotaPct,
@@ -64,6 +64,23 @@ public record ClprConfig(
         // --- Verifier contract dispatch (CLPR-5.3) ---
         @ConfigProperty(defaultValue = "300000") @NetworkProperty
         long verifierGasLimit,
+
+        // --- Verifier output bounds ---
+        // Largest trust anchor, and largest trust anchor id, a verifier may return, in bytes. Both are stored on
+        // the Channel. The default leaves room for an Ethereum sync committee anchor (512 BLS keys, ~25 KB).
+        @ConfigProperty(defaultValue = "32768") @NetworkProperty @Min(1)
+        int maxTrustAnchorBytes,
+
+        // Largest serialized endpoint manifest stored on a Channel, in bytes. Endpoints past this budget are
+        // dropped in declared order, after unusable endpoints are removed and max_peer_endpoints is applied.
+        @ConfigProperty(defaultValue = "16384") @NetworkProperty @Min(1)
+        int maxEndpointManifestBytes,
+
+        // When true, a peer endpoint is stored and dialed only if its address is a publicly routable IP
+        // literal; hostnames and loopback, private, link-local, multicast and reserved addresses are dropped.
+        // Set false only on dev/test networks whose nodes run on such addresses.
+        @ConfigProperty(defaultValue = "true") @NetworkProperty
+        boolean publicPeerEndpointsOnly,
 
         // --- Node-submitted ClprSubmitBundle fee cap (tinybars) ---
         // Maximum fee the node will pay when submitting an inbound bundle for consensus.

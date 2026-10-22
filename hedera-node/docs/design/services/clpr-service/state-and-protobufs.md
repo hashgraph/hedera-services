@@ -75,9 +75,9 @@ Seeds `LEDGER_CONFIGURATION` with:
 - `chainId` and `protocolVersion` from `ClprConfig` (active network config).
 - Default `ClprThrottles`:
   - `maxSyncBytes = 4 MiB`
-  - `maxMessagesPerBundle = 1 000`
-  - `maxQueueDepth = 10 000`
-  - `maxMessagePayloadBytes = 64 KiB`
+  - `maxMessagesPerBundle = 100`
+  - `maxQueueDepth = 1 000`
+  - `maxMessagePayloadBytes = 16 KiB`
   - `maxSyncsPerSec = 10`
   - `maxLocalEndpoints = 10`
   - `maxPeerEndpoints = 10`

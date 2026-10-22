@@ -535,7 +535,7 @@ class ClprCompleteChannelHandlerTest {
                 .serviceAddress(PEER_CONFIG.serviceAddress())
                 .endpoints(List.of(ClprEndpoint.newBuilder()
                         .serviceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .ipAddress("10.0.0.1")
+                                .ipAddress("203.0.113.1")
                                 .port(50211)
                                 .build())
                         .tlsCertificate(Bytes.wrap(new byte[] {9, 9, 9}))
@@ -803,6 +803,63 @@ class ClprCompleteChannelHandlerTest {
     }
 
     @Test
+    void dropsPeerEndpointsThatAreNotPublicIpLiteralsBeforeTruncating() {
+        commitmentStore.put(ECDSA_COMMITMENT);
+        final var publicEndpoint = endpointAt("203.0.113.9");
+        final var peerManifest = ClprEndpointManifest.newBuilder()
+                .version(1L)
+                .serviceAddress(PEER_CONFIG.serviceAddress())
+                .endpoints(List.of(
+                        endpointAt("127.0.0.1"),
+                        endpointAt("169.254.169.254"),
+                        endpointAt("peer.example.com"),
+                        publicEndpoint,
+                        endpointAt("203.0.113.10")))
+                .build();
+        // A limit of one shows that dropped endpoints do not use up a slot
+        setupHandleContext(
+                validEcdsaTxnWithManifest(peerManifest), enabledConfig(), localConfigWithMaxPeerEndpoints(1));
+        setupVerifierAccount(true);
+
+        subject.handle(handleContext);
+
+        assertThat(channelStore.getChannel(CHANNEL_ID).endpointManifestOrThrow().endpoints())
+                .containsExactly(publicEndpoint);
+        then(channelLifecycle).should().seedPeerEndpoints(CHANNEL_ID, List.of(publicEndpoint));
+    }
+
+    @Test
+    void rejectsInitialTrustAnchorOverMaxTrustAnchorBytes() {
+        commitmentStore.put(ECDSA_COMMITMENT);
+        // One byte over the default clpr.maxTrustAnchorBytes
+        final var peerConfig = PEER_CONFIG
+                .copyBuilder()
+                .initialTrustAnchor(Bytes.wrap(new byte[32_769]))
+                .build();
+        setupHandleContext(validEcdsaTxnWithPeerConfig(peerConfig));
+        setupVerifierAccount(true);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_VERIFIER_CONFIG_FAILED));
+        assertThat(channelStore.getChannel(CHANNEL_ID)).isNull();
+    }
+
+    @Test
+    void rejectsOversizedPeerChainId() {
+        commitmentStore.put(ECDSA_COMMITMENT);
+        final var peerConfig =
+                PEER_CONFIG.copyBuilder().chainId("eip155:" + "1".repeat(64)).build();
+        setupHandleContext(validEcdsaTxnWithPeerConfig(peerConfig));
+        setupVerifierAccount(true);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_VERIFIER_CONFIG_FAILED));
+        assertThat(channelStore.getChannel(CHANNEL_ID)).isNull();
+    }
+
+    @Test
     void rejectsPeerConfigWithNegativeTimestampSeconds() {
         commitmentStore.put(ECDSA_COMMITMENT);
         final var peerConfig = PEER_CONFIG
@@ -912,12 +969,21 @@ class ClprCompleteChannelHandlerTest {
                 .build();
     }
 
+    private static ClprEndpoint endpointAt(final String ipAddress) {
+        return ClprEndpoint.newBuilder()
+                .serviceEndpoint(ClprServiceEndpoint.newBuilder()
+                        .ipAddress(ipAddress)
+                        .port(50211)
+                        .build())
+                .build();
+    }
+
     private static ClprEndpointManifest manifestWithEndpointCount(final int count) {
         final var endpoints = new ArrayList<ClprEndpoint>();
         for (int i = 0; i < count; i++) {
             endpoints.add(ClprEndpoint.newBuilder()
                     .serviceEndpoint(ClprServiceEndpoint.newBuilder()
-                            .ipAddress("10.0.0." + i)
+                            .ipAddress("203.0.113." + i)
                             .port(50211)
                             .build())
                     .tlsCertificate(Bytes.wrap(new byte[] {(byte) (i + 1)}))

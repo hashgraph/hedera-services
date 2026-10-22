@@ -1643,7 +1643,7 @@ class ClprDeepDiveBundleAuditTest {
     @DisplayName("#333: manifest replaced when version advances")
     void manifestReplacedWhenVersionAdvances() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var newManifest = buildManifest(3L, "203.0.113.5");
         // Bundle carries a message (Criterion 1) so progress isn't in question; we're
         // asserting only that the manifest write lands.
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
@@ -1662,7 +1662,7 @@ class ClprDeepDiveBundleAuditTest {
         // Cache is at v=5; bundle carries v=3 (stale) — silent skip, bundle still succeeds
         // via Criterion 1 (message).
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-        final var staleManifest = buildManifest(3L, "10.0.0.3");
+        final var staleManifest = buildManifest(3L, "203.0.113.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
         setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
@@ -1690,7 +1690,7 @@ class ClprDeepDiveBundleAuditTest {
     @DisplayName("#333: manifest update applied on DRAINED channel")
     void manifestUpdateAppliedOnDrainedChannel() {
         putChannelWithManifestVersion(ClprChannelStatus.DRAINED, 0, 0, ZERO_HASH, 1L);
-        final var newManifest = buildManifest(2L, "10.0.0.7");
+        final var newManifest = buildManifest(2L, "203.0.113.7");
         // Peer bundle metadata declares ACTIVE (peer's own channel state); local receiver
         // stays DRAINED. Manifest advancement is Criterion 5, satisfying NoProgress on its own.
         final var bundleContent = ClprBundleContent.newBuilder()
@@ -1715,7 +1715,7 @@ class ClprDeepDiveBundleAuditTest {
     @DisplayName("#334: bundle with only advancing manifest satisfies NoProgress via Criterion 5")
     void bundleWithOnlyAdvancingManifestSatisfiesProgress() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(1L, "10.0.0.11");
+        final var newManifest = buildManifest(1L, "203.0.113.11");
         // No messages, no trust anchor, no ack advance, no state transition — only Criterion 5.
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
@@ -1738,7 +1738,7 @@ class ClprDeepDiveBundleAuditTest {
     @DisplayName("#334: stale-only manifest fails NoProgress (Criterion 5 requires advance)")
     void bundleWithStaleManifestOnlyIsNoProgress() {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-        final var staleManifest = buildManifest(3L, "10.0.0.13");
+        final var staleManifest = buildManifest(3L, "203.0.113.13");
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
                         .nextMessageId(1)
@@ -3112,7 +3112,12 @@ class ClprDeepDiveBundleAuditTest {
     private static List<ClprEndpoint> endpointList(final int count) {
         final var endpoints = new ArrayList<ClprEndpoint>();
         for (int i = 0; i < count; i++) {
-            endpoints.add(ClprEndpoint.newBuilder().build());
+            endpoints.add(ClprEndpoint.newBuilder()
+                    .serviceEndpoint(ClprServiceEndpoint.newBuilder()
+                            .ipAddress("203.0.113." + (i + 1))
+                            .port(50211)
+                            .build())
+                    .build());
         }
         return endpoints;
     }

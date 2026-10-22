@@ -1641,7 +1641,7 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("#333: manifest replaced when version advances")
     void manifestReplacedWhenVersionAdvances() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var newManifest = buildManifest(3L, "203.0.113.5");
         // Bundle carries a message (Criterion 1) so progress isn't in question; we're
         // asserting only that the manifest write lands.
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
@@ -1660,7 +1660,7 @@ class ClprSubmitBundleHandlerTest {
         // Cache is at v=5; bundle carries v=3 (stale) — silent skip, bundle still succeeds
         // via Criterion 1 (message).
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-        final var staleManifest = buildManifest(3L, "10.0.0.3");
+        final var staleManifest = buildManifest(3L, "203.0.113.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
         setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
@@ -1688,7 +1688,7 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("#333: manifest update applied on DRAINED channel")
     void manifestUpdateAppliedOnDrainedChannel() {
         putChannelWithManifestVersion(ClprChannelStatus.DRAINED, 0, 0, ZERO_HASH, 1L);
-        final var newManifest = buildManifest(2L, "10.0.0.7");
+        final var newManifest = buildManifest(2L, "203.0.113.7");
         // Peer bundle metadata declares ACTIVE (peer's own channel state); local receiver
         // stays DRAINED. Manifest advancement is Criterion 5, satisfying NoProgress on its own.
         final var bundleContent = ClprBundleContent.newBuilder()
@@ -1713,7 +1713,7 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("#334: bundle with only advancing manifest satisfies NoProgress via Criterion 5")
     void bundleWithOnlyAdvancingManifestSatisfiesProgress() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(1L, "10.0.0.11");
+        final var newManifest = buildManifest(1L, "203.0.113.11");
         // No messages, no trust anchor, no ack advance, no state transition — only Criterion 5.
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
@@ -1736,7 +1736,7 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("#334: stale-only manifest fails NoProgress (Criterion 5 requires advance)")
     void bundleWithStaleManifestOnlyIsNoProgress() {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-        final var staleManifest = buildManifest(3L, "10.0.0.13");
+        final var staleManifest = buildManifest(3L, "203.0.113.13");
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
                         .nextMessageId(1)
@@ -1782,7 +1782,7 @@ class ClprSubmitBundleHandlerTest {
         // The Step 1b channel write is rolled back with the failed transaction, so the node-local cache (the inbound
         // mTLS trust set) must not pick up the unapplied manifest's endpoints either.
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var newManifest = buildManifest(3L, "203.0.113.5");
         final var valid = buildBundleWithManifest(newManifest, List.of(dataPayload()));
         final var badHash = valid.copyBuilder()
                 .metadata(valid.metadataOrThrow()
@@ -1802,7 +1802,7 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("manifest advancement reseeds peer endpoint cache")
     void manifestAdvancementReseedsPeerEndpointCache() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var newManifest = buildManifest(3L, "203.0.113.5");
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
         setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
@@ -1812,10 +1812,59 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
+    @DisplayName("manifest update stores and reseeds only endpoints with a public IP literal address")
+    void manifestUpdateDropsEndpointsThatAreNotPublicIpLiterals() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var publicEndpoint = buildManifest(3L, "203.0.113.5").endpoints().getFirst();
+        final var newManifest = ClprEndpointManifest.newBuilder()
+                .version(3L)
+                .endpoints(List.of(
+                        buildManifest(3L, "10.0.0.5").endpoints().getFirst(),
+                        buildManifest(3L, "169.254.169.254").endpoints().getFirst(),
+                        publicEndpoint,
+                        buildManifest(3L, "peer.example.com").endpoints().getFirst()))
+                .build();
+        setupHandleContextWithFlags(bundleTxn(buildBundleWithManifest(newManifest, List.of(dataPayload()))), true);
+
+        subject.handle(handleContext);
+
+        final var updated = channelStore.getChannel(CHANNEL_ID);
+        assertThat(updated.endpointManifestVersion()).isEqualTo(3L);
+        assertThat(updated.endpointManifestOrThrow().endpoints()).containsExactly(publicEndpoint);
+        verify(channelLifecycle).seedPeerEndpoints(CHANNEL_ID, List.of(publicEndpoint));
+    }
+
+    @Test
+    @DisplayName("successor trust anchor over clpr.maxTrustAnchorBytes is rejected without penalizing the submitter")
+    void rejectsOversizedSuccessorTrustAnchorWithoutPenalty() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var metadata = ClprQueueMetadata.newBuilder()
+                .nextMessageId(1)
+                .sentRunningHash(ZERO_HASH)
+                .receivedMessageId(0)
+                .status(ClprChannelStatus.ACTIVE)
+                .build();
+        final var bundleContent = ClprBundleContent.newBuilder()
+                .metadata(metadata)
+                // One byte over the default clpr.maxTrustAnchorBytes
+                .newTrustAnchor(Bytes.wrap(new byte[32_769]))
+                .newTrustAnchorId(Bytes.wrap(new byte[] {5, 6, 7, 8}))
+                .build();
+        setupHandleContext(bundleTxn(bundleContent), true);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_BUNDLE_VERIFICATION_FAILED))
+                .satisfies(e -> ((HandleException) e).maybeReplay(feeChargingContext, handleContext));
+        verify(feeChargingContext, never()).charge(any(), any(), any());
+        assertThat(channelStore.getChannel(CHANNEL_ID).trustAnchor()).isEqualTo(Bytes.EMPTY);
+    }
+
+    @Test
     @DisplayName("stale manifest does not reseed peer endpoint cache")
     void staleManifestDoesNotReseedPeerEndpointCache() {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-        final var staleManifest = buildManifest(3L, "10.0.0.3");
+        final var staleManifest = buildManifest(3L, "203.0.113.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
         setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 

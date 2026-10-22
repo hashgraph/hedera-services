@@ -29,9 +29,12 @@ public final class ClprConfigBuilder {
     private long retryMaxDelayMs = 30_000L;
     private int retryMaxAttempts = 5;
     private int circuitBreakerCooldownSeconds = 120;
-    private boolean syncPeerExclusionEnabled = false;
+    private boolean syncPeerExclusionEnabled = true;
     private int connectorQueueQuotaPct = 50;
     private long verifierGasLimit = 300_000L;
+    private int maxTrustAnchorBytes = 32_768;
+    private int maxEndpointManifestBytes = 16_384;
+    private boolean publicPeerEndpointsOnly = true;
     private boolean verifyProofsAtSender = true;
     private String peerEndpointsFile = "data/clpr/peer-endpoints.json";
     private long nodeSubmitBundleMaxFee = 1_000_000_000L;
@@ -161,6 +164,21 @@ public final class ClprConfigBuilder {
         return this;
     }
 
+    public ClprConfigBuilder maxTrustAnchorBytes(final int maxTrustAnchorBytes) {
+        this.maxTrustAnchorBytes = maxTrustAnchorBytes;
+        return this;
+    }
+
+    public ClprConfigBuilder maxEndpointManifestBytes(final int maxEndpointManifestBytes) {
+        this.maxEndpointManifestBytes = maxEndpointManifestBytes;
+        return this;
+    }
+
+    public ClprConfigBuilder publicPeerEndpointsOnly(final boolean publicPeerEndpointsOnly) {
+        this.publicPeerEndpointsOnly = publicPeerEndpointsOnly;
+        return this;
+    }
+
     public ClprConfigBuilder nodeSubmitBundleMaxFee(final long nodeSubmitBundleMaxFee) {
         this.nodeSubmitBundleMaxFee = nodeSubmitBundleMaxFee;
         return this;
@@ -245,6 +263,9 @@ public final class ClprConfigBuilder {
                 syncPeerExclusionEnabled,
                 connectorQueueQuotaPct,
                 verifierGasLimit,
+                maxTrustAnchorBytes,
+                maxEndpointManifestBytes,
+                publicPeerEndpointsOnly,
                 nodeSubmitBundleMaxFee,
                 verifyProofsAtSender,
                 peerEndpointsFile,

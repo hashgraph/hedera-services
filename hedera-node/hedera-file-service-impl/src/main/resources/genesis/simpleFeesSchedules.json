@@ -799,12 +799,12 @@
         },
         {
           "name": "ClprRegisterChannel",
-          "baseFee": 10000000,
+          "baseFee": 10000000000,
           "extras": []
         },
         {
           "name": "ClprCompleteChannel",
-          "baseFee": 10000000,
+          "baseFee": 10000000000,
           "extras": []
         },
         {
@@ -819,17 +819,17 @@
         },
         {
           "name": "ClprRegisterConnector",
-          "baseFee": 10000000,
+          "baseFee": 1000000000,
           "extras": []
         },
         {
           "name": "ClprCompleteConnector",
-          "baseFee": 10000000,
+          "baseFee": 1000000000,
           "extras": []
         },
         {
           "name": "ClprDeregisterConnector",
-          "baseFee": 10000000,
+          "baseFee": 1000000000,
           "extras": []
         },
         {

@@ -162,9 +162,11 @@ public class V0780ClprSchema extends Schema<SemanticVersion> {
             final var clprConfig = configuration.getConfigData(ClprConfig.class);
             final var defaultThrottles = ClprThrottles.newBuilder()
                     .maxSyncBytes(4_194_304L) // 4 MB
-                    .maxMessagesPerBundle(1_000)
-                    .maxQueueDepth(10_000)
-                    .maxMessagePayloadBytes(65_536) // 64 KB per message
+                    .maxMessagesPerBundle(100)
+                    .maxQueueDepth(1_000)
+                    .maxMessagePayloadBytes(16_384) // 16 KB per message
+                    // Bounds the peer endpoints stored per Channel, all of which every node dials
+                    .maxPeerEndpoints(10)
                     .maxGasPerMessage(Math.min(
                             DEFAULT_MAX_GAS_PER_MESSAGE,
                             configuration.getConfigData(ContractsConfig.class).maxGasPerTransaction()))

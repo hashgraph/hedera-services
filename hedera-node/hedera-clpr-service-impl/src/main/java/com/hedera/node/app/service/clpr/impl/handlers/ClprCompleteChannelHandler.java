@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.clpr.ClprChannelLifecycle;
 import com.hedera.node.app.service.clpr.ReadableLedgerConfigurationStore;
+import com.hedera.node.app.service.clpr.impl.ClprPeerEndpoints;
 import com.hedera.node.app.service.clpr.impl.WritableChannelStore;
 import com.hedera.node.app.service.clpr.impl.WritablePendingCommitmentStore;
 import com.hedera.node.app.service.clpr.impl.verifier.ClprVerifier;
@@ -36,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.config.data.ClprConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -59,6 +61,12 @@ import org.slf4j.LoggerFactory;
 public final class ClprCompleteChannelHandler extends AbstractClprHandler {
     private static final Logger log = LoggerFactory.getLogger(ClprCompleteChannelHandler.class);
     private static final Bytes ZERO_HASH = Bytes.wrap(new byte[32]);
+
+    /** Longest peer chain id stored on a Channel; a CAIP-2 chain id is at most 41 characters. */
+    private static final int MAX_CHAIN_ID_LENGTH = 64;
+
+    /** Largest peer service address stored on a Channel; EVM addresses are 20 bytes. */
+    private static final int MAX_SERVICE_ADDRESS_BYTES = 64;
 
     /**
      * Contract numbers of built-in system contracts that are valid verifier targets but have
@@ -308,6 +316,24 @@ public final class ClprCompleteChannelHandler extends AbstractClprHandler {
                     shortHex(MiscCryptoUtils.keccak256DigestOf(peerConfig.initialTrustAnchor())));
         }
         validateTrue(peerConfig.throttles() != null, CLPR_VERIFIER_CONFIG_FAILED);
+        // Everything the verifier returns is stored on the Channel, and whoever completes the
+        // channel chooses the verifier, so bound each field here instead of relying on its gas limit.
+        final var clprConfig = context.configuration().getConfigData(ClprConfig.class);
+        final boolean withinSizeLimits = peerConfig.chainId().length() <= MAX_CHAIN_ID_LENGTH
+                && peerConfig.serviceAddress().length() <= MAX_SERVICE_ADDRESS_BYTES
+                && peerConfig.initialTrustAnchor().length() <= clprConfig.maxTrustAnchorBytes()
+                && peerConfig.initialTrustAnchorId().length() <= clprConfig.maxTrustAnchorBytes();
+        if (!withinSizeLimits) {
+            log.warn(
+                    "[ClprCompleteChannel] verified config rejected: oversized field channelId={} chainIdLength={} "
+                            + "serviceAddressBytes={} initialTrustAnchorBytes={} initialTrustAnchorIdBytes={}",
+                    shortHex(op.channelId()),
+                    peerConfig.chainId().length(),
+                    peerConfig.serviceAddress().length(),
+                    peerConfig.initialTrustAnchor().length(),
+                    peerConfig.initialTrustAnchorId().length());
+        }
+        validateTrue(withinSizeLimits, CLPR_VERIFIER_CONFIG_FAILED);
         // A manifest-backed channel may legitimately start empty: ClprEndpointManifest permits an
         // empty endpoint list at version >= 1, and genesis creates exactly that — later
         // manifest-update bundles populate it. So an empty peer-endpoint list is not rejected here.
@@ -327,17 +353,29 @@ public final class ClprCompleteChannelHandler extends AbstractClprHandler {
                 op.verifierContractOrThrow(),
                 shortHex(verifierFingerprint));
 
-        // 7. Truncate the peer endpoint list to this ledger's max_peer_endpoints (spec §3.10.5).
-        //    The receiving ledger imposes its own bound on how many peer endpoints it stores on
-        //    chain per Channel; entries beyond the limit are silently discarded in declared
-        //    order. Zero means no limit. Read from the LOCAL ledger config — the peer's
-        //    declaration of its own list doesn't override our storage policy.
+        // 7. Apply this ledger's endpoint storage policy (spec §3.10.5): drop endpoints that are
+        //    not safe to dial (see ClprPeerEndpoints), truncate to max_peer_endpoints (zero means
+        //    no limit), and drop endpoints past the manifest byte budget, all in declared order.
+        //    Read from the LOCAL ledger config — the peer's declaration of its own list doesn't
+        //    override our storage policy.
         final var localConfigStore = context.storeFactory().readableStore(ReadableLedgerConfigurationStore.class);
         final var localThrottles = localConfigStore.getConfiguration().throttlesOrElse(ClprThrottles.DEFAULT);
         final int rawPeerLimit = localThrottles.maxPeerEndpoints();
-        final List<ClprEndpoint> truncatedPeerEndpoints = rawPeerLimit > 0 && peerEndpoints.size() > rawPeerLimit
-                ? peerEndpoints.subList(0, rawPeerLimit)
-                : peerEndpoints;
+        final var storedManifest = ClprPeerEndpoints.boundedManifest(
+                peerManifest,
+                clprConfig.publicPeerEndpointsOnly(),
+                rawPeerLimit,
+                clprConfig.maxEndpointManifestBytes());
+        if (storedManifest == null) {
+            log.warn(
+                    "[ClprCompleteChannel] verified manifest rejected: exceeds {} bytes without endpoints channelId={} "
+                            + "manifestServiceAddressBytes={}",
+                    clprConfig.maxEndpointManifestBytes(),
+                    shortHex(op.channelId()),
+                    peerManifest.serviceAddress().length());
+        }
+        validateTrue(storedManifest != null, CLPR_VERIFIER_CONFIG_FAILED);
+        final List<ClprEndpoint> truncatedPeerEndpoints = storedManifest.endpoints();
         log.debug(
                 "[ClprCompleteChannel] endpoint policy channelId={} peerEndpoints={} localMaxPeerEndpoints={} "
                         + "storedEndpoints={}",
@@ -378,11 +416,9 @@ public final class ClprCompleteChannelHandler extends AbstractClprHandler {
         // Attach the peer endpoint manifest: it is the runtime dial-target source (spec §4.7,
         // ClprChannelManager.resolveDialTargets).
         //
-        // Store the manifest carrying the LOCALLY TRUNCATED endpoint list (this ledger's
-        // max_peer_endpoints policy), not the peer's full list — the stored manifest IS what the
-        // orchestrator dials, so it must honor the same bound applied to the seeded cache below.
-        final var storedManifest =
-                peerManifest.copyBuilder().endpoints(truncatedPeerEndpoints).build();
+        // Store the manifest carrying the LOCALLY FILTERED endpoint list (this ledger's storage
+        // policy above), not the peer's full list — the stored manifest IS what the orchestrator
+        // dials, so it must honor the same bound applied to the seeded cache below.
         channelBuilder.endpointManifest(storedManifest).endpointManifestVersion(storedManifest.version());
         final var channel = channelBuilder.build();
         channelStore.put(channel);

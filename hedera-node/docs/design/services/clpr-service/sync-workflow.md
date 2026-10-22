@@ -123,7 +123,7 @@ apply circuit-breaker / retry policy (`clpr.retryInitialDelayMs`,
 `clpr.retryMaxDelayMs`, `clpr.retryMaxAttempts`,
 `clpr.circuitBreakerCooldownSeconds`); decay peer reputation
 (`clpr.reputationDecaySeconds`). Open circuit breakers remove peers from the candidate
-set only when `clpr.syncPeerExclusionEnabled=true`; the default false setting keeps those
+set only when `clpr.syncPeerExclusionEnabled=true` (the default); setting it to false keeps those
 signals observational and never declines to initiate a sync on that basis.
 - Each bundle the peer streams back is handed to `ClprBundleSubmitter` to ingest the peer's
 outbound (i.e. our inbound) messages.

@@ -42,6 +42,7 @@ others are node-local.
 | `retryMaxDelayMs`               | `30 000` | no       | Backoff cap.                               |
 | `retryMaxAttempts`              | `5`      | no       | Max retries before circuit-break.          |
 | `circuitBreakerCooldownSeconds` | `120`    | no       | Cooldown after circuit opens.              |
+| `syncPeerExclusionEnabled`      | `true`   | no       | Act on shunning and open circuit breakers. |
 
 ### Inbound misbehaviour (CLPR-4.6, used by `InboundSyncThrottle`)
 
@@ -61,6 +62,17 @@ others are node-local.
 |        Key         |  Default  | Network? |                                  Purpose                                  |
 |--------------------|-----------|----------|---------------------------------------------------------------------------|
 | `verifierGasLimit` | `300 000` | yes      | Gas for `ClprVerifier.verifyBundle` / `verifyConfig` (`EvmClprVerifier`). |
+
+`CLPR_COMPLETE_CHANNEL` and `CLPR_SUBMIT_BUNDLE` reserve `verifierGasLimit` against the network gas throttle
+(`contracts.maxGasPerSec`) when `contracts.throttle.throttleByGas` is on, since each runs the channel's verifier.
+
+### Verifier output bounds (used by `ClprCompleteChannelHandler` / `ClprSubmitBundleHandler`)
+
+|            Key             | Default  | Network? |                                                 Purpose                                                  |
+|----------------------------|----------|----------|----------------------------------------------------------------------------------------------------------|
+| `maxTrustAnchorBytes`      | `32 768` | yes      | Largest trust anchor, and trust anchor id, a verifier may return; larger values fail the transaction.    |
+| `maxEndpointManifestBytes` | `16 384` | yes      | Largest stored endpoint manifest; endpoints past it are dropped in declared order.                       |
+| `publicPeerEndpointsOnly`  | `true`   | yes      | Keep only peer endpoints whose address is a public IP literal (see `ClprPeerEndpoints`); off for dev/test. |
 
 > Application-message dispatch gas is **not** a node-config value. `ClprSubmitBundleHandler`
 > caps each application callback (`onClprMessage` / `onClprResponse`) at the per-Channel

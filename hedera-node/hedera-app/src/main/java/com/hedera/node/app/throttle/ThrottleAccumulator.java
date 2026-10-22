@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.throttle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_COMPLETE_CHANNEL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_SUBMIT_BUNDLE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
@@ -101,8 +102,15 @@ import org.apache.logging.log4j.Logger;
  */
 public class ThrottleAccumulator {
     private static final Logger log = LogManager.getLogger(ThrottleAccumulator.class);
-    private static final Set<HederaFunctionality> CONTRACT_FUNCTIONS =
-            EnumSet.of(CONTRACT_CALL_LOCAL, CONTRACT_CALL, CONTRACT_CREATE, ETHEREUM_TRANSACTION, HOOK_DISPATCH);
+    // CLPR_COMPLETE_CHANNEL and CLPR_SUBMIT_BUNDLE run the channel's verifier contract, so they reserve its gas too
+    private static final Set<HederaFunctionality> CONTRACT_FUNCTIONS = EnumSet.of(
+            CONTRACT_CALL_LOCAL,
+            CONTRACT_CALL,
+            CONTRACT_CREATE,
+            ETHEREUM_TRANSACTION,
+            HOOK_DISPATCH,
+            CLPR_COMPLETE_CHANNEL,
+            CLPR_SUBMIT_BUNDLE);
     private static final Set<HederaFunctionality> AUTO_CREATE_FUNCTIONS =
             EnumSet.of(CRYPTO_TRANSFER, ETHEREUM_TRANSACTION);
     private static final int UNKNOWN_NUM_IMPLICIT_CREATIONS = -1;
@@ -828,6 +836,9 @@ public class ThrottleAccumulator {
                                 .callOrElse(HookCall.DEFAULT)
                                 .evmHookCallOrElse(EvmHookCall.DEFAULT)
                                 .gasLimit();
+                    // The verifier dispatch is not given a gas limit by the payer but by this network
+                    case CLPR_COMPLETE_CHANNEL, CLPR_SUBMIT_BUNDLE ->
+                        configSupplier.get().getConfigData(ClprConfig.class).verifierGasLimit();
                     default -> 0L;
                 };
         // Interpret negative gas as overflow

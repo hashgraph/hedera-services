@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.clpr.ClprChannel;
 import com.hedera.hapi.node.state.clpr.ClprEndpoint;
+import com.hedera.node.app.service.clpr.impl.ClprPeerEndpoints;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.ClprConfig;
@@ -77,12 +78,26 @@ public final class ClprPeerSelector {
             return null;
         }
         final NodeIdentity thisNodeIdentity = getNodeIdentity();
+        // Endpoints are filtered when stored, but state written before that check, or the node-local endpoint cache,
+        // may still hold one this node must not dial.
+        final boolean publicOnly = configProvider
+                .getConfiguration()
+                .getConfigData(ClprConfig.class)
+                .publicPeerEndpointsOnly();
         final var endpointsById = new HashMap<String, ClprEndpoint>();
         for (final var ep : providedEndpoints) {
             final var svc = ep.serviceEndpoint();
             if (svc == null) {
                 logger.warn(
                         "[CLPR-SYNC-OUTBOUND] endpoint missing serviceEndpoint channel={} endpoint={}", channelId, ep);
+                continue;
+            }
+            if (!ClprPeerEndpoints.isUsable(ep, publicOnly)) {
+                logger.warn(
+                        "[CLPR-SYNC-OUTBOUND] skipping endpoint not allowed for dialing channel={} endpoint={}:{}",
+                        channelId,
+                        svc.ipAddress(),
+                        svc.port());
                 continue;
             }
             if (thisNodeIdentity.isSelf(svc.ipAddress(), svc.port())) {

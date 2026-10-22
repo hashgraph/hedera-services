@@ -16,6 +16,24 @@
     },
     {
       "burstPeriod": 0,
+      "burstPeriodMs": 1000,
+      "name": "ClprChannelOps",
+      "throttleGroups": [
+        {
+          "opsPerSec": 0,
+          "milliOpsPerSec": 10000,
+          "operations": [
+            "ClprRegisterChannel",
+            "ClprCompleteChannel",
+            "ClprRegisterConnector",
+            "ClprCompleteConnector",
+            "ClprDeregisterConnector"
+          ]
+        }
+      ]
+    },
+    {
+      "burstPeriod": 0,
       "burstPeriodMs": 15000,
       "name": "ThroughputLimits",
       "throttleGroups": [
@@ -62,12 +80,7 @@
             "RegisteredNodeDelete",
             "AtomicBatch",
             "ClprUpdateLedgerConfiguration",
-            "ClprRegisterChannel",
-            "ClprCompleteChannel",
             "ClprCloseChannel",
-            "ClprRegisterConnector",
-            "ClprCompleteConnector",
-            "ClprDeregisterConnector",
             "ClprSubmitBundle",
             "ClprGetLedgerConfiguration",
             "ClprGetEndpointManifest"
