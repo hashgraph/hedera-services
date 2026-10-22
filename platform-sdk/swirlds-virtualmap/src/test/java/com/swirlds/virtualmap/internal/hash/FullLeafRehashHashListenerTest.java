@@ -282,14 +282,16 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
                 gatedDataSource, new VirtualMapStatistics("test"), VirtualHashChunk.getChunkSize(hashChunkHeight));
         chunkListener.onHashingStarted(1, 1_000_000);
         try {
-            // The first chunk is flushed, and the flush blocks in the data source
+            // The first chunk is flushed, and the flush blocks in the data source. The second chunk fills the
+            // next batch
             chunkListener.onHashChunkHashed(fullChunk(0, hashChunkHeight));
             assertTrue(saveStarted.await(10, SECONDS), "The first flush must start");
-            // The second chunk fills the next batch, so it blocks till the running flush is complete
+            chunkListener.onHashChunkHashed(fullChunk(1, hashChunkHeight));
+            // The third chunk blocks till the running flush is complete
             final CompletableFuture<Void> result = new CompletableFuture<>();
             final Thread hashingThread = new Thread(() -> {
                 try {
-                    chunkListener.onHashChunkHashed(fullChunk(1, hashChunkHeight));
+                    chunkListener.onHashChunkHashed(fullChunk(2, hashChunkHeight));
                     result.complete(null);
                 } catch (final Throwable t) {
                     result.completeExceptionally(t);
