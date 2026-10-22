@@ -14,15 +14,18 @@ public record AtomicBatchConfig(
         @ConfigProperty(defaultValue = "50") @NetworkProperty long maxNumberOfTransactions,
         // The only types allowed as inner transactions; a new type stays out of batches until it is added here
         @ConfigProperty(defaultValue =
-            "CryptoTransfer,CryptoUpdate,CryptoDelete,ContractCall,ContractCreate,ContractUpdate,FileCreate,"
-                + "FileAppend,FileUpdate,FileDelete,CryptoCreate,SystemDelete,SystemUndelete,ContractDelete,"
-                + "ConsensusCreateTopic,ConsensusUpdateTopic,ConsensusDeleteTopic,ConsensusSubmitMessage,"
-                + "TokenCreate,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,"
-                + "TokenRevokeKycFromAccount,TokenDelete,TokenUpdate,TokenMint,TokenBurn,TokenAccountWipe,"
-                + "TokenAssociateToAccount,TokenDissociateFromAccount,ScheduleDelete,TokenFeeScheduleUpdate,"
-                + "TokenPause,TokenUnpause,CryptoApproveAllowance,CryptoDeleteAllowance,EthereumTransaction,"
-                + "UtilPrng,TokenUpdateNfts,NodeCreate,NodeUpdate,NodeDelete,TokenReject,TokenAirdrop,"
-                + "TokenCancelAirdrop,TokenClaimAirdrop,HookStore,RegisteredNodeCreate,RegisteredNodeUpdate,"
-                + "RegisteredNodeDelete")
+            "CryptoTransfer,CryptoUpdate,CryptoDelete,CryptoAddLiveHash,CryptoDeleteLiveHash,ContractCall,"
+                + "ContractCreate,ContractUpdate,FileCreate,FileAppend,FileUpdate,FileDelete,CryptoCreate,"
+                + "SystemDelete,SystemUndelete,ContractDelete,ConsensusCreateTopic,ConsensusUpdateTopic,"
+                + "ConsensusDeleteTopic,ConsensusSubmitMessage,UncheckedSubmit,TokenCreate,TokenFreezeAccount,"
+                + "TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenDelete,TokenUpdate,"
+                + "TokenMint,TokenBurn,TokenAccountWipe,TokenAssociateToAccount,TokenDissociateFromAccount,"
+                + "ScheduleDelete,TokenFeeScheduleUpdate,TokenPause,TokenUnpause,CryptoApproveAllowance,"
+                + "CryptoDeleteAllowance,EthereumTransaction,NodeStakeUpdate,UtilPrng,TokenUpdateNfts,NodeCreate,"
+                + "NodeUpdate,NodeDelete,TokenReject,TokenAirdrop,TokenCancelAirdrop,TokenClaimAirdrop,"
+                + "StateSignatureTransaction,HintsKeyPublication,HintsPreprocessingVote,HintsPartialSignature,"
+                + "HistoryAssemblySignature,HistoryProofKeyPublication,HistoryProofVote,CrsPublication,HookDispatch,"
+                + "HookStore,LedgerIdPublication,RegisteredNodeCreate,RegisteredNodeUpdate,RegisteredNodeDelete,"
+                + "MigrationRootHashVote")
                 @NetworkProperty HederaFunctionalitySet whitelist) {}
 // spotless:on

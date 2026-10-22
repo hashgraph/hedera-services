@@ -120,30 +120,10 @@ class AtomicBatchHandlerTest {
             AccountID.newBuilder().accountNum(0).build();
     // Transaction types not in the default atomicBatch.whitelist
     private static final Set<HederaFunctionality> NOT_BATCHABLE_BY_DEFAULT = EnumSet.of(
-            // Already excluded from batches before the whitelist
             HederaFunctionality.FREEZE,
             HederaFunctionality.ATOMIC_BATCH,
             HederaFunctionality.SCHEDULE_CREATE,
             HederaFunctionality.SCHEDULE_SIGN,
-            // Unsupported
-            HederaFunctionality.CRYPTO_ADD_LIVE_HASH,
-            HederaFunctionality.CRYPTO_DELETE_LIVE_HASH,
-            HederaFunctionality.UNCHECKED_SUBMIT,
-            // Node-submitted
-            HederaFunctionality.STATE_SIGNATURE_TRANSACTION,
-            HederaFunctionality.HINTS_KEY_PUBLICATION,
-            HederaFunctionality.HINTS_PREPROCESSING_VOTE,
-            HederaFunctionality.HINTS_PARTIAL_SIGNATURE,
-            HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE,
-            HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION,
-            HederaFunctionality.HISTORY_PROOF_VOTE,
-            HederaFunctionality.CRS_PUBLICATION,
-            HederaFunctionality.MIGRATION_ROOT_HASH_VOTE,
-            // Internal, never submitted by users
-            HederaFunctionality.NODE_STAKE_UPDATE,
-            HederaFunctionality.HOOK_DISPATCH,
-            HederaFunctionality.LEDGER_ID_PUBLICATION,
-            // CLPR
             HederaFunctionality.CLPR_UPDATE_LEDGER_CONFIGURATION,
             HederaFunctionality.CLPR_REGISTER_CHANNEL,
             HederaFunctionality.CLPR_COMPLETE_CHANNEL,
