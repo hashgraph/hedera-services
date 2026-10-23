@@ -9,6 +9,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALRE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hapi.utils.contracts.HookUtils.minimalRepresentationOf;
 import static com.hedera.node.app.service.token.HookDispatchUtils.HTS_HOOKS_CONTRACT_NUM;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.BATCH_INNER;
@@ -632,6 +633,21 @@ public class BlockStreamBuilder
      * @return the list of block items
      */
     public Output build(final boolean topLevel, @Nullable final List<StateChange> groupStateChanges) {
+        return build(topLevel, groupStateChanges, groupStateChanges != null);
+    }
+
+    /**
+     * Builds block items, distinguishing shared EVM state changes from intermediate trace output.
+     *
+     * @param topLevel if true, always includes a following {@link StateChanges} item
+     * @param sharedStateChanges if not null, the committed changes used to resolve implicit EVM slot-write indexes
+     * @param emitIntermediateTraceData whether to emit intermediate fields normally derived from state changes
+     * @return the list of block items
+     */
+    public Output build(
+            final boolean topLevel,
+            @Nullable final List<StateChange> sharedStateChanges,
+            final boolean emitIntermediateTraceData) {
         final var blockItems = new ArrayList<BlockItem>();
         // Construct the context here to capture any additional Ethereum transaction details needed
         // for the legacy record before they are removed from the block stream output item
@@ -660,28 +676,23 @@ public class BlockStreamBuilder
             final var builder = EvmTraceData.newBuilder();
             if (slotUsages != null) {
                 final boolean traceExplicitWrites = logicallyIdentical == null;
-                if (traceExplicitWrites) {
-                    // When writes are traced explicitly in ContractSlotUsage#writtenSlotKeys, we index the reads
-                    // to their corresponding writes; so in the case of a reverted transaction, we need to swap
-                    // the indexes back to the original keys before output
+                if (traceExplicitWrites || status == REVERTED_SUCCESS) {
+                    // Reverted executions have no committed writes. Restore explicit indexes to keys, and keep
+                    // implicit placeholders from being indexed against a surviving sibling's writes to the same slot.
                     if (status == REVERTED_SUCCESS) {
                         slotUsages = slotUsages.stream()
                                 .map(usage -> {
                                     final var writtenKeys = usage.writtenSlotKeysOrElse(WrittenSlotKeys.DEFAULT)
                                             .keys();
-                                    var reads = usage.slotReads();
-                                    if (!writtenKeys.isEmpty()) {
-                                        final List<SlotRead> explicitReads = new ArrayList<>(reads.size());
-                                        for (final var read : reads) {
-                                            if (read.hasIndex()) {
-                                                explicitReads.add(read.copyBuilder()
-                                                        .key(writtenKeys.get(read.indexOrThrow()))
-                                                        .build());
-                                            } else {
-                                                explicitReads.add(read);
-                                            }
-                                        }
-                                        reads = explicitReads;
+                                    final List<SlotRead> reads =
+                                            new ArrayList<>(usage.slotReads().size());
+                                    for (final var read : usage.slotReads()) {
+                                        final var key = read.hasIndex()
+                                                ? writtenKeys.get(read.indexOrThrow())
+                                                : read.keyOrThrow();
+                                        reads.add(read.copyBuilder()
+                                                .key(minimalRepresentationOf(key))
+                                                .build());
                                     }
                                     return usage.copyBuilder()
                                             .slotReads(reads)
@@ -690,13 +701,13 @@ public class BlockStreamBuilder
                                 })
                                 .toList();
                     }
-                    // Nothing else to do if these slot usages already traced their written keys explicitly
+                    // Explicit writes are already indexed, and reverted executions now contain only reads.
                     builder.contractSlotUsages(slotUsages);
                 } else {
                     // If writes are implicit as the non-identical slot updates in the state changes list,
                     // we need to index the corresponding reads to minimize the size of the output stream
                     final Map<ContractID, Map<Bytes, Integer>> implicitWriteIndexes = new HashMap<>();
-                    final var relevantStateChanges = groupStateChanges != null ? groupStateChanges : stateChanges;
+                    final var relevantStateChanges = sharedStateChanges != null ? sharedStateChanges : stateChanges;
                     for (final var stateChange : relevantStateChanges) {
                         if (stateChange.stateId() == STATE_ID_STORAGE.protoOrdinal()) {
                             SlotKey slotKey = null;
@@ -757,25 +768,25 @@ public class BlockStreamBuilder
                                 contractId = ContractID.DEFAULT;
                             }
                             final var writeIndexes = implicitWriteIndexes.get(contractId);
-                            if (writeIndexes != null) {
-                                final List<SlotRead> indexedReads = new ArrayList<>(reads.size());
-                                for (final var read : reads) {
-                                    var key = read.keyOrThrow();
-                                    if (contractId == ContractID.DEFAULT) {
-                                        key = WritableEvmHookStore.minimalKey(key);
-                                    }
-                                    final var index = writeIndexes.get(key);
-                                    if (index != null) {
-                                        indexedReads.add(new SlotRead(new OneOf<>(INDEX, index), read.readValue()));
-                                    } else {
-                                        indexedReads.add(read);
-                                    }
+                            final List<SlotRead> indexedReads = new ArrayList<>(reads.size());
+                            for (final var read : reads) {
+                                var key = read.keyOrThrow();
+                                if (contractId == ContractID.DEFAULT) {
+                                    key = WritableEvmHookStore.minimalKey(key);
                                 }
-                                indexedSlotUsages.add(
-                                        new ContractSlotUsage(slotUsage.contractIdOrThrow(), null, indexedReads));
-                            } else {
-                                indexedSlotUsages.add(slotUsage);
+                                final var index = writeIndexes == null ? null : writeIndexes.get(key);
+                                if (index != null) {
+                                    indexedReads.add(new SlotRead(new OneOf<>(INDEX, index), read.readValue()));
+                                } else {
+                                    // Implicit write placeholders use full keys for lookup. If no committed write
+                                    // remains, externalize the key with the same minimal encoding as read-only slots.
+                                    indexedReads.add(read.copyBuilder()
+                                            .key(minimalRepresentationOf(read.keyOrThrow()))
+                                            .build());
+                                }
                             }
+                            indexedSlotUsages.add(
+                                    new ContractSlotUsage(slotUsage.contractIdOrThrow(), null, indexedReads));
                         }
                     }
                     builder.contractSlotUsages(indexedSlotUsages);
@@ -797,7 +808,7 @@ public class BlockStreamBuilder
         }
 
         // Add trace data for batch inner transaction fields, that are normally computed by state changes
-        if (groupStateChanges != null) {
+        if (emitIntermediateTraceData) {
             // message submit trace data
             if (sequenceNumber > 0 || runningHash != Bytes.EMPTY) {
                 final var builder = SubmitMessageTraceData.newBuilder()
@@ -840,6 +851,17 @@ public class BlockStreamBuilder
     @Override
     public @Nullable Predicate<Object> logicallyIdenticalValueTest() {
         return logicallyIdentical;
+    }
+
+    /**
+     * Returns whether this builder traces any written storage keys explicitly, without an identical-value test.
+     */
+    public boolean hasExplicitContractSlotWrites() {
+        return logicallyIdentical == null
+                && slotUsages != null
+                && slotUsages.stream().anyMatch(usage -> !usage.writtenSlotKeysOrElse(WrittenSlotKeys.DEFAULT)
+                        .keys()
+                        .isEmpty());
     }
 
     @Override
