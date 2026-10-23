@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-package org.hiero.base.eventbus;
+package org.hiero.consensus.eventbus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.hiero.consensus.model.node.NodeId;
+import org.hiero.consensus.test.fixtures.eventbus.EventBus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,8 +22,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("EventBus Test")
 class EventBusTest {
 
-    private static final String TEST_KEY_1 = "testKey1";
-    private static final String TEST_KEY_2 = "testKey2";
+    private static final NodeId TEST_KEY_1 = NodeId.of(1);
+    private static final NodeId TEST_KEY_2 = NodeId.of(2);
     private static final String TEST_CHANNEL = "testChannel";
     private static final String TEST_MESSAGE = "testMessage";
 
@@ -108,57 +110,6 @@ class EventBusTest {
     }
 
     @Test
-    @DisplayName("Unsubscribe removes specific callback")
-    void unsubscribe() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final List<String> messages = new ArrayList<>();
-        final Consumer<String> callback = messages::add;
-
-        eventBus.subscribe(TEST_CHANNEL, callback);
-        eventBus.publish(TEST_CHANNEL, "message1");
-
-        assertThat(eventBus.unsubscribe(TEST_CHANNEL, callback)).isTrue();
-        eventBus.publish(TEST_CHANNEL, "message2");
-
-        assertThat(messages).hasSize(1).containsExactly("message1");
-    }
-
-    @Test
-    @DisplayName("Unsubscribe returns false for non-existent callback")
-    void unsubscribeNonExistentCallback() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final Consumer<String> callback = s -> {};
-
-        assertThat(eventBus.unsubscribe(TEST_CHANNEL, callback)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Unsubscribe returns false for non-existent channel")
-    void unsubscribeNonExistentChannel() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final Consumer<String> callback = s -> {};
-
-        assertThat(eventBus.unsubscribe("nonExistentChannel", callback)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Unsubscribe all removes all callbacks from channel")
-    void unsubscribeAll() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final List<String> messages1 = new ArrayList<>();
-        final List<String> messages2 = new ArrayList<>();
-
-        eventBus.subscribe(TEST_CHANNEL, messages1::add);
-        eventBus.subscribe(TEST_CHANNEL, messages2::add);
-
-        eventBus.unsubscribeAll(TEST_CHANNEL);
-        eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
-
-        assertThat(messages1).isEmpty();
-        assertThat(messages2).isEmpty();
-    }
-
-    @Test
     @DisplayName("Subscribe throws NullPointerException for null channel")
     void subscribeNullChannel() {
         final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
@@ -172,30 +123,6 @@ class EventBusTest {
         final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
 
         assertThatThrownBy(() -> eventBus.subscribe(TEST_CHANNEL, null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    @DisplayName("Unsubscribe throws NullPointerException for null channel")
-    void unsubscribeNullChannel() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-
-        assertThatThrownBy(() -> eventBus.unsubscribe(null, s -> {})).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    @DisplayName("Unsubscribe throws NullPointerException for null callback")
-    void unsubscribeNullCallback() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-
-        assertThatThrownBy(() -> eventBus.unsubscribe(TEST_CHANNEL, null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    @DisplayName("UnsubscribeAll throws NullPointerException for null channel")
-    void unsubscribeAllNullChannel() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-
-        assertThatThrownBy(() -> eventBus.unsubscribeAll(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -246,10 +173,10 @@ class EventBusTest {
     @Test
     @DisplayName("Shutdown removes instance from global map")
     void shutdownRemovesInstance() {
-        EventBus bus1 = EventBus.getInstance("shutdownKey");
+        EventBus bus1 = EventBus.getInstance(NodeId.of(3));
         bus1.shutdown();
 
-        EventBus bus2 = EventBus.getInstance("shutdownKey");
+        EventBus bus2 = EventBus.getInstance(NodeId.of(3));
         assertThat(bus2).isNotSameAs(bus1).as("After shutdown, getInstance should return a new instance");
     }
 
@@ -302,40 +229,6 @@ class EventBusTest {
     }
 
     @Test
-    @DisplayName("Concurrent subscribe and unsubscribe")
-    void concurrentSubscribeUnsubscribe() throws InterruptedException {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final int threadCount = 10;
-        final CountDownLatch latch = new CountDownLatch(threadCount);
-        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-        final List<Consumer<String>> callbacks = new ArrayList<>();
-
-        for (int i = 0; i < threadCount; i++) {
-            final int index = i;
-            executor.submit(() -> {
-                try {
-                    Consumer<String> callback = s -> {};
-                    callbacks.add(callback);
-
-                    for (int j = 0; j < 100; j++) {
-                        eventBus.subscribe("channel" + index, callback);
-                        eventBus.unsubscribe("channel" + index, callback);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-        executor.shutdown();
-
-        for (int i = 0; i < threadCount; i++) {
-            eventBus.publish("channel" + i, "message");
-        }
-    }
-
-    @Test
     @DisplayName("Same callback can be added multiple times")
     void sameCallbackMultipleTimes() {
         final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
@@ -347,21 +240,6 @@ class EventBusTest {
         eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
 
         assertThat(counter.get()).isEqualTo(2).as("Same callback added twice should be called twice");
-    }
-
-    @Test
-    @DisplayName("Unsubscribe only removes one instance of duplicate callback")
-    void unsubscribeSingleInstanceOfDuplicate() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final AtomicInteger counter = new AtomicInteger(0);
-        final Consumer<String> callback = s -> counter.incrementAndGet();
-
-        eventBus.subscribe(TEST_CHANNEL, callback);
-        eventBus.subscribe(TEST_CHANNEL, callback);
-        eventBus.unsubscribe(TEST_CHANNEL, callback);
-        eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
-
-        assertThat(counter.get()).isEqualTo(1).as("After removing one instance, one should remain");
     }
 
     @Test
@@ -380,24 +258,6 @@ class EventBusTest {
     }
 
     @Test
-    @DisplayName("Empty channel cleanup after last unsubscribe")
-    void emptyChannelCleanup() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final Consumer<String> callback1 = s -> {};
-        final Consumer<String> callback2 = s -> {};
-
-        eventBus.subscribe(TEST_CHANNEL, callback1);
-        eventBus.subscribe(TEST_CHANNEL, callback2);
-
-        assertThat(eventBus.unsubscribe(TEST_CHANNEL, callback1)).isTrue();
-        assertThat(eventBus.unsubscribe(TEST_CHANNEL, callback2)).isTrue();
-
-        assertThat(eventBus.unsubscribe(TEST_CHANNEL, callback1))
-                .isFalse()
-                .as("Channel should be removed after last subscriber is unsubscribed");
-    }
-
-    @Test
     @DisplayName("Multiple messages to same subscriber")
     void multipleMessagesToSameSubscriber() {
         final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
@@ -410,42 +270,5 @@ class EventBusTest {
         eventBus.publish(TEST_CHANNEL, "message3");
 
         assertThat(messages).hasSize(3).containsExactly("message1", "message2", "message3");
-    }
-
-    @Test
-    @DisplayName("EventBus works with different key types")
-    void differentKeyTypes() {
-        final EventBus stringKeyBus = EventBus.getInstance("stringKey");
-        final EventBus integerKeyBus = EventBus.getInstance(42);
-        final EventBus objectKeyBus = EventBus.getInstance(new Object());
-
-        assertThat(stringKeyBus).isNotNull();
-        assertThat(integerKeyBus).isNotNull();
-        assertThat(objectKeyBus).isNotNull();
-
-        assertThat(stringKeyBus).isNotSameAs(integerKeyBus).isNotSameAs(objectKeyBus);
-        assertThat(integerKeyBus).isNotSameAs(objectKeyBus);
-    }
-
-    @Test
-    @DisplayName("Subscriber can modify its own subscription during callback")
-    void modifySubscriptionDuringCallback() {
-        final EventBus eventBus = EventBus.getInstance(TEST_KEY_1);
-        final AtomicInteger counter = new AtomicInteger(0);
-        final Consumer<String>[] callbackHolder = new Consumer[1];
-
-        callbackHolder[0] = s -> {
-            counter.incrementAndGet();
-            if (counter.get() == 1) {
-                eventBus.unsubscribe(TEST_CHANNEL, callbackHolder[0]);
-            }
-        };
-
-        eventBus.subscribe(TEST_CHANNEL, callbackHolder[0]);
-
-        eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
-        eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
-
-        assertThat(counter.get()).isEqualTo(1).as("Callback should only be called once after self-unsubscription");
     }
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 module org.hiero.base.utility {
     exports org.hiero.base.constructable;
-    exports org.hiero.base.eventbus;
     exports org.hiero.base.exceptions;
     exports org.hiero.base.file;
     exports org.hiero.base.io.exceptions;

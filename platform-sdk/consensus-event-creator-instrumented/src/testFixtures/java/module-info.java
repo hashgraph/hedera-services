@@ -12,8 +12,8 @@ module org.hiero.consensus.event.creator.instrumented.test.fixtures {
     requires transitive org.hiero.consensus.model;
     requires transitive org.hiero.consensus.wiring.framework;
     requires com.swirlds.logging;
-    requires org.hiero.base.utility;
     requires org.hiero.consensus.event.creator.impl;
+    requires org.hiero.consensus.utility.test.fixtures;
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
 

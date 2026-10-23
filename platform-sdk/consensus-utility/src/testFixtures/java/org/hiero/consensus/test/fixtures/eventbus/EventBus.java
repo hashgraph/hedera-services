@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-package org.hiero.base.eventbus;
+package org.hiero.consensus.test.fixtures.eventbus;
 
 import static java.util.Objects.requireNonNull;
 
@@ -11,17 +11,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.consensus.model.node.NodeId;
 
 /**
  * A simple event bus implementation that allows components to subscribe to channels and publish messages.
- * Each instance of EventBus is associated with a specific key (e.g., NodeId) to isolate eventbuses between different
- * contexts.
+ * Each instance of EventBus is associated with a specific {@link NodeId} to isolate eventbuses between different
+ * nodes.
  */
 public class EventBus {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static final Map<Object, EventBus> INSTANCES = new ConcurrentHashMap<>();
+    private static final Map<NodeId, EventBus> INSTANCES = new ConcurrentHashMap<>();
 
     private final Map<String, List<Consumer<String>>> subscribers = new ConcurrentHashMap<>();
 
@@ -31,15 +32,15 @@ public class EventBus {
     private EventBus() {}
 
     /**
-     * Get an instance of EventBus associated with the given key. The key is typically the {@code NodeId}.
+     * Get an instance of EventBus associated with the given node.
      *
-     * @param key the key to identify the EventBus instance
-     * @return the EventBus instance associated with the given key
+     * @param nodeId the ID of the node whose EventBus is requested
+     * @return the EventBus instance associated with the given node
      */
     @NonNull
-    public static EventBus getInstance(@NonNull final Object key) {
-        requireNonNull(key);
-        return INSTANCES.computeIfAbsent(key, k -> new EventBus());
+    public static EventBus getInstance(@NonNull final NodeId nodeId) {
+        requireNonNull(nodeId);
+        return INSTANCES.computeIfAbsent(nodeId, k -> new EventBus());
     }
 
     /**
@@ -54,41 +55,6 @@ public class EventBus {
         requireNonNull(callback);
 
         subscribers.computeIfAbsent(channel, k -> new CopyOnWriteArrayList<>()).add(callback);
-    }
-
-    /**
-     * Unsubscribe a specific callback from a channel
-     *
-     * @param channel the channel to unsubscribe from
-     * @param callback the callback function to remove
-     * @return {@code true} if the callback was found and removed, {@code false} otherwise
-     * @throws NullPointerException if {@code channel} or {@code callback} is {@code null}
-     */
-    public boolean unsubscribe(@NonNull final String channel, @NonNull final Consumer<String> callback) {
-        requireNonNull(channel);
-        requireNonNull(callback);
-
-        final List<Consumer<String>> channelSubscribers = subscribers.get(channel);
-        if (channelSubscribers != null) {
-            final boolean removed = channelSubscribers.remove(callback);
-            if (channelSubscribers.isEmpty()) {
-                subscribers.remove(channel);
-            }
-            return removed;
-        }
-        return false;
-    }
-
-    /**
-     * Unsubscribe all callbacks from a channel
-     *
-     * @param channel the channel to clear
-     * @throws NullPointerException if {@code channel} is {@code null}
-     */
-    public void unsubscribeAll(@NonNull final String channel) {
-        requireNonNull(channel);
-
-        subscribers.remove(channel);
     }
 
     /**

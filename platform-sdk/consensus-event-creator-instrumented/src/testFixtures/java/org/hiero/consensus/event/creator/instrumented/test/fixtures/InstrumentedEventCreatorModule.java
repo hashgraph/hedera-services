@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.base.eventbus.EventBus;
 import org.hiero.consensus.event.creator.EventCreatorModule;
 import org.hiero.consensus.event.creator.impl.DefaultEventCreatorModule;
 import org.hiero.consensus.model.event.PlatformEvent;
@@ -28,6 +27,7 @@ import org.hiero.consensus.model.roster.RosterWrapper;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
+import org.hiero.consensus.test.fixtures.eventbus.EventBus;
 import org.hiero.consensus.wiring.framework.model.WiringModel;
 import org.hiero.consensus.wiring.framework.wires.input.InputWire;
 import org.hiero.consensus.wiring.framework.wires.output.OutputWire;
@@ -173,13 +173,13 @@ public class InstrumentedEventCreatorModule implements EventCreatorModule {
     /**
      * {@inheritDoc}
      *
-     * <p>Also unsubscribes from the {@link EventBus}, so that a restarted node does not keep the callbacks of its
+     * <p>Also shuts down the {@link EventBus} of this node, so that a restarted node does not keep the callbacks of its
      * previous instance.
      */
     @Override
     public void destroy() {
         if (eventBus != null) {
-            eventBus.unsubscribe(PING_CHANNEL, pingCallback);
+            eventBus.shutdown();
             eventBus = null;
         }
         delegate.destroy();

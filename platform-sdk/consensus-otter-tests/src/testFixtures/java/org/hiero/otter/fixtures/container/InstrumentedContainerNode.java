@@ -9,10 +9,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.otter.fixtures.InstrumentedNode;
 import org.hiero.otter.fixtures.TimeManager;
+import org.hiero.otter.fixtures.container.proto.InstrumentationPingRequest;
 import org.hiero.otter.fixtures.internal.NetworkConfiguration;
 import org.hiero.otter.fixtures.internal.result.ConsensusRoundPool;
 import org.testcontainers.containers.Network;
@@ -22,6 +25,8 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  * An implementation of {@link InstrumentedNode} for a containerized environment.
  */
 public class InstrumentedContainerNode extends ContainerNode implements InstrumentedNode {
+
+    private static final Logger log = LogManager.getLogger();
 
     private static final Duration PING_TIMEOUT = Duration.ofMinutes(1);
 
@@ -70,6 +75,11 @@ public class InstrumentedContainerNode extends ContainerNode implements Instrume
     @Override
     public void ping(@NonNull final String message) {
         throwIsNotInLifecycle(RUNNING, "Cannot ping a node that is not running");
-        doSendInstrumentationPing(message, PING_TIMEOUT);
+        log.info("Sending instrumentation ping '{}' to node {}", message, selfId);
+        nodeCommBlockingStub
+                .withDeadlineAfter(PING_TIMEOUT)
+                .instrumentationPing(InstrumentationPingRequest.newBuilder()
+                        .setMessage(message)
+                        .build());
     }
 }

@@ -58,7 +58,6 @@ import org.hiero.otter.fixtures.app.services.consistency.ConsistencyServiceConfi
 import org.hiero.otter.fixtures.container.proto.ContainerControlServiceGrpc;
 import org.hiero.otter.fixtures.container.proto.EventMessage;
 import org.hiero.otter.fixtures.container.proto.InitRequest;
-import org.hiero.otter.fixtures.container.proto.InstrumentationPingRequest;
 import org.hiero.otter.fixtures.container.proto.KillImmediatelyRequest;
 import org.hiero.otter.fixtures.container.proto.NodeCommunicationServiceGrpc;
 import org.hiero.otter.fixtures.container.proto.NodeCommunicationServiceGrpc.NodeCommunicationServiceStub;
@@ -123,7 +122,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
     private final ContainerControlServiceGrpc.ContainerControlServiceBlockingStub containerControlBlockingStub;
 
     /** The gRPC service used to communicate with the consensus node */
-    private NodeCommunicationServiceGrpc.NodeCommunicationServiceBlockingStub nodeCommBlockingStub;
+    protected NodeCommunicationServiceGrpc.NodeCommunicationServiceBlockingStub nodeCommBlockingStub;
 
     /** The configuration of this node */
     private final ContainerNodeConfiguration nodeConfiguration;
@@ -375,22 +374,6 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
                 .withDeadlineAfter(timeout)
                 .quiescenceCommandUpdate(
                         QuiescenceRequest.newBuilder().setCommand(dto).build());
-    }
-
-    /**
-     * Sends a ping message to the instrumented modules of the consensus node in the container.
-     *
-     * @param message the message to send
-     * @param timeout the maximum duration to wait for the node to confirm the ping
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    protected void doSendInstrumentationPing(@NonNull final String message, @NonNull final Duration timeout) {
-        log.info("Sending instrumentation ping '{}' to node {}", message, selfId);
-        nodeCommBlockingStub
-                .withDeadlineAfter(timeout)
-                .instrumentationPing(InstrumentationPingRequest.newBuilder()
-                        .setMessage(message)
-                        .build());
     }
 
     /**
