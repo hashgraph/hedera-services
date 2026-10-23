@@ -71,13 +71,6 @@ public final class DataFileWriter {
 
     private static final String ERROR_DATA_ITEM_TOO_LARGE = "Data item is too large to write to a data file";
 
-    // These two thread locals are a workaround for missing PBJ API to write to MemoryData
-    // objects at specified offsets (positioned writes). Once this API is available, data
-    // file writers will write directly into MemoryData (wrapped over mapped memory segments).
-    // See https://github.com/hashgraph/pbj/issues/790 for details
-    private static final ThreadLocal<MemorySegment> SEGMENT_CACHE = new ThreadLocal<>();
-    private static final ThreadLocal<MemoryData> WRITE_CACHE = new ThreadLocal<>();
-
     /** The path to the data file we are writing */
     private final Path path;
 
@@ -221,24 +214,6 @@ public final class DataFileWriter {
     }
 
     /**
-     * Returns a temp MemoryData buffer with position set to 0 and limit set to sizeToWrite. The
-     * buffer can be used on the current thread only.
-     */
-    private MemoryData getTempLocalWriteBuffer(final int sizeToWrite) {
-        MemoryData out = WRITE_CACHE.get();
-        if ((out == null) || (out.capacity() < sizeToWrite)) {
-            final MemorySegment segment = MemorySegment.ofArray(new byte[sizeToWrite]);
-            SEGMENT_CACHE.set(segment);
-            out = MemoryData.wrap(segment);
-            WRITE_CACHE.set(out);
-        } else {
-            out.position(0);
-            out.limit(sizeToWrite);
-        }
-        return out;
-    }
-
-    /**
      * This method is called, when a data item is written. If the data item is written completely
      * into a single writing window, this window is notified that all data item bytes are written
      * to it. If write happened on a boundary of two windows, both windows are notified
@@ -324,18 +299,15 @@ public final class DataFileWriter {
         final WritingWindow writingWindow = getWritingWindow(writingWindowIndex);
 
         try {
-            final MemoryData out = getTempLocalWriteBuffer(sizeToWrite);
+            final long writingOffset = (fileOffset % dataBufferSize);
+            final MemoryData out = MemoryData.wrap(writingWindow.writeBuffer);
+            out.position(writingOffset);
+            out.limit(writingOffset + sizeToWrite);
             writer.accept(out);
-            // double check that we wrote the expected number of bytes
             if (out.remaining() != 0) {
                 throw new IOException("Estimated size / written bytes mismatch: expected=" + sizeToWrite + " written="
                         + (sizeToWrite - out.remaining()));
             }
-
-            // The segment contains the same data as out above
-            final MemorySegment segment = SEGMENT_CACHE.get();
-            final long writingOffset = fileOffset % dataBufferSize;
-            MemorySegment.copy(segment, 0, writingWindow.writeBuffer, writingOffset, sizeToWrite);
         } finally {
             bytesWritten(fileOffset, sizeToWrite);
         }
