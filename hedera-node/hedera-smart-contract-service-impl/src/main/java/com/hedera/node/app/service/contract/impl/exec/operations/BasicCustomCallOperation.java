@@ -4,6 +4,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
+import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isWarmAccess;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -136,7 +137,7 @@ public interface BasicCustomCallOperation {
         final var transferValue = value(frame);
         final var recipientAddress = address(frame);
         final var to = to(frame);
-        final var accountIsWarm = frame.isAddressWarm(to) || gasCalculator().isPrecompile(to);
+        final var accountIsWarm = isWarmAccess(frame, to, gasCalculator());
 
         final var staticCost = gasCalculator()
                 .callOperationStaticGasCost(

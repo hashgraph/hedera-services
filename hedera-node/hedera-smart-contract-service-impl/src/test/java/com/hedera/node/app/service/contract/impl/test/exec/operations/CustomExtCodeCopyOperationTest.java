@@ -78,7 +78,6 @@ class CustomExtCodeCopyOperationTest {
     void rejectsMissingUserAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
-            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
             givenWellKnownFrameWith(Address.fromHexString(HEX_ADDRESS_STR));
             given(frame.getRemainingGas()).willReturn(GAS_LIMIT);
@@ -96,7 +95,6 @@ class CustomExtCodeCopyOperationTest {
     void delegatesToParentIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             given(frame.getStackItem(1)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1L)));
-            given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2L)));
             given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
             givenWellKnownFrameWith(Address.fromHexString(HEX_ADDRESS_STR));
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
