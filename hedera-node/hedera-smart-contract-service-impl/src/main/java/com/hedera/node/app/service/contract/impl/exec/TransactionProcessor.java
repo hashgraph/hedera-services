@@ -38,6 +38,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -217,10 +218,9 @@ public class TransactionProcessor {
                     context,
                     updater);
         }
-        initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
-
         // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
-        return safeCommit(result, transaction, updater, context, accessTrackerFor(initialFrame));
+        return safeCommit(
+                result, transaction, updater, context, accessTrackerFor(initialFrame), initialFrame.getSelfDestructs());
     }
 
     private InvolvedParties computeInvolvedPartiesOrAbort(
@@ -256,8 +256,13 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final HederaEvmContext context,
-            @Nullable final StorageAccessTracker accessTracker) {
+            @Nullable final StorageAccessTracker accessTracker,
+            @NonNull final Set<Address> selfDestructs) {
         try {
+            if (result.isSuccess()) {
+                // Child records must have a deterministic order and share the commit's rollback boundary.
+                selfDestructs.stream().sorted().forEach(updater::deleteAccount);
+            }
             updater.commit();
             if (result.isSuccess()) {
                 final var txStorageUsage = txStorageUsageFrom((ProxyWorldUpdater) updater, accessTracker, true);

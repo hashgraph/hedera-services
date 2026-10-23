@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -82,6 +83,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
@@ -90,6 +92,8 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -831,6 +835,73 @@ class TransactionProcessorTest {
                 subject.processTransaction(transaction, worldUpdater, context, tracer, config, opsDurationCounter);
 
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
+        final var inOrder = inOrder(worldUpdater);
+        inOrder.verify(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        inOrder.verify(worldUpdater).commit();
+        inOrder.verify(worldUpdater).revert();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void selfDestructsAreDeletedInAddressOrderRegardlessOfSetIterationOrder(final boolean reverseOrder) {
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        final var transaction = clprDispatchCall(null);
+        givenClprDispatchRunsToCompletion(transaction, context);
+        final var first = Address.fromHexString("0x0000000000000000000000000000000000001001");
+        final var second = Address.fromHexString("0x8000000000000000000000000000000000000000");
+        final var third = Address.fromHexString("0xff00000000000000000000000000000000000000");
+        final var selfDestructs =
+                new LinkedHashSet<>(reverseOrder ? List.of(third, second, first) : List.of(second, first, third));
+        given(initialFrame.getSelfDestructs()).willReturn(selfDestructs);
+
+        subject.processTransaction(transaction, worldUpdater, context, tracer, config, opsDurationCounter);
+
+        final var inOrder = inOrder(worldUpdater);
+        inOrder.verify(worldUpdater).deleteAccount(first);
+        inOrder.verify(worldUpdater).deleteAccount(second);
+        inOrder.verify(worldUpdater).deleteAccount(third);
+        inOrder.verify(worldUpdater).commit();
+        verify(worldUpdater, times(3)).deleteAccount(any());
+    }
+
+    @Test
+    void resourceExhaustionWhileExternalizingSelfDestructsRevertsBeforeCommit() {
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        final var transaction = clprDispatchCall(null);
+        givenClprDispatchRunsToCompletion(transaction, context);
+        final var laterDeletion = Address.fromHexString("0xff00000000000000000000000000000000000000");
+        given(initialFrame.getSelfDestructs()).willReturn(Set.of(laterDeletion, NON_SYSTEM_LONG_ZERO_ADDRESS));
+        willDoNothing().given(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        willThrow(new ResourceExhaustedException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED))
+                .given(worldUpdater)
+                .deleteAccount(laterDeletion);
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, context, tracer, config, opsDurationCounter);
+
+        assertResourceExhaustion(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED, result);
+        final var inOrder = inOrder(worldUpdater);
+        inOrder.verify(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        inOrder.verify(worldUpdater).deleteAccount(laterDeletion);
+        inOrder.verify(worldUpdater).revert();
+        verify(worldUpdater, never()).commit();
+    }
+
+    @Test
+    void failedExecutionDoesNotDeleteContractsFromStaleSelfDestructSet() {
+        final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
+        final var transaction = clprDispatchCall(null);
+        final var failedResult = HederaEvmTransactionResult.resourceExhaustionFrom(
+                SENDER_ID, GAS_LIMIT, NETWORK_GAS_PRICE, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
+        givenClprDispatchRunsToCompletion(transaction, context, failedResult);
+        given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, context, tracer, config, opsDurationCounter);
+
+        assertFalse(result.isSuccess());
+        verify(worldUpdater, never()).deleteAccount(any());
+        verify(worldUpdater).commit();
     }
 
     @Test
@@ -1027,6 +1098,13 @@ class TransactionProcessorTest {
 
     private void givenClprDispatchRunsToCompletion(
             @NonNull final HederaEvmTransaction transaction, @NonNull final HederaEvmContext context) {
+        givenClprDispatchRunsToCompletion(transaction, context, SUCCESS_RESULT);
+    }
+
+    private void givenClprDispatchRunsToCompletion(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaEvmTransactionResult result) {
         // A native CLPR dispatch has no sender account
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(null);
         givenReceiverAccount();
@@ -1054,7 +1132,7 @@ class TransactionProcessorTest {
                         contractCreationProcessor,
                         GasCharges.NONE,
                         null))
-                .willReturn(SUCCESS_RESULT);
+                .willReturn(result);
     }
 
     private static HederaEvmTransaction clprDispatchCall(@Nullable final AccountID relayer) {
