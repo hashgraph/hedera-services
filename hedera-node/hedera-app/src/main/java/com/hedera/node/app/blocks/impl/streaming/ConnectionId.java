@@ -4,14 +4,12 @@ package com.hedera.node.app.blocks.impl.streaming;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
+import java.security.SecureRandom;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
+import java.util.random.RandomGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,7 +22,7 @@ import org.apache.logging.log4j.Logger;
  *     lifespan of the JVM</li>
  * </ul>
  * Since the sequence number restarts whenever the JVM restarts, correlation IDs derived from a connection ID (see
- * {@link #correlationId()}) are suffixed with a JVM instance token ({@link #JVM_ID}) to distinguish connections made by
+ * {@link #correlationId()}) are suffixed with a JVM instance token ({@link #jvmId()}) to distinguish connections made by
  * different JVMs (e.g. after a restart, or by two processes running with the same node ID). If the token cannot be
  * created, it is omitted and correlation IDs fall back to the format without it.
  */
@@ -49,22 +47,20 @@ public class ConnectionId {
     }
 
     /**
-     * Number of random base-36 characters at the end of the JVM instance token.
+     * Number of base-36 characters in the JVM instance token.
      */
-    static final int JVM_ID_RANDOM_CHARS = 2;
+    static final int JVM_ID_LENGTH = 8;
 
     /**
-     * Exclusive upper bound of the random part of the JVM instance token (36^2 = 1,296 possible values).
+     * Exclusive upper bound of the random value encoded in the JVM instance token (36^8, about 2.8 trillion values).
      */
-    static final int JVM_ID_RANDOM_BOUND = Character.MAX_RADIX * Character.MAX_RADIX;
+    static final long JVM_ID_BOUND = 2_821_109_907_456L;
 
     /**
-     * Token that identifies this JVM instance. It is composed of the JVM start time in epoch seconds (base 36) followed
-     * by exactly {@link #JVM_ID_RANDOM_CHARS} random base-36 characters. The start time can be recovered by dropping the
-     * last {@link #JVM_ID_RANDOM_CHARS} characters and parsing the remainder as a base-36 long. Empty if the token
-     * could not be created.
+     * Random token that identifies this JVM instance, made of exactly {@link #JVM_ID_LENGTH} base-36 characters. Empty
+     * if the token could not be created.
      */
-    static final String JVM_ID = buildJvmId(() -> ProcessHandle.current().info().startInstant());
+    private static final String JVM_ID = buildJvmId(new SecureRandom());
 
     /**
      * Suffix appended to the end of every correlation ID, in the format of {@code -JVM<token>}. Empty if the JVM
@@ -87,6 +83,7 @@ public class ConnectionId {
     private final ConnectionType type;
     private final int sequenceNumber;
     private final String asString;
+    private final String correlationId;
 
     /**
      * Create a new connection ID with fixed values. For production code, you should create a new connection ID by
@@ -102,6 +99,7 @@ public class ConnectionId {
         this.sequenceNumber = sequenceNumber;
 
         asString = "N" + nodeId + "-" + type.key + sequenceNumber;
+        correlationId = asString + JVM_SUFFIX;
     }
 
     public long nodeId() {
@@ -121,7 +119,7 @@ public class ConnectionId {
      * sent to block nodes and used to identify this connection in logs.
      */
     public @NonNull String correlationId() {
-        return asString + JVM_SUFFIX;
+        return correlationId;
     }
 
     /**
@@ -166,19 +164,15 @@ public class ConnectionId {
     }
 
     /**
-     * Builds the JVM instance token from the JVM start time and a random value. If the start time is not available,
-     * the current time is used instead. This is called from a static initializer, so it must never throw: if the token
-     * cannot be created, a single warning is logged and an empty string is returned.
+     * Builds a random JVM instance token. This is called from a static initializer, so it must never throw: if the
+     * token cannot be created, a single warning is logged and an empty string is returned.
      *
-     * @param startInstantSupplier supplier of the JVM start time
+     * @param random source of randomness
      * @return the JVM instance token, or an empty string if it could not be created
      */
-    static @NonNull String buildJvmId(@NonNull final Supplier<Optional<Instant>> startInstantSupplier) {
+    static @NonNull String buildJvmId(@NonNull final RandomGenerator random) {
         try {
-            final long startSeconds =
-                    startInstantSupplier.get().orElseGet(Instant::now).getEpochSecond();
-            final int rand = ThreadLocalRandom.current().nextInt(JVM_ID_RANDOM_BOUND);
-            return formatJvmId(startSeconds, rand);
+            return formatJvmId(random.nextLong(JVM_ID_BOUND));
         } catch (final RuntimeException e) {
             logger.warn("Unable to create JVM instance ID; correlation IDs will not include it", e);
             return "";
@@ -186,23 +180,16 @@ public class ConnectionId {
     }
 
     /**
-     * Formats a JVM instance token as the base-36 start time followed by the random value as exactly
-     * {@link #JVM_ID_RANDOM_CHARS} zero-padded base-36 characters.
+     * Formats a value as a JVM instance token of exactly {@link #JVM_ID_LENGTH} zero-padded base-36 characters.
      *
-     * @param startSeconds the JVM start time in epoch seconds
-     * @param rand the random value, in the range [0, {@link #JVM_ID_RANDOM_BOUND})
+     * @param value the value to format, in the range [0, {@link #JVM_ID_BOUND})
      * @return the JVM instance token
      */
-    static @NonNull String formatJvmId(final long startSeconds, final int rand) {
-        if (startSeconds < 0) {
-            throw new IllegalArgumentException("Start seconds must be non-negative");
+    static @NonNull String formatJvmId(final long value) {
+        if (value < 0 || value >= JVM_ID_BOUND) {
+            throw new IllegalArgumentException("Value must be in the range [0, " + JVM_ID_BOUND + ")");
         }
-        if (rand < 0 || rand >= JVM_ID_RANDOM_BOUND) {
-            throw new IllegalArgumentException("Random value must be in the range [0, " + JVM_ID_RANDOM_BOUND + ")");
-        }
-        final String randPart = Integer.toString(rand, Character.MAX_RADIX);
-        return Long.toString(startSeconds, Character.MAX_RADIX)
-                + "0".repeat(JVM_ID_RANDOM_CHARS - randPart.length())
-                + randPart;
+        final String token = Long.toString(value, Character.MAX_RADIX);
+        return "0".repeat(JVM_ID_LENGTH - token.length()) + token;
     }
 }

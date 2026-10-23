@@ -178,31 +178,35 @@ public abstract class AbstractBlockNodeConnection implements AutoCloseable {
     }
 
     /**
-     * Builds a correlation ID for the specified connection request.
+     * Builds a correlation ID for the specified connection request. The ID starts with the connection-level correlation
+     * ID so that searching logs for a connection also finds its requests. Request-level correlation IDs are only used
+     * in logs; the correlation ID header sent to block nodes is always the connection-level correlation ID.
      *
      * @param connectionRequestNumber the connection-level request number
-     * @return correlation ID in the format of N#-[STR|SVC]#-CRN#-JVM&lt;token&gt;
+     * @return correlation ID in the format of N#-[STR|SVC]#-JVM&lt;token&gt;-CRN#
      */
     final @NonNull String buildRequestCorrelationId(final long connectionRequestNumber) {
-        return connectionId + "-CRN" + connectionRequestNumber + ConnectionId.JVM_SUFFIX;
+        return connectionId.correlationId() + "-CRN" + connectionRequestNumber;
     }
 
     /**
-     * Builds a correlation ID for the specified block-level request.
+     * Builds a correlation ID for the specified block-level request. The ID starts with the connection-level correlation
+     * ID so that searching logs for a connection also finds its requests. Request-level correlation IDs are only used
+     * in logs; the correlation ID header sent to block nodes is always the connection-level correlation ID.
      *
      * @param connectionRequestNumber the connection-level request number
      * @param blockNumber the block number
      * @param blockRequestNumber the block-level request number
      * @param blockAttemptNumber number of times this block has been attempted on this connection
-     * @return correlation ID in the format of N#-[STR|SVC]#-BLK#-BAN#-REQ#-CRN#-JVM&lt;token&gt;
+     * @return correlation ID in the format of N#-[STR|SVC]#-JVM&lt;token&gt;-BLK#-BAN#-REQ#-CRN#
      */
     final @NonNull String buildRequestCorrelationId(
             final long connectionRequestNumber,
             final long blockNumber,
             final int blockRequestNumber,
             final int blockAttemptNumber) {
-        return connectionId + "-BLK" + blockNumber + "-BAN" + blockAttemptNumber + "-REQ" + blockRequestNumber + "-CRN"
-                + connectionRequestNumber + ConnectionId.JVM_SUFFIX;
+        return connectionId.correlationId() + "-BLK" + blockNumber + "-BAN" + blockAttemptNumber + "-REQ"
+                + blockRequestNumber + "-CRN" + connectionRequestNumber;
     }
 
     /**

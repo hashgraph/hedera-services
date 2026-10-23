@@ -7,8 +7,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.hedera.node.app.blocks.impl.streaming.ConnectionId.ConnectionType;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import java.time.Instant;
-import java.util.Optional;
+import java.security.SecureRandom;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,9 +16,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 class ConnectionIdTest {
 
     /**
-     * Base-36 start time followed by exactly two base-36 random characters.
+     * Exactly eight base-36 characters.
      */
-    private static final String JVM_ID_PATTERN = "[0-9a-z]+[0-9a-z]{2}";
+    private static final String JVM_ID_PATTERN = "[0-9a-z]{8}";
 
     /**
      * Maximum length of the correlation ID header accepted by block nodes.
@@ -29,64 +28,45 @@ class ConnectionIdTest {
     @Test
     void testJvmIdFormat() {
         final String jvmId = ConnectionId.jvmId();
+        assumeTrue(!jvmId.isEmpty(), "JVM instance ID could not be created on this platform");
 
-        assertThat(jvmId).matches(JVM_ID_PATTERN).isEqualTo(ConnectionId.JVM_ID);
+        assertThat(jvmId).matches(JVM_ID_PATTERN);
         assertThat(ConnectionId.JVM_SUFFIX).isEqualTo("-JVM" + jvmId);
     }
 
     @Test
-    void testJvmIdDecodesToJvmStartTime() {
-        final String jvmId = ConnectionId.jvmId();
-        final long startSeconds = Long.parseLong(
-                jvmId.substring(0, jvmId.length() - ConnectionId.JVM_ID_RANDOM_CHARS), Character.MAX_RADIX);
-        final Optional<Instant> expectedStart = ProcessHandle.current().info().startInstant();
-        assumeTrue(expectedStart.isPresent(), "JVM start time is not available on this platform");
-
-        assertThat(startSeconds).isEqualTo(expectedStart.get().getEpochSecond());
+    void testJvmIdBoundIsAllBase36Values() {
+        assertThat(ConnectionId.JVM_ID_BOUND).isEqualTo(Long.parseLong("zzzzzzzz", Character.MAX_RADIX) + 1);
     }
 
     @ParameterizedTest
     @CsvSource({
-        "1792610793, 0, tn9vc900",
-        "1792610793, 5, tn9vc905",
-        "1792610793, 35, tn9vc90z",
-        "1792610793, 36, tn9vc910",
-        "1792610793, 739, tn9vc9kj",
-        "1792610793, 1295, tn9vc9zz",
-        "0, 0, 000",
-        // last second with a 6 character start time (2038-12-24T05:45:35Z), followed by the first with 7 characters
-        "2176782335, 1, zzzzzz01",
-        "2176782336, 1, 100000001"
+        "0, 00000000",
+        "5, 00000005",
+        "35, 0000000z",
+        "36, 00000010",
+        "1792610793, 00tn9vc9",
+        "2821109907455, zzzzzzzz"
     })
-    void testFormatJvmId(final long startSeconds, final int rand, final String expected) {
-        final String jvmId = ConnectionId.formatJvmId(startSeconds, rand);
+    void testFormatJvmId(final long value, final String expected) {
+        final String jvmId = ConnectionId.formatJvmId(value);
 
         assertThat(jvmId).isEqualTo(expected).matches(JVM_ID_PATTERN);
-        // the start time can always be recovered by dropping the random characters
-        assertThat(Long.parseLong(
-                        jvmId.substring(0, jvmId.length() - ConnectionId.JVM_ID_RANDOM_CHARS), Character.MAX_RADIX))
-                .isEqualTo(startSeconds);
-        // the random part is always exactly two characters
-        assertThat(Integer.parseInt(
-                        jvmId.substring(jvmId.length() - ConnectionId.JVM_ID_RANDOM_CHARS), Character.MAX_RADIX))
-                .isEqualTo(rand);
+        assertThat(Long.parseLong(jvmId, Character.MAX_RADIX)).isEqualTo(value);
     }
 
     @Test
     void testFormatJvmId_invalidInputs() {
-        assertThatThrownBy(() -> ConnectionId.formatJvmId(-1, 0)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ConnectionId.formatJvmId(0, -1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ConnectionId.formatJvmId(0, ConnectionId.JVM_ID_RANDOM_BOUND))
+        assertThatThrownBy(() -> ConnectionId.formatJvmId(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ConnectionId.formatJvmId(ConnectionId.JVM_ID_BOUND))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void testBuildJvmId_usesSuppliedStartTime() {
+    void testBuildJvmId_usesSuppliedRandom() {
         final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
         try {
-            final String jvmId = ConnectionId.buildJvmId(() -> Optional.of(Instant.ofEpochSecond(1792610793L)));
-
-            assertThat(jvmId).matches(JVM_ID_PATTERN).startsWith("tn9vc9").hasSize(8);
+            assertThat(ConnectionId.buildJvmId(() -> 0L)).isEqualTo("00000000");
             assertThat(logCaptor.warnLogs()).isEmpty();
         } finally {
             logCaptor.stopCapture();
@@ -94,25 +74,16 @@ class ConnectionIdTest {
     }
 
     @Test
-    void testBuildJvmId_startTimeUnavailableFallsBackToNow() {
-        final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
-        try {
-            final long before = Instant.now().getEpochSecond();
-            final String jvmId = ConnectionId.buildJvmId(Optional::empty);
-            final long after = Instant.now().getEpochSecond();
+    void testBuildJvmId_differsBetweenCalls() {
+        final SecureRandom random = new SecureRandom();
 
-            assertThat(jvmId).matches(JVM_ID_PATTERN);
-            final long startSeconds = Long.parseLong(
-                    jvmId.substring(0, jvmId.length() - ConnectionId.JVM_ID_RANDOM_CHARS), Character.MAX_RADIX);
-            assertThat(startSeconds).isBetween(before, after);
-            assertThat(logCaptor.warnLogs()).isEmpty();
-        } finally {
-            logCaptor.stopCapture();
-        }
+        assertThat(ConnectionId.buildJvmId(random))
+                .matches(JVM_ID_PATTERN)
+                .isNotEqualTo(ConnectionId.buildJvmId(random));
     }
 
     @Test
-    void testBuildJvmId_supplierThrowsReturnsEmpty() {
+    void testBuildJvmId_randomThrowsReturnsEmpty() {
         final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
         try {
             final String jvmId = ConnectionId.buildJvmId(() -> {
@@ -127,27 +98,14 @@ class ConnectionIdTest {
     }
 
     @Test
-    void testBuildJvmId_invalidStartTimeReturnsEmpty() {
-        final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
-        try {
-            final String jvmId = ConnectionId.buildJvmId(() -> Optional.of(Instant.ofEpochSecond(-1)));
-
-            assertThat(jvmId).isEmpty();
-            assertThat(logCaptor.warnLogs()).singleElement().asString().contains("Unable to create JVM instance ID");
-        } finally {
-            logCaptor.stopCapture();
-        }
-    }
-
-    @Test
     void testCorrelationId() {
         final ConnectionId streamingId = new ConnectionId(37, ConnectionType.BLOCK_STREAMING, 6);
         final ConnectionId serviceId = new ConnectionId(37, ConnectionType.SERVER_STATUS, 41);
 
         assertThat(streamingId).hasToString("N37-STR6");
-        assertThat(streamingId.correlationId()).isEqualTo("N37-STR6-JVM" + ConnectionId.jvmId());
+        assertThat(streamingId.correlationId()).isEqualTo("N37-STR6" + ConnectionId.JVM_SUFFIX);
         assertThat(serviceId).hasToString("N37-SVC41");
-        assertThat(serviceId.correlationId()).isEqualTo("N37-SVC41-JVM" + ConnectionId.jvmId());
+        assertThat(serviceId.correlationId()).isEqualTo("N37-SVC41" + ConnectionId.JVM_SUFFIX);
     }
 
     @Test
@@ -169,10 +127,10 @@ class ConnectionIdTest {
 
     @Test
     void testCorrelationIdFitsWithinHeaderLimit() {
-        // worst case: max node ID / sequence number, combined with the JVM ID format after 2038 (7 char start time)
+        // worst case: max node ID / sequence number, combined with the largest JVM ID
         final ConnectionId connectionId =
                 new ConnectionId(Long.MAX_VALUE, ConnectionType.BLOCK_STREAMING, Integer.MAX_VALUE);
-        final String worstCaseJvmId = ConnectionId.formatJvmId(Long.parseLong("zzzzzzz", 36), 1295);
+        final String worstCaseJvmId = ConnectionId.formatJvmId(ConnectionId.JVM_ID_BOUND - 1);
         final String correlationId = connectionId.toString() + "-JVM" + worstCaseJvmId;
 
         assertThat(correlationId.length()).isLessThanOrEqualTo(MAX_CORRELATION_ID_HEADER_LENGTH);

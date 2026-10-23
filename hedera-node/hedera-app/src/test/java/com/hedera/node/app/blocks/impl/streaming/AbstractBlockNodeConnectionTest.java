@@ -245,8 +245,8 @@ class AbstractBlockNodeConnectionTest extends BlockNodeCommunicationTestBase {
         final String correlationId = connection.buildRequestCorrelationId(12L);
 
         assertThat(correlationId)
-                .isEqualTo(connection.connectionId() + "-CRN12-JVM" + ConnectionId.jvmId())
-                .endsWith(ConnectionId.JVM_SUFFIX);
+                .isEqualTo(connection.connectionId() + ConnectionId.JVM_SUFFIX + "-CRN12")
+                .startsWith(connection.connectionId().correlationId());
     }
 
     @Test
@@ -257,8 +257,8 @@ class AbstractBlockNodeConnectionTest extends BlockNodeCommunicationTestBase {
         final String correlationId = connection.buildRequestCorrelationId(12809L, 101388558L, 1, 1);
 
         assertThat(correlationId)
-                .isEqualTo(connection.connectionId() + "-BLK101388558-BAN1-REQ1-CRN12809-JVM" + ConnectionId.jvmId())
-                .endsWith(ConnectionId.JVM_SUFFIX);
+                .isEqualTo(connection.connectionId() + ConnectionId.JVM_SUFFIX + "-BLK101388558-BAN1-REQ1-CRN12809")
+                .startsWith(connection.connectionId().correlationId());
     }
 
     @Test
