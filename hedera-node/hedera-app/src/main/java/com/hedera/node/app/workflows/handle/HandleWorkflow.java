@@ -1014,8 +1014,6 @@ public class HandleWorkflow {
             if (streamMode == BLOCKS) {
                 blockStreamManager.recordSubmittedTransaction(
                         handleOutput.blockRecordSourceOrThrow().blockItems(),
-                        parentTxn.functionality() == HederaFunctionality.HINTS_PARTIAL_SIGNATURE
-                                || parentTxn.functionality() == HederaFunctionality.MIGRATION_ROOT_HASH_VOTE,
                         blockFull && parentTxn.baseBuilder().status() == THROTTLED_AT_CONSENSUS);
             }
             recordCache.addRecordSource(

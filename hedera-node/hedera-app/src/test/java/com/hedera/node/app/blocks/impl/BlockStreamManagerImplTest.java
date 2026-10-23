@@ -497,9 +497,9 @@ class BlockStreamManagerImplTest {
         bytesField.setAccessible(true);
         final long before = bytesField.getLong(subject);
         final var items = List.of(FAKE_SIGNED_TRANSACTION);
-        subject.recordSubmittedTransaction(items, false, true);
+        subject.recordSubmittedTransaction(items, true);
         subject.writeSavepointItems(items, CONSENSUS_NOW.plusNanos(1));
-        subject.recordSubmittedTransaction(items, true, false);
+        subject.recordSubmittedTransaction(items, false);
         subject.writeSavepointItems(items, CONSENSUS_NOW.plusNanos(2));
         final long batchBytes = Block.PROTOBUF.measureRecord(new Block(items));
         assertEquals(before + 2 * batchBytes, bytesField.getLong(subject));
@@ -507,7 +507,6 @@ class BlockStreamManagerImplTest {
         verify(throttleCounters.get("maxBlockSizeThrottleRejectedBytes")).add(batchBytes);
         verify(throttleCounters.get("numMaxBlockSizeThrottleSignedTxns"), times(2))
                 .add(1L);
-        verify(throttleGauges.get("submittedTxnsAtMaxBlockSizeCutoff")).set(0L);
         verify(throttleGauges.get("bytesAtMaxBlockSizeCutoff")).set(longThat(bytes -> bytes > 1L));
     }
 

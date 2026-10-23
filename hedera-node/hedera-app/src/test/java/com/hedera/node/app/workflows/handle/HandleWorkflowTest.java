@@ -1480,7 +1480,7 @@ class HandleWorkflowTest {
         method.setAccessible(true);
         method.invoke(subject, parent, 100L, state);
         verify(dispatchProcessor).processDispatch(eq(dispatch), any(), eq(true));
-        verify(blockStreamManager).recordSubmittedTransaction(List.of(), false, true);
+        verify(blockStreamManager).recordSubmittedTransaction(List.of(), true);
     }
 
     @ParameterizedTest
@@ -1511,7 +1511,7 @@ class HandleWorkflowTest {
         } else {
             verify(dispatchProcessor).processDispatch(eq(dispatch), any(), eq(true));
         }
-        verify(blockStreamManager).recordSubmittedTransaction(List.of(), false, false);
+        verify(blockStreamManager).recordSubmittedTransaction(List.of(), false);
     }
 
     @ParameterizedTest

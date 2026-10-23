@@ -257,8 +257,7 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
      * Records diagnostic counts for a submitted parent's output before it is written. Scheduled executions
      * and child transactions are not submitted parents. Rejection bytes include the complete output batch.
      */
-    default void recordSubmittedTransaction(
-            @NonNull List<BlockItem> items, boolean nodeSubmitted, boolean rejectedForBlockSize) {}
+    default void recordSubmittedTransaction(@NonNull List<BlockItem> items, boolean rejectedForBlockSize) {}
 
     /**
      * Signals that the platform has reached a catastrophic failure (e.g. following an ISS). Sets a flag that

@@ -196,8 +196,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private boolean maxBlockSizeThrottleEnabled;
     private long currentThrottleBlockSizeBytes;
     private boolean maxBlockSizeReached;
-    private long submittedTransactionCount;
-    private long nodeSubmittedTransactionCount;
 
     // Block merkle subtrees and leaves
     private IncrementalStreamingHasher previousBlockHashes;
@@ -295,7 +293,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private final Counter maxBlockSizeThrottleRejectionsCounter;
     private final Counter maxBlockSizeThrottleRejectedBytesCounter;
     private final Counter maxBlockSizeThrottleSignedTxnsCounter;
-    private final LongGauge submittedTxnsAtMaxBlockSizeCutoffGauge;
     private final LongGauge bytesAtMaxBlockSizeCutoffGauge;
 
     @Inject
@@ -367,10 +364,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 metrics.getOrCreate(new Counter.Config("block", "numMaxBlockSizeThrottleSignedTxns")
                         .withDescription("Number of signed transactions written to canonical blocks while the max block"
                                 + " size throttle is enabled"));
-        submittedTxnsAtMaxBlockSizeCutoffGauge =
-                metrics.getOrCreate(new LongGauge.Config("block", "submittedTxnsAtMaxBlockSizeCutoff")
-                        .withDescription("Number of non-node submitted transactions in the most recent canonical block"
-                                + " when it reached the max block size limit"));
         bytesAtMaxBlockSizeCutoffGauge = metrics.getOrCreate(new LongGauge.Config("block", "bytesAtMaxBlockSizeCutoff")
                 .withDescription("Serialized size in bytes of the most recent canonical block when it reached the"
                         + " max block size limit"));
@@ -561,8 +554,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     && maxBlockExecutionSizeBytes > 0;
             currentThrottleBlockSizeBytes = 0;
             maxBlockSizeReached = false;
-            submittedTransactionCount = 0;
-            nodeSubmittedTransactionCount = 0;
             writer = writerSupplier.get();
             blockTimestamp = asTimestamp(firstConsensusTimestampOf(round));
 
@@ -1116,15 +1107,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void recordSubmittedTransaction(
-            @NonNull final List<BlockItem> items, final boolean nodeSubmitted, final boolean rejectedForBlockSize) {
+    public void recordSubmittedTransaction(@NonNull final List<BlockItem> items, final boolean rejectedForBlockSize) {
         if (!maxBlockSizeThrottleEnabled) {
             return;
-        }
-        if (nodeSubmitted) {
-            nodeSubmittedTransactionCount++;
-        } else {
-            submittedTransactionCount++;
         }
         if (rejectedForBlockSize) {
             maxBlockSizeThrottleRejectionsCounter.increment();
@@ -1154,20 +1139,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             maxBlockSizeThrottleSignedTxnsCounter.add(signedTxns);
         }
         if (!maxBlockSizeReached && currentThrottleBlockSizeBytes > maxBlockExecutionSizeBytes) {
-            submittedTxnsAtMaxBlockSizeCutoffGauge.set(submittedTransactionCount);
             bytesAtMaxBlockSizeCutoffGauge.set(currentThrottleBlockSizeBytes);
             maxBlockSizeReached = true;
             maxBlockSizeThrottleTripsCounter.increment();
             log.warn(
                     "Block #{} reached a serialized size of {} bytes after adding {} bytes, exceeding the "
                             + "{}-byte max-block-size-throttle limit; rejecting further dispatches in this block"
-                            + " with THROTTLED_AT_CONSENSUS; submittedTransactions={}, nodeSubmittedTransactions={}",
+                            + " with THROTTLED_AT_CONSENSUS",
                     blockNumber,
                     currentThrottleBlockSizeBytes,
                     addedSize,
-                    maxBlockExecutionSizeBytes,
-                    submittedTransactionCount,
-                    nodeSubmittedTransactionCount);
+                    maxBlockExecutionSizeBytes);
         }
     }
 
