@@ -205,12 +205,14 @@ class StateChangeDeltasTest {
                 List.of(SingletonUpdateChangeSchema.PARTIAL, SingletonUpdateChangeSchema.CLEARED_FIELDS))) {
             final var partialField = fields.get(0);
             final var clearedField = fields.get(1);
-            long overhead = (partialField.number() < 16 ? 1 : 2) + 1;
+            long overhead = StateChangeDeltas.varintSize((long) partialField.number() << 3) + 1;
             if (!delta.clearedFields().isEmpty()) {
                 long length = delta.clearedFields().stream()
                         .mapToLong(StateChangeDeltas::varintSize)
                         .sum();
-                overhead += (clearedField.number() < 16 ? 1 : 2) + StateChangeDeltas.varintSize(length) + length;
+                overhead += StateChangeDeltas.varintSize(((long) clearedField.number() << 3) | 2)
+                        + StateChangeDeltas.varintSize(length)
+                        + length;
             }
             for (int min : List.of(0, 1, 32, 64, 128, 4096)) {
                 assertThat(StateChangeDeltas.worthPartial(type, value, delta, min, partialField, clearedField))

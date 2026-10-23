@@ -41,13 +41,14 @@ class BinaryStateChangeParserTest {
     @ParameterizedTest
     @CsvSource({
         // partial=1, throttle_usage_snapshots_value (field 9)
-        "120e088f4e2209c001014a0412020802, false",
+        "120f088f4e220a88f104014a0412020802, false",
         // partial=1, packed cleared_fields=[1], throttle_usage_snapshots_value
-        "1212088f4e220dc00101ca0101014a0412020802, true",
+        "1214088f4e220f88f1040192f10401014a0412020802, true",
         // partial=1, unpacked cleared_fields=1, throttle_usage_snapshots_value
-        "1211088f4e220cc00101c801014a0412020802, true"
+        "1213088f4e220e88f1040190f104014a0412020802, true"
     })
-    void singletonGoldenWireFixturesUseMetadataFields24And25(final String wire, final boolean clearsTpsThrottles) {
+    void singletonGoldenWireFixturesUseMetadataFields10001And10002(
+            final String wire, final boolean clearsTpsThrottles) {
         final var prior = ThrottleUsageSnapshots.newBuilder()
                 .tpsThrottles(List.of(new ThrottleUsageSnapshot(7, null)))
                 .gasThrottle(new ThrottleUsageSnapshot(1, null))
