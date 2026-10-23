@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
@@ -22,6 +23,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -31,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -54,6 +58,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  */
 public class ProxyWorldUpdater implements HederaWorldUpdater {
     private static final String CANNOT_CREATE = "Cannot create ";
+    private static final Logger log = LogManager.getLogger(ProxyWorldUpdater.class);
 
     /**
      * The parent {@link WorldUpdater}, or null if this is the root updater.
@@ -395,8 +400,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void deleteAccount(@NonNull final Address address) {
-        final var beneficiary = requireNonNull(
-                selfDestructBeneficiaries.get(address), "Missing beneficiary for committed self-destruct");
+        requireNonNull(address);
+        final var beneficiary = selfDestructBeneficiaries.get(address);
+        if (beneficiary == null) {
+            // Never guess a beneficiary or commit a deletion without its record. Finalization handles
+            // this failure by rolling back the EVM changes while retaining the transaction's gas charge.
+            log.error("Missing beneficiary for committed self-destruct of {}", address);
+            throw new HandleException(CONTRACT_EXECUTION_EXCEPTION);
+        }
         if (isLongZero(address)) {
             enhancement.operations().deleteUnaliasedContract(numberOfLongZero(address), beneficiary);
         } else {

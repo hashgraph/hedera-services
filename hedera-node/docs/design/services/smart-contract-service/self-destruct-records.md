@@ -23,6 +23,29 @@ state changes. A block-to-record translator uses the numeric ID in the deletion 
 the creation translator has already consumed the account's final state change for a contract created
 and destroyed in one transaction.
 
+## Rollout and compatibility
+
+The network property `contracts.selfDestructs.externalization.enabled` defaults to `true`. Operators
+can disable it through a coordinated network configuration update if downstream consumers need more
+time to support the new children. It applies uniformly to RECORDS, BLOCKS, and BOTH. Disabling it
+preserves EVM account/alias deletion but emits no synthetic deletion child and consumes no additional
+child-record capacity. It also disables the deletion child's committed-beneficiary correction for
+legacy staking redirection; that behavior returns to the pre-feature transaction-builder bookkeeping.
+
+Enabling the feature changes both the stream shape and the capacity required by existing transactions.
+With `consensus.handle.maxFollowingRecords=50` and no other child records, 25 internal CREATE plus
+SELFDESTRUCT pairs fit exactly: 25 creation children and 25 deletion children. A transaction with 26
+pairs now fails with `MAX_CHILD_RECORDS_EXCEEDED`, although it could succeed with externalization
+disabled. Other child records reduce the available capacity further. Under pre-EIP-6780 semantics,
+deleting pre-existing contracts also consumes one new child slot per distinct contract; 51 deletions
+alone exceed the same limit. These failures roll back execution rather than silently omit deletions.
+
+Consumers must accept the additional `ContractDelete` children, their ordering, and their zero
+fee/transfer payloads before rollout. Keep the gate disabled on a network that has not completed this
+coordination. Forward mirror-import compatibility is tracked in
+[#27848](https://github.com/hiero-ledger/hiero-consensus-node/issues/27848); consensus stream assertions
+and block-to-record translation tests do not replace running the mirror importer.
+
 ## Execution and rollback
 
 The finalized EVM self-destruct set determines which accounts are deleted. With EIP-6780 semantics,
@@ -42,6 +65,16 @@ The child counts toward the normal child-record limit. Exhausting that limit rol
 EVM changes, including earlier deletions. The child is removable, so a subsequent enclosing rollback,
 including a failed atomic batch, also removes it.
 
+Finalization also requires a committed beneficiary for every address in the deletion set. An invariant
+failure is logged and becomes a handled `CONTRACT_EXECUTION_EXCEPTION`; it rolls back all pending
+deletions instead of guessing a beneficiary or escaping as an unhandled exception.
+
+Gas refunds are calculated after finalization using the final result. Commit-time resource exhaustion
+reports the full gas limit, so rollback fee replay must retain the full gas charge. This also corrects
+the pre-existing mismatch for other commit-time exhaustion, where a refund recorded before the failure
+could reduce the actual charge despite the full-gas result. Ordinary EVM reverts that finalize normally
+continue to receive their unused-gas refund.
+
 ## Historical mirror reconciliation
 
 New records repair future ingestion; they do not retroactively correct a mirror database. Historical
@@ -60,3 +93,5 @@ reconciliation requires coordination with mirror-node operators:
 Empty runtime bytecode, a bytecode containing `SELFDESTRUCT`, or an HBAR balance of zero is not
 sufficient evidence to mark an account deleted. The snapshot export and mirror-side migration are
 operational follow-up work; this change performs no historical state migration.
+Reconciliation, including deciding whether consensus-side tooling is needed, is tracked in
+[#27849](https://github.com/hiero-ledger/hiero-consensus-node/issues/27849).

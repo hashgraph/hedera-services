@@ -91,6 +91,7 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TraceDataSizeLimiter;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.ParseException;
@@ -169,8 +170,12 @@ class HandleHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
+        createSubject(DEFAULT_CONTRACTS_CONFIG);
+    }
+
+    private void createSubject(final ContractsConfig contractsConfig) {
         subject = new HandleHederaOperations(
-                DEFAULT_CONTRACTS_CONFIG,
+                contractsConfig,
                 context,
                 tinybarValues,
                 gasCalculator,
@@ -634,6 +639,31 @@ class HandleHederaOperationsTest {
         inOrder.verify(accountStore).getContractById(aliasedId);
         inOrder.verify(tokenServiceApi).deleteContract(aliasedId);
         assertSyntheticDeletion(childBuilder);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disabledExternalizationStillDeletesWithoutConsultingChildRecordCapacity(final boolean aliased) {
+        createSubject(HederaTestConfigBuilder.create()
+                .withValue("contracts.selfDestructs.externalization.enabled", false)
+                .getOrCreateConfig()
+                .getConfigData(ContractsConfig.class));
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        if (aliased) {
+            subject.deleteAliasedContract(CANONICAL_ALIAS, A_NEW_ACCOUNT_ID);
+            verify(tokenServiceApi)
+                    .deleteContract(
+                            ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build());
+        } else {
+            subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow(), A_NEW_ACCOUNT_ID);
+            verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
+        }
+
+        verify(context, never()).savepointStack();
+        verify(storeFactory, never()).readableStore(ReadableAccountStore.class);
+        verify(context, never()).dispatch(any());
     }
 
     @ParameterizedTest

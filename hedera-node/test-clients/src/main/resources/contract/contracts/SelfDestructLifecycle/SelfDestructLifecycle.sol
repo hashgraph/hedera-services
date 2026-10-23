@@ -21,6 +21,7 @@ contract SelfDestructLifecycle {
             }
         }
         require(!revertAfter, "Revert after SELFDESTRUCT");
+        completedDestructions += count;
     }
 
     function catchRevertedDestruction() external {

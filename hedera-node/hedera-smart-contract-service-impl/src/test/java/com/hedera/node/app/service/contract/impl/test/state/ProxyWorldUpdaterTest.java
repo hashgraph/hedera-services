@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -40,6 +42,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.OpsDurationCounter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.*;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -435,7 +438,7 @@ class ProxyWorldUpdaterTest {
         child.revert();
         child.commit();
 
-        assertThrows(NullPointerException.class, () -> subject.deleteAccount(SOME_EVM_ADDRESS));
+        assertMissingBeneficiaryFailsSafely();
     }
 
     @Test
@@ -448,14 +451,20 @@ class ProxyWorldUpdaterTest {
 
         assertThrows(ResourceExhaustedException.class, child::commit);
 
-        assertThrows(NullPointerException.class, () -> subject.deleteAccount(SOME_EVM_ADDRESS));
+        assertMissingBeneficiaryFailsSafely();
     }
 
     @Test
     void beneficiaryValidationAloneDoesNotRecordCommittedSelfDestruct() {
         subject.tryTrackingSelfDestructBeneficiary(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS, frame);
 
-        assertThrows(NullPointerException.class, () -> subject.deleteAccount(SOME_EVM_ADDRESS));
+        assertMissingBeneficiaryFailsSafely();
+    }
+
+    private void assertMissingBeneficiaryFailsSafely() {
+        final var failure = assertThrows(HandleException.class, () -> subject.deleteAccount(SOME_EVM_ADDRESS));
+        assertEquals(CONTRACT_EXECUTION_EXCEPTION, failure.getStatus());
+        verify(hederaOperations, never()).deleteAliasedContract(any(), any());
     }
 
     private void trackBeneficiary(

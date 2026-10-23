@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludePassFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -28,6 +29,7 @@ import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleIte
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.asSolidityAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.idAsHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
@@ -56,6 +58,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
@@ -75,10 +78,12 @@ public class SelfDestructRecordsSuite {
     private static final String BENEFICIARY = "beneficiary";
     private static final String TXN = "selfDestruct";
     private static final String FINISHED = "finished";
+    private static final String EXTERNALIZATION_ENABLED = "contracts.selfDestructs.externalization.enabled";
+    private static final String MAX_FOLLOWING_RECORDS = "consensus.handle.maxFollowingRecords";
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle lifecycle) {
-        lifecycle.doAdhoc(uploadInitCode(FACTORY, CONSTRUCTOR, CALLABLE));
+        lifecycle.doAdhoc(uploadInitCode(FACTORY, CONSTRUCTOR, CALLABLE, "Fuse"));
     }
 
     @HapiTest
@@ -264,12 +269,88 @@ public class SelfDestructRecordsSuite {
                         .refusingEthConversion()
                         .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
                 blockingOrder(
-                        getTxnRecord(TXN).andAllChildRecords().hasChildRecordCount(0),
+                        getTxnRecord(TXN).andAllChildRecords().hasNonStakingChildRecordCount(0),
                         getAccountBalance(BENEFICIARY).hasTinyBars(ONE_HUNDRED_HBARS),
                         getContractInfo(FACTORY)
                                 .has(contractWith().isNotDeleted().balance(0L)),
                         contractCallLocal(FACTORY, "completedDestructions")
                                 .exposingTypedResultsTo(results -> assertEquals(BigInteger.ZERO, results[0]))),
+                finish());
+    }
+
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
+    @DisplayName("record several pre-existing contract deletions in unsigned EVM-address order before EIP-6780")
+    final Stream<DynamicTest> preCancunDeletesSeveralPreExistingContracts() {
+        final var creation = "fuseCreation";
+        return hapiTest(
+                preExistingDeletionRecords(creation, TXN, FINISHED, 3, "Fuse"),
+                startNewRecordFile(),
+                cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
+                overriding("contracts.evm.version", "v0.46"),
+                // Fuse's constructor creates three persistent Dynamite contracts, all targeting Fuse as beneficiary.
+                contractCreate("Fuse").gas(1_000_000).via(creation).refusingEthConversion(),
+                // A later transaction SELFDESTRUCTs all three pre-existing children.
+                contractCall("Fuse", "light")
+                        .gas(1_000_000)
+                        .payingWith(BENEFICIARY)
+                        .via(TXN),
+                blockingOrder(
+                        getTxnRecord(TXN).hasNonStakingChildRecordCount(3),
+                        createdChildrenAreDeleted(creation, 3),
+                        getContractInfo("Fuse").has(contractWith().isNotDeleted())),
+                finish());
+    }
+
+    @LeakyHapiTest(overrides = {MAX_FOLLOWING_RECORDS, EXTERNALIZATION_ENABLED})
+    @DisplayName("fit 25 create-and-delete pairs in 50 child slots and restore the old limit when disabled")
+    final Stream<DynamicTest> externalizationUsesTwoChildSlotsPerPair() {
+        final var atBoundary = "twentyFivePairs";
+        final var pastBoundary = "twentySixPairs";
+        final var disabled = "disabledExternalization";
+        return hapiTest(
+                deletionRecords(atBoundary, FINISHED, 25, BENEFICIARY, null, SUCCESS),
+                deletionRecords(pastBoundary, FINISHED, 0, BENEFICIARY, null, MAX_CHILD_RECORDS_EXCEEDED),
+                deletionRecords(disabled, FINISHED, 0, BENEFICIARY, null, SUCCESS),
+                startNewRecordFile(),
+                cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS),
+                contractCreate(FACTORY),
+                overridingTwo(MAX_FOLLOWING_RECORDS, "50", EXTERNALIZATION_ENABLED, "true"),
+                // Each committed pair needs one creation record and one deletion record: 25 pairs exactly fill 50
+                // slots.
+                contractCall(FACTORY, "destroyChildren", BigInteger.valueOf(25), false, false)
+                        .sending(25)
+                        .gas(10_000_000)
+                        .payingWith(BENEFICIARY)
+                        .via(atBoundary),
+                blockingOrder(
+                        getTxnRecord(atBoundary).hasNonStakingChildRecordCount(50),
+                        createdChildrenAreDeleted(atBoundary, 25)),
+                // Execution reaches all 26 SELFDESTRUCTs, but finalization must roll back the entire over-capacity
+                // call.
+                contractCall(FACTORY, "destroyChildren", BigInteger.valueOf(26), false, false)
+                        .sending(26)
+                        .gas(10_000_000)
+                        .payingWith(BENEFICIARY)
+                        .via(pastBoundary)
+                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                blockingOrder(
+                        getTxnRecord(pastBoundary).hasNonStakingChildRecordCount(0),
+                        getContractInfo(FACTORY)
+                                .has(contractWith().isNotDeleted().balance(0L)),
+                        contractCallLocal(FACTORY, "completedDestructions")
+                                .exposingTypedResultsTo(results -> assertEquals(BigInteger.valueOf(25), results[0]))),
+                overriding(EXTERNALIZATION_ENABLED, "false"),
+                // With externalization disabled, the same 26 pairs commit using only their 26 creation records.
+                contractCall(FACTORY, "destroyChildren", BigInteger.valueOf(26), false, false)
+                        .sending(26)
+                        .gas(10_000_000)
+                        .payingWith(BENEFICIARY)
+                        .via(disabled),
+                blockingOrder(
+                        getTxnRecord(disabled).hasNonStakingChildRecordCount(26),
+                        createdChildrenAreDeleted(disabled, 26),
+                        contractCallLocal(FACTORY, "completedDestructions")
+                                .exposingTypedResultsTo(results -> assertEquals(BigInteger.valueOf(51), results[0]))),
                 finish());
     }
 
@@ -321,6 +402,32 @@ public class SelfDestructRecordsSuite {
                 finishedTxn));
     }
 
+    /** Compares deletion records with the child contracts created by a prior transaction. */
+    private static EventualStreamAssertion preExistingDeletionRecords(
+            final String creationTxn,
+            final String txn,
+            final String finishedTxn,
+            final int count,
+            final String beneficiary) {
+        return streamMustIncludePassFrom(spec -> new VisibleItemsAssertion(
+                spec,
+                (s, items) ->
+                        assertDeletions(s, items.get(txn), count, beneficiary, null, SUCCESS, items.get(creationTxn)),
+                NO,
+                creationTxn,
+                txn,
+                finishedTxn));
+    }
+
+    /** Reads the address from the actual creation result, falling back to the canonical address for unaliased creates. */
+    private static byte[] creationAddress(@NonNull final RecordStreamEntry creation) {
+        final var address =
+                creation.txnRecord().getContractCreateResult().getEvmAddress().getValue();
+        return address.isEmpty()
+                ? asSolidityAddress(creation.txnRecord().getReceipt().getContractID())
+                : address.toByteArray();
+    }
+
     private static void assertDeletions(
             @NonNull final HapiSpec spec,
             @NonNull final VisibleItems items,
@@ -328,6 +435,17 @@ public class SelfDestructRecordsSuite {
             @NonNull final String beneficiary,
             @Nullable final String target,
             @NonNull final ResponseCodeEnum parentStatus) {
+        assertDeletions(spec, items, count, beneficiary, target, parentStatus, null);
+    }
+
+    private static void assertDeletions(
+            @NonNull final HapiSpec spec,
+            @NonNull final VisibleItems items,
+            final int count,
+            @NonNull final String beneficiary,
+            @Nullable final String target,
+            @NonNull final ResponseCodeEnum parentStatus,
+            @Nullable final VisibleItems priorCreationItems) {
         final var entries = items.entries().stream()
                 .filter(e -> e.function() != NodeStakeUpdate)
                 .toList();
@@ -339,16 +457,20 @@ public class SelfDestructRecordsSuite {
         if (count == 0) {
             return;
         }
+        final var creationEntries = priorCreationItems == null ? entries : priorCreationItems.entries();
         final List<ContractID> expectedIds = target == null
-                ? entries.stream()
+                ? creationEntries.stream()
                         .filter(e -> e.function() == ContractCreate)
+                        .filter(e -> priorCreationItems == null
+                                || e.txnRecord().getTransactionID().getNonce() > 0)
+                        .sorted((left, right) -> Arrays.compareUnsigned(creationAddress(left), creationAddress(right)))
                         .map(e -> e.txnRecord().getReceipt().getContractID())
                         .toList()
                 : List.of(spec.registry().getContractId(target));
         final var actualIds = deletions.stream()
                 .map(e -> e.body().getContractDeleteInstance().getContractID())
                 .toList();
-        assertEquals(new HashSet<>(expectedIds), new HashSet<>(actualIds), "Delete exactly the expected contracts");
+        assertEquals(expectedIds, actualIds, "Delete contracts in unsigned ascending EVM-address order");
         assertEquals(count, new HashSet<>(actualIds).size(), "Do not duplicate a deletion");
         var previous = entries.stream()
                 .filter(e -> e.function() != ContractDelete)

@@ -350,6 +350,10 @@ public class HandleHederaOperations implements HederaOperations {
     private void deleteContract(@NonNull final ContractID contractId, @NonNull final AccountID beneficiaryId) {
         requireNonNull(beneficiaryId);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
+        if (!contractsConfig.selfDestructsExternalizationEnabled()) {
+            tokenServiceApi.deleteContract(contractId);
+            return;
+        }
         // Resolve the canonical id before deleting the alias mapping. The EVM has already transferred
         // the balance and authorized the operation; this child only externalizes the resulting deletion.
         final var contract =

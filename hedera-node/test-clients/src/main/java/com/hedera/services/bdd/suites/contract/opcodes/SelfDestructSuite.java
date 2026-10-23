@@ -393,7 +393,7 @@ public class SelfDestructSuite {
                 withOpContext((spec, opLog) -> {
                     allRunFor(
                             spec,
-                            getTxnRecord("selfDestruct").andAllChildRecords().hasChildRecordCount(2));
+                            getTxnRecord("selfDestruct").andAllChildRecords().hasNonStakingChildRecordCount(2));
                     final var childInfo = getNthNextContractInfoFrom(spec, quickSelfDestructContract.name(), 1);
                     final var childInfoQuery = expectedDeletionStatus
                             ? childInfo.has(contractWith().isDeleted())
@@ -425,7 +425,9 @@ public class SelfDestructSuite {
                         .gas(100_000L)
                         .payingWith(payerAccount)
                         .andAssert(txn -> txn.hasKnownStatus(SUCCESS).via("selfDestruct")),
-                getTxnRecord("selfDestruct").andAllChildRecords().hasChildRecordCount(expectedDeletionStatus ? 1 : 0),
+                getTxnRecord("selfDestruct")
+                        .andAllChildRecords()
+                        .hasNonStakingChildRecordCount(expectedDeletionStatus ? 1 : 0),
                 selfDestructCallableContract.getInfo().andAssert(ci -> {
                     if (expectedDeletionStatus) {
                         ci.hasCostAnswerPrecheck(OK).has(contractWith().isDeleted());

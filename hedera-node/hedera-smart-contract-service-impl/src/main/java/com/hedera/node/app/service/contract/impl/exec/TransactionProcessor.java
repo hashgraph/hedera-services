@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -38,6 +39,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Comparator;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -208,7 +210,10 @@ public class TransactionProcessor {
         // Add code delegation result
         result = result.withCodeDelegationResult(codeDelegationResult);
 
-        // Maybe refund some of the charged fees before committing if gas was charged in this processor.
+        // Finalize before refunding: a handled commit failure consumes the full gas limit. Recording a
+        // refund first would survive in the rollback handler's gas events even after its state is reverted.
+        result = safeCommit(
+                result, transaction, updater, context, accessTrackerFor(initialFrame), initialFrame.getSelfDestructs());
         if (!gasIsPrepaid) {
             gasCharging.maybeRefundGiven(
                     transaction.unusedGas(result.gasUsed()),
@@ -218,9 +223,7 @@ public class TransactionProcessor {
                     context,
                     updater);
         }
-        // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
-        return safeCommit(
-                result, transaction, updater, context, accessTrackerFor(initialFrame), initialFrame.getSelfDestructs());
+        return result;
     }
 
     private InvolvedParties computeInvolvedPartiesOrAbort(
@@ -261,7 +264,9 @@ public class TransactionProcessor {
         try {
             if (result.isSuccess()) {
                 // Child records must have a deterministic order and share the commit's rollback boundary.
-                selfDestructs.stream().sorted().forEach(updater::deleteAccount);
+                selfDestructs.stream()
+                        .sorted(Comparator.comparing(Address::getBytes))
+                        .forEach(updater::deleteAccount);
             }
             updater.commit();
             if (result.isSuccess()) {
@@ -271,7 +276,10 @@ public class TransactionProcessor {
                 }
             }
             return result;
-        } catch (final ResourceExhaustedException e) {
+        } catch (final HandleException e) {
+            if (!(e instanceof ResourceExhaustedException) && e.getStatus() != CONTRACT_EXECUTION_EXCEPTION) {
+                throw e;
+            }
             updater.revert();
             final var sender = updater.getHederaAccount(transaction.senderId());
             return resourceExhaustionFrom(
