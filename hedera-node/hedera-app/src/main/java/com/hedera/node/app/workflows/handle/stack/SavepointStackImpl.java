@@ -675,9 +675,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         var parentConsensusTime = consensusTime;
         for (int i = 0; i < n; i++) {
             final var builder = builders.get(i);
-            // Immediately triggered scheduled dispatches commit their writes with the scheduling parent, just as
-            // group members do. Their implicit slot-write indexes must refer to that shared state-change list.
-            grouped |= builder.functionality() == HOOK_DISPATCH || builder.category() == SCHEDULED;
+            grouped |= builder.functionality() == HOOK_DISPATCH;
             final var nonceOffset =
                     switch (builder.category()) {
                         case USER, SCHEDULED, NODE, BATCH_INNER -> 0;
@@ -724,9 +722,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                             nextRecord.transactionRecord().receiptOrThrow()));
                 }
                 case BLOCKS -> {
-                    final var groupStateChanges = grouped ? baseBuilder.getStateChanges() : null;
+                    // Scheduled EVM executions share the parent's committed writes, but scheduling alone must not
+                    // enable intermediate trace fields that are only needed for grouped execution.
+                    final var sharedStateChanges =
+                            grouped || builder.category() == SCHEDULED ? baseBuilder.getStateChanges() : null;
                     requireNonNull(outputs)
-                            .add(((BlockStreamBuilder) builder).build(builder == baseBuilder, groupStateChanges));
+                            .add(((BlockStreamBuilder) builder)
+                                    .build(builder == baseBuilder, sharedStateChanges, grouped));
                 }
                 case BOTH -> {
                     final var pairedBuilder = (PairedStreamBuilder) builder;
@@ -736,11 +738,12 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
                             nextRecord.transactionRecord().transactionIDOrThrow(),
                             nextRecord.transactionRecord().receiptOrThrow()));
                     if (!suppressBlockOutput) {
-                        final var groupStateChanges = grouped ? baseBuilder.getStateChanges() : null;
+                        final var sharedStateChanges =
+                                grouped || builder.category() == SCHEDULED ? baseBuilder.getStateChanges() : null;
                         requireNonNull(outputs)
                                 .add(pairedBuilder
                                         .blockStreamBuilder()
-                                        .build(builder == baseBuilder, groupStateChanges));
+                                        .build(builder == baseBuilder, sharedStateChanges, grouped));
                     }
                 }
             }

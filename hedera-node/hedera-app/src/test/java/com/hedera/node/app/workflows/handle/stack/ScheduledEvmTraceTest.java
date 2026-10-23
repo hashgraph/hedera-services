@@ -3,11 +3,13 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_STORAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ATOMIC_BATCH;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.BATCH_INNER;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.SignedTxCustomizer.NOOP_SIGNED_TX_CUSTOMIZER;
@@ -31,6 +33,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.ImmediateStateChangeListener;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageStreamBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TraceDataSizeLimiter;
@@ -131,6 +134,109 @@ class ScheduledEvmTraceTest {
                 }
             }
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = StreamMode.class,
+            names = {"BLOCKS", "BOTH"})
+    void contractRootIncludesNestedScheduledWritesButExcludesRevertedWrites(final StreamMode mode) {
+        final var fixture = fixture(mode, CONTRACT_CALL);
+        final var outerKey = key(1035, 5);
+        storage(fixture.root()).put(outerKey, new SlotValue(word(9), Bytes.EMPTY, Bytes.EMPTY));
+
+        final var scheduled = scheduledIn(fixture.root(), mode);
+        final var scheduledKey = key(1037, 1);
+        trace(scheduled, List.of(usage(1037, read(scheduledKey.key(), 0))), Set.of(scheduledKey));
+        storage(scheduled).put(scheduledKey, new SlotValue(word(2), Bytes.EMPTY, Bytes.EMPTY));
+        scheduled.commitFullStack();
+        final var reverted = scheduledIn(fixture.root(), mode);
+        trace(reverted, List.of(usage(1037, read(POINTER_ONLY.key(), 7))), Set.of(POINTER_ONLY));
+        storage(reverted).put(POINTER_ONLY, new SlotValue(word(9), Bytes.EMPTY, Bytes.EMPTY));
+        reverted.rollbackFullStack();
+        // The outer updater captures its changed keys after nested dispatches have committed into its state.
+        final var outerChangedKeys = Set.copyOf(storage(fixture.root()).modifiedKeys());
+        assertThat(outerChangedKeys).containsExactlyInAnyOrder(outerKey, scheduledKey);
+        trace(fixture.root(), List.of(usage(1035, read(outerKey.key(), 0))), outerChangedKeys);
+        // Pointer maintenance follows this capture, and a reverted child must not make it a logical write.
+        storage(fixture.root()).put(POINTER_ONLY, new SlotValue(word(7), word(1), Bytes.EMPTY));
+        fixture.root().commitFullStack();
+
+        final var changes = fixture.root().getBaseBuilder(StreamBuilder.class).getStateChanges();
+        assertThat(changes).hasSize(3);
+        assertThat(changes.stream()
+                        .filter(change -> !change.mapUpdateOrThrow().identical())
+                        .map(change -> change.mapUpdateOrThrow().keyOrThrow().slotKeyKeyOrThrow()))
+                .containsExactlyInAnyOrder(outerKey, scheduledKey);
+        assertThat(changes.stream().filter(change -> change.mapUpdateOrThrow().identical()))
+                .singleElement()
+                .satisfies(change -> assertThat(
+                                change.mapUpdateOrThrow().keyOrThrow().slotKeyKeyOrThrow())
+                        .isEqualTo(POINTER_ONLY));
+        assertThat(reverted.getBaseBuilder(StreamBuilder.class).status()).isEqualTo(REVERTED_SUCCESS);
+        final var evmTraces = traces(items(fixture.root()));
+        assertThat(evmTraces).hasSize(3);
+        for (int i = 0; i < 2; i++) {
+            final var usage = evmTraces.get(i).contractSlotUsages().getFirst();
+            assertThat(usage.contractIdOrThrow()).isEqualTo(i == 0 ? outerKey.contractID() : scheduledKey.contractID());
+            assertThat(usage.slotReads()).singleElement().satisfies(read -> {
+                assertThat(read.indexOrThrow()).isZero();
+                assertThat(read.readValue()).isEqualTo(Bytes.EMPTY);
+            });
+        }
+        assertThat(evmTraces.getLast().contractSlotUsages().getFirst().slotReads())
+                .containsExactly(read(minimal(3), 7));
+    }
+
+    @ParameterizedTest
+    @MethodSource("schedulingModes")
+    void scheduledSubmitMessageDoesNotAcquireBatchTraceData(
+            final StreamMode mode, final HederaFunctionality schedulingFunction) {
+        final var fixture = fixture(mode, schedulingFunction);
+        final var scheduled = SavepointStackImpl.newChildStack(
+                fixture.root(), REVERSIBLE, SCHEDULED, NOOP_SIGNED_TX_CUSTOMIZER, mode);
+        initialize(
+                scheduled.getBaseBuilder(StreamBuilder.class),
+                CONSENSUS_SUBMIT_MESSAGE,
+                TXN_ID.copyBuilder().scheduled(true).build());
+        scheduled
+                .getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class)
+                .topicSequenceNumber(7)
+                .topicRunningHash(Bytes.fromHex("abcdef"));
+        scheduled.commitFullStack();
+        fixture.root().commitFullStack();
+
+        // SubmitMessageTraceData captures batch intermediate state; scheduling alone does not require it.
+        assertThat(items(fixture.root()).stream().filter(BlockItem::hasTraceData))
+                .isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = StreamMode.class,
+            names = {"BLOCKS", "BOTH"})
+    void batchSubmitMessageRetainsIntermediateTraceData(final StreamMode mode) {
+        final var fixture = fixture(mode, ATOMIC_BATCH);
+        final var inner = SavepointStackImpl.newChildStack(
+                fixture.root(), REVERSIBLE, BATCH_INNER, NOOP_SIGNED_TX_CUSTOMIZER, mode);
+        initialize(
+                inner.getBaseBuilder(StreamBuilder.class),
+                CONSENSUS_SUBMIT_MESSAGE,
+                TXN_ID.copyBuilder().nonce(1).build());
+        final var runningHash = Bytes.fromHex("abcdef");
+        inner.getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class)
+                .topicSequenceNumber(7)
+                .topicRunningHash(runningHash);
+        inner.commitFullStack();
+        fixture.root().commitFullStack();
+
+        assertThat(items(fixture.root()).stream().filter(BlockItem::hasTraceData))
+                .singleElement()
+                .satisfies(item -> {
+                    final var trace = item.traceDataOrThrow().submitMessageTraceDataOrThrow();
+                    assertThat(trace.sequenceNumber()).isEqualTo(7);
+                    assertThat(trace.runningHash()).isEqualTo(runningHash);
+                });
     }
 
     @ParameterizedTest

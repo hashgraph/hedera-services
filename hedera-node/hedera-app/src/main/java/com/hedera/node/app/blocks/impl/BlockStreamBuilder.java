@@ -633,6 +633,21 @@ public class BlockStreamBuilder
      * @return the list of block items
      */
     public Output build(final boolean topLevel, @Nullable final List<StateChange> groupStateChanges) {
+        return build(topLevel, groupStateChanges, groupStateChanges != null);
+    }
+
+    /**
+     * Builds block items, distinguishing shared EVM state changes from intermediate trace output.
+     *
+     * @param topLevel if true, always includes a following {@link StateChanges} item
+     * @param sharedStateChanges if not null, the committed changes used to resolve implicit EVM slot-write indexes
+     * @param emitIntermediateTraceData whether to emit intermediate fields normally derived from state changes
+     * @return the list of block items
+     */
+    public Output build(
+            final boolean topLevel,
+            @Nullable final List<StateChange> sharedStateChanges,
+            final boolean emitIntermediateTraceData) {
         final var blockItems = new ArrayList<BlockItem>();
         // Construct the context here to capture any additional Ethereum transaction details needed
         // for the legacy record before they are removed from the block stream output item
@@ -692,7 +707,7 @@ public class BlockStreamBuilder
                     // If writes are implicit as the non-identical slot updates in the state changes list,
                     // we need to index the corresponding reads to minimize the size of the output stream
                     final Map<ContractID, Map<Bytes, Integer>> implicitWriteIndexes = new HashMap<>();
-                    final var relevantStateChanges = groupStateChanges != null ? groupStateChanges : stateChanges;
+                    final var relevantStateChanges = sharedStateChanges != null ? sharedStateChanges : stateChanges;
                     for (final var stateChange : relevantStateChanges) {
                         if (stateChange.stateId() == STATE_ID_STORAGE.protoOrdinal()) {
                             SlotKey slotKey = null;
@@ -793,7 +808,7 @@ public class BlockStreamBuilder
         }
 
         // Add trace data for batch inner transaction fields, that are normally computed by state changes
-        if (groupStateChanges != null) {
+        if (emitIntermediateTraceData) {
             // message submit trace data
             if (sequenceNumber > 0 || runningHash != Bytes.EMPTY) {
                 final var builder = SubmitMessageTraceData.newBuilder()

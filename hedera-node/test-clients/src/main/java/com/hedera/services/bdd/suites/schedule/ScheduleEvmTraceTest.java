@@ -75,7 +75,7 @@ public class ScheduleEvmTraceTest {
         final var triggeringTxn = executeOnSign ? SIGN_TXN : CREATE_TXN;
         return hapiTest(
                 overriding("scheduling.whitelist", "ContractCall"),
-                overriding("contracts.sidecars", "CONTRACT_STATE_CHANGE"),
+                overriding("contracts.sidecars", "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE"),
                 cryptoCreate(SCHEDULE_PAYER).balance(ONE_HUNDRED_HBARS),
                 uploadInitCode(CONTRACT),
                 contractCreate(CONTRACT, BigInteger.valueOf(55), BigInteger.TWO, BigInteger.TWO)
