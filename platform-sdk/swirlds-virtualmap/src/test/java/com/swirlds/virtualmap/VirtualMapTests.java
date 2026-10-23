@@ -212,6 +212,20 @@ class VirtualMapTests extends VirtualTestBase {
     }
 
     @Test
+    @DisplayName("Cannot snapshot mutable copy")
+    void unableSnapshotMutableCopy() {
+        final VirtualMap vm = createMap();
+        vm.put(A_KEY, APPLE, TestValueCodec.INSTANCE);
+
+        try {
+            assertThrows(
+                    IllegalStateException.class, () -> vm.createSnapshot(testDirectory), "Can't snapshot mutable copy");
+        } finally {
+            vm.release();
+        }
+    }
+
+    @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("FastCopy")})
     @DisplayName("Detached is not impacted by changes to original map copy")
     void detachedIsUnaffectedWhenModifyingCopy() throws IOException {
