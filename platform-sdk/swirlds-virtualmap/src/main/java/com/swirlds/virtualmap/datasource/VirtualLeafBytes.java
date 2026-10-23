@@ -11,6 +11,7 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.base.utility.ToStringBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -272,6 +273,18 @@ public class VirtualLeafBytes<V> {
                 : "pos=" + pos + ", out.position()=" + out.position() + ", size=" + getSizeInBytes();
     }
 
+    public long writeTo(final RandomAccessData out, final long offset) {
+        long bytesWritten = 0;
+        if (path != 0) {
+            bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_LEAFRECORD_PATH);
+            bytesWritten += out.putLong(offset + bytesWritten, path);
+        }
+        bytesWritten += writeKey(out, offset + bytesWritten);
+        bytesWritten += writeValue(out, offset + bytesWritten);
+        assert bytesWritten == getSizeInBytes() : "bytesWritten=" + bytesWritten + ", size=" + getSizeInBytes();
+        return bytesWritten;
+    }
+
     /**
      * Writes this virtual leaf bytes object to the given sequential data for hashing.
      * <p>
@@ -296,6 +309,16 @@ public class VirtualLeafBytes<V> {
         kb.writeTo(out);
     }
 
+    private long writeKey(final RandomAccessData out, final long offset) {
+        long bytesWritten = 0;
+        final Bytes kb = keyBytes();
+        // ProtoWriterTools.writeDelimited() is not used to avoid using kb::writeTo method handle
+        bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_LEAFRECORD_KEY);
+        bytesWritten += out.putVarLong(offset + bytesWritten, kb.length());
+        bytesWritten += kb.writeTo(out, offset + bytesWritten);
+        return bytesWritten;
+    }
+
     private void writeValue(final WritableSequentialData out) {
         // Use valueBytes instead of valueBytes() to avoid allocating a byte array
         final Bytes vb = valueBytes;
@@ -315,6 +338,30 @@ public class VirtualLeafBytes<V> {
                 throw new UncheckedIOException("Cannot serialize leaf value", z);
             }
         }
+    }
+
+    private long writeValue(final RandomAccessData out, final long offset) {
+        long bytesWritten = 0;
+        // Use valueBytes instead of valueBytes() to avoid allocating a byte array
+        final Bytes vb = valueBytes;
+        if (vb != null) {
+            // ProtoWriterTools.writeDelimited() is not used to avoid using vb::writeTo method handle
+            bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_LEAFRECORD_VALUE);
+            bytesWritten += out.putVarLong(offset + bytesWritten, vb.length());
+            bytesWritten += vb.writeTo(out, offset + bytesWritten);
+        } else if (value != null) {
+            assert valueCodec != null;
+//            try {
+                // ProtoWriterTools.writeDelimited() is not used to avoid using vb::writeTo method handle
+                bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_LEAFRECORD_VALUE);
+                bytesWritten += out.putVarLong(offset + bytesWritten, valueCodec.measureRecord(value));
+//                bytesWritten += valueCodec.write(value, out, offset + bytesWritten);
+                bytesWritten += valueCodec.toBytes(value).writeTo(out, offset + bytesWritten);
+//            } catch (final IOException z) {
+//                throw new UncheckedIOException("Cannot serialize leaf value", z);
+//            }
+        }
+        return bytesWritten;
     }
 
     @Override

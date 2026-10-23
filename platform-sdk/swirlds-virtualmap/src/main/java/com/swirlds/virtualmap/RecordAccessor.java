@@ -199,7 +199,7 @@ public final class RecordAccessor {
                 rec = dataSource.loadLeafRecord(path);
                 if (rec != null) {
                     assert rec.path() == path
-                            : "The path we found from the DB does not match the one we were looking for! path=" + path;
+                            : "The path we found from the DB does not match the one we were looking for! " + rec.path() + " != " + path;
                 }
             } catch (final IOException ex) {
                 throw new UncheckedIOException("Failed to read a leaf record from the data source by path", ex);

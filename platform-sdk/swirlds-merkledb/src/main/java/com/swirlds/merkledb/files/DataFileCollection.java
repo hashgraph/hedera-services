@@ -18,6 +18,7 @@ import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.merkledb.FileStatisticAware;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -384,7 +386,8 @@ public class DataFileCollection implements FileStatisticAware, Snapshotable {
      *     within the file.
      * @throws IOException If there was a problem writing this data item to the file.
      */
-    public long storeDataItem(final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+//    public long storeDataItem(final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+    public long storeDataItem(final BiFunction<RandomAccessData, Long, Long> dataItemWriter, final int dataItemSize)
             throws IOException {
         final DataFileWriter currentDataFileForWriting = currentDataFileWriter.get();
         if (currentDataFileForWriting == null) {

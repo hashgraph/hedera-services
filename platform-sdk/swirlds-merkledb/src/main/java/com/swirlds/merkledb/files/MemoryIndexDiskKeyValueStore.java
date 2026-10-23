@@ -5,6 +5,7 @@ import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LongSummaryStatistics;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,7 +108,8 @@ public class MemoryIndexDiskKeyValueStore implements AutoCloseable, Snapshotable
      * @param dataItemSize the data item size, in bytes
      * @throws IOException If there was a problem write key/value to the store
      */
-    public void put(final long key, final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+//    public void put(final long key, final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+    public void put(final long key, final BiFunction<RandomAccessData, Long, Long> dataItemWriter, final int dataItemSize)
             throws IOException {
         final long dataLocation = fileCollection.storeDataItem(dataItemWriter, dataItemSize);
         // store data location in index

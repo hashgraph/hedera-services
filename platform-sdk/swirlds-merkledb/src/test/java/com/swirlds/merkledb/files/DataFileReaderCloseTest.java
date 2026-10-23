@@ -48,9 +48,10 @@ class DataFileReaderCloseTest {
                 index.put(
                         i,
                         collection.storeDataItem(
-                                o -> {
-                                    o.writeLong(fi);
-                                    o.writeLong(fi + 1);
+                                (out, offset) -> {
+                                    out.putLong(offset, fi);
+                                    out.putLong(offset + Long.BYTES, fi + 1);
+                                    return 2L * Long.BYTES;
                                 },
                                 2 * Long.BYTES));
             }
@@ -107,9 +108,10 @@ class DataFileReaderCloseTest {
             index.put(
                     0,
                     writer.storeDataItem(
-                            o -> {
-                                o.writeLong(fi);
-                                o.writeLong(fi * 2 + 1);
+                            (out, offset) -> {
+                                out.putLong(offset, fi);
+                                out.putLong(offset + Long.BYTES, fi * 2 + 1);
+                                return 2L * Long.BYTES;
                             },
                             2 * Long.BYTES));
             final DataFileReader reader = new DataFileReader(DEFAULT_MERKLE_DB_CONFIG, filePath, metadata);

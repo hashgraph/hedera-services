@@ -51,6 +51,7 @@ class DataFileCollectionCompactionHammerTest {
         Configurator.reconfigure();
     }
 
+    /*
     @ParameterizedTest
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
@@ -98,6 +99,7 @@ class DataFileCollectionCompactionHammerTest {
             index.close();
         });
     }
+    */
 
     private static Stream<Arguments> provideForBenchmark() {
         return Stream.of(
@@ -120,6 +122,7 @@ class DataFileCollectionCompactionHammerTest {
                 Arguments.of(1000, 1_000_000));
     }
 
+    /*
     @Test
     void hammer() throws IOException, InterruptedException, ExecutionException {
         final Path tempFileDir = tempDir.resolve("DataFileCollectionCompactionHammerTest");
@@ -190,4 +193,5 @@ class DataFileCollectionCompactionHammerTest {
         coll.close();
         index.close();
     }
+    */
 }

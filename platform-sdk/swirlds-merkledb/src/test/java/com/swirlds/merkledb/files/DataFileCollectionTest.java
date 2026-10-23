@@ -76,10 +76,12 @@ class DataFileCollectionTest {
 
     private static long storeDataItem(final DataFileCollection coll, long[] values) throws IOException {
         return coll.storeDataItem(
-                o -> {
+                (out, offset) -> {
+                    long bytesWritten = 0;
                     for (final long value : values) {
-                        o.writeLong(value);
+                        bytesWritten += out.putLong(offset + bytesWritten, value);
                     }
+                    return bytesWritten;
                 },
                 values.length * Long.BYTES);
     }

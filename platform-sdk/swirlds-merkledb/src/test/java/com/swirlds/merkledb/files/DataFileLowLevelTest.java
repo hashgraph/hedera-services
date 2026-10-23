@@ -70,11 +70,12 @@ class DataFileLowLevelTest {
 
     private static long storeDataItem(final DataFileWriter writer, final long[] data) throws IOException {
         return writer.storeDataItem(
-                o -> {
-                    o.writeLong(data.length);
+                (out, offset) -> {
+                    long bytesWritten = out.putLong(offset, data.length);
                     for (long l : data) {
-                        o.writeLong(l);
+                        bytesWritten += out.putLong(offset + bytesWritten, l);
                     }
+                    return bytesWritten;
                 },
                 Long.BYTES + data.length * Long.BYTES);
     }

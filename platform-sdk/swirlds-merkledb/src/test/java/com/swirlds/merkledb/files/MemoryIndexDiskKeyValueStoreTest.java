@@ -123,10 +123,12 @@ class MemoryIndexDiskKeyValueStoreTest {
             }
             store.put(
                     i,
-                    o -> {
+                    (out, offset) -> {
+                        long bytesWritten = 0;
                         for (long l : dataValue) {
-                            o.writeLong(l);
+                            bytesWritten += out.putLong(offset + bytesWritten, l);
                         }
+                        return bytesWritten;
                     },
                     dataValue.length * Long.BYTES);
         }

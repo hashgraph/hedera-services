@@ -13,6 +13,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -378,6 +379,13 @@ public sealed class Bucket implements Closeable permits ParsedBucket {
     public void writeTo(final WritableSequentialData out) {
         bucketData.resetPosition();
         out.writeBytes(bucketData);
+    }
+
+    public long writeTo(final RandomAccessData out, final long offset) {
+        bucketData.resetPosition();
+        long bytesWritten = bucketData.writeTo(out, offset);
+        assert bytesWritten == bucketData.length();
+        return bytesWritten;
     }
 
     /**

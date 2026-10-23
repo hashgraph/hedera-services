@@ -76,7 +76,7 @@ class DataFileWriterTest {
 
         assertThrows(
                 Exception.class,
-                () -> dataFileWriter.storeDataItem(o -> o.writeBytes(data), (int) (data.length() + diff)),
+                () -> dataFileWriter.storeDataItem(data::writeTo, (int) (data.length() + diff)),
                 "Wrong estimated data size");
     }
 
@@ -94,7 +94,7 @@ class DataFileWriterTest {
 
         for (int i = 0; i < iterations; i++) {
             dataFileWriter.storeDataItemWithTag(data);
-            data.flip();
+            // data.flip();
         }
 
         dataFileWriter.close();

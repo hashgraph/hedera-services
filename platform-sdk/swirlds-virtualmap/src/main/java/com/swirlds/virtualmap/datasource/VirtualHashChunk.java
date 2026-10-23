@@ -9,6 +9,7 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.virtualmap.MerkleHasher;
 import com.swirlds.virtualmap.MerklePathUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -246,6 +247,34 @@ public class VirtualHashChunk {
             }
         }
         assert out.position() == pos + getSerializedSizeInBytes();
+    }
+
+    public long writeTo(final RandomAccessData out, final long offset) {
+        long bytesWritten = 0;
+        bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_HASHCHUNK_PATH);
+        bytesWritten += out.putLong(offset + bytesWritten, path);
+        // Hash data is never null
+        bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_HASHCHUNK_HASHDATA);
+        final int singleHashLength = Cryptography.DEFAULT_DIGEST_TYPE.digestLength();
+        final int serializedDataLength = singleHashLength * getChunkSize(dataRank);
+        bytesWritten += out.putVarLong(offset + bytesWritten, serializedDataLength);
+        if (dataRank == height) {
+            // Full chunk, write in one call
+            assert serializedDataLength == hashData.length;
+            bytesWritten += out.putBytes(offset + bytesWritten, hashData);
+        } else {
+            // Some hashes at the lowest ranks are not set. To save disk space, write the
+            // hash data in a packed format. Only hashes at dataRank are written. This
+            // process must be in sync with parseFrom()
+            final int chunkSize = getChunkSize(height);
+            final int step = 1 << (height - dataRank);
+            for (int i = 0; i < chunkSize; i += step) {
+                final int pos = i * singleHashLength;
+                bytesWritten += out.putBytes(offset + bytesWritten, hashData, pos, singleHashLength);
+            }
+        }
+        assert bytesWritten == getSerializedSizeInBytes();
+        return bytesWritten;
     }
 
     public static long pathToChunkPath(final long path, final int chunkHeight) {

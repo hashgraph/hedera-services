@@ -355,9 +355,10 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
                     expected.put(key, value);
                     coll.put(
                             key,
-                            o -> {
-                                o.writeLong(key);
-                                o.writeLong(value);
+                            (out, offset) -> {
+                                out.putLong(offset, key);
+                                out.putLong(offset + Long.BYTES, value);
+                                return 2L * Long.BYTES;
                             },
                             2 * Long.BYTES);
                 }

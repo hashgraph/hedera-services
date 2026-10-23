@@ -10,6 +10,7 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.MemoryData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.lang.foreign.Arena;
@@ -25,17 +26,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Class for creating and sequentially writing to the file. A data file contains a header
  * containing {@link DataFileMetadata} followed by data items. Each data item is considered
  * as a black box.
- *
- * <p>{@link #close()} must be called after done writing data using {@link #storeDataItem(BufferedData)},
- * or {@link #storeDataItem(Consumer, int)}, or {@link #storeDataItemWithTag(BufferedData)}
- * any number of times. When a file writer is closed, the file size is set to the last byte of
- * the last data item written.
  *
  * <p>Right after a data file writer is created, it's ready to write from multiple threads.
  * After all write calls are finished, the writer should be closed using {@link #close()}. It
@@ -272,7 +270,8 @@ public final class DataFileWriter {
      * @throws IOException if there was a problem appending data to file
      */
     public long storeDataItem(final BufferedData dataItem) throws IOException {
-        return storeDataItem(o -> o.writeBytes(dataItem), Math.toIntExact(dataItem.remaining()));
+//        return storeDataItem(o -> o.writeBytes(dataItem), Math.toIntExact(dataItem.remaining()));
+        return storeDataItem(dataItem::writeTo, Math.toIntExact(dataItem.remaining()));
     }
 
     /**
@@ -284,11 +283,19 @@ public final class DataFileWriter {
      * @return the data location of written data in bytes
      * @throws IOException if there was a problem appending data to the file
      */
-    public long storeDataItem(final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+//    public long storeDataItem(final Consumer<WritableSequentialData> dataItemWriter, final int dataItemSize)
+    public long storeDataItem(final BiFunction<RandomAccessData, Long, Long> dataItemWriter, final int dataItemSize)
             throws IOException {
         final int sizeToWrite = ProtoWriterTools.sizeOfDelimited(FIELD_DATAFILE_ITEMS, dataItemSize);
         return store(
-                out -> ProtoWriterTools.writeDelimited(out, FIELD_DATAFILE_ITEMS, dataItemSize, dataItemWriter),
+//                out -> ProtoWriterTools.writeDelimited(out, FIELD_DATAFILE_ITEMS, dataItemSize, dataItemWriter),
+                (out, offset) -> {
+                    long bytesWritten = 0;
+                    bytesWritten += ProtoWriterTools.writeTag(out, offset + bytesWritten, FIELD_DATAFILE_ITEMS);
+                    bytesWritten += out.putVarLong(offset + bytesWritten, dataItemSize);
+                    bytesWritten += dataItemWriter.apply(out, offset + bytesWritten);
+                    return bytesWritten;
+                },
                 sizeToWrite);
     }
 
@@ -297,19 +304,18 @@ public final class DataFileWriter {
      * as is, assuming the provided data item buffer already has the {@link
      * DataFileCommon#FIELD_DATAFILE_ITEMS} tag and the item length.
      *
-     * <p>This method is very similar to {@link #storeDataItem(Consumer, int)}. They are not
-     * refactored to a single method to avoid lambda / method handle performance overhead.
-     *
      * @param dataItemWithTag the data item to write
      * @return the data location of written data in bytes
      * @throws IOException if there was a problem appending data to the file
      */
     public long storeDataItemWithTag(final BufferedData dataItemWithTag) throws IOException {
         final int sizeToWrite = Math.toIntExact(dataItemWithTag.remaining());
-        return store(out -> out.writeBytes(dataItemWithTag), sizeToWrite);
+//        return store(out -> out.writeBytes(dataItemWithTag), sizeToWrite);
+        return store(dataItemWithTag::writeTo, sizeToWrite);
     }
 
-    private long store(final Consumer<MemoryData> writer, final int sizeToWrite) throws IOException {
+//    private long store(final Consumer<MemoryData> writer, final int sizeToWrite) throws IOException {
+    private long store(final BiFunction<MemoryData, Long, Long> writer, final int sizeToWrite) throws IOException {
         if (closed.get()) {
             throw new IOException("Data file is already closed");
         }
@@ -324,6 +330,7 @@ public final class DataFileWriter {
         final WritingWindow writingWindow = getWritingWindow(writingWindowIndex);
 
         try {
+            /*
             final MemoryData out = getTempLocalWriteBuffer(sizeToWrite);
             writer.accept(out);
             // double check that we wrote the expected number of bytes
@@ -336,6 +343,21 @@ public final class DataFileWriter {
             final MemorySegment segment = SEGMENT_CACHE.get();
             final long writingOffset = fileOffset % dataBufferSize;
             MemorySegment.copy(segment, 0, writingWindow.writeBuffer, writingOffset, sizeToWrite);
+            */
+//            final long writingOffset = (fileOffset % dataBufferSize);
+//            final MemoryData out = MemoryData.wrap(writingWindow.writeBuffer);
+//            out.position(writingOffset);
+//            out.limit(writingOffset + sizeToWrite);
+//            writer.accept(out);
+//            if (out.remaining() != 0) {
+//                throw new IOException("Estimated size / written bytes mismatch: expected=" + sizeToWrite + " written="
+//                        + (sizeToWrite - out.remaining()));
+//            }
+            final long writingOffset = (fileOffset % dataBufferSize);
+            final long bytesWritten = writer.apply(writingWindow.writingOut, writingOffset);
+            if (bytesWritten != sizeToWrite) {
+                throw new IOException("Estimated size / written bytes mismatch: expected=" + sizeToWrite + " written=" + bytesWritten);
+            }
         } finally {
             bytesWritten(fileOffset, sizeToWrite);
         }
@@ -381,6 +403,7 @@ public final class DataFileWriter {
 
         // FUTURE WORK: use MemoryData to directly write data items to
         private final MemorySegment writeBuffer;
+        private final MemoryData writingOut;
 
         private final AtomicInteger bytesLeftToWrite;
 
@@ -390,6 +413,7 @@ public final class DataFileWriter {
             final long fileOffset = (long) windowIndex * dataBufferSize;
             // Mapped segment size is 2 x data buffer size to make sure writing windows are overlapped
             writeBuffer = fileChannel.map(MapMode.READ_WRITE, fileOffset, dataBufferSize * 2L, arena);
+            writingOut = MemoryData.wrap(writeBuffer);
             bytesLeftToWrite = new AtomicInteger(dataBufferSize);
         }
 
