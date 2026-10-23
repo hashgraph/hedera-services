@@ -77,6 +77,19 @@ public record FlickerGraph(
     }
 
     /**
+     * Write this graph back out as {@code .graph} text.
+     * <p>
+     * The text parses back to an equal graph. Nothing in the suite consumes it yet; it exists so that the round-trip
+     * test can detect a field the format cannot carry.
+     *
+     * @return the file this graph would be written as
+     */
+    @NonNull
+    public String toText() {
+        return GraphWriter.write(this);
+    }
+
+    /**
      * Build this graph's events under one of its own roster blocks.
      *
      * @param rosterName the name a roster block was declared with
