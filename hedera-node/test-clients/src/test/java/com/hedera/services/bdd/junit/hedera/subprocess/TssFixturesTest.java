@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
+import org.hiero.base.crypto.DigestType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -102,6 +103,33 @@ class TssFixturesTest {
                 "ledgerA_manifest", TssFixtures.fixtureNetworkName("ledgerA_manifest-node0-genesis-network.json.gz"));
         assertNull(TssFixtures.fixtureNetworkName("ledgerA_manifest-node1-genesis-network.json.gz"));
         assertNull(TssFixtures.fixtureNetworkName("README.md"));
+    }
+
+    @Test
+    @DisplayName("Fixture file name carries the -sha256- tag only under the SHA-256 digest")
+    void fixtureFileNameTagsOnlySha256() {
+        assertEquals("ledgerA-genesis-network.json", TssFixtures.fixtureFileName("ledgerA", DigestType.SHA_384));
+        assertEquals("ledgerA-sha256-genesis-network.json", TssFixtures.fixtureFileName("ledgerA", DigestType.SHA_256));
+    }
+
+    @Test
+    @DisplayName("Under SHA-384 only bare fixtures match; under SHA-256 only -sha256- fixtures match")
+    void fixtureNetworkNameIsDigestAware() {
+        // SHA-384 (bare) view: accept bare, reject the tagged variant so it cannot shadow the reservation
+        assertEquals("ledgerA", TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json.gz", DigestType.SHA_384));
+        assertEquals(
+                "ledgerA_manifest",
+                TssFixtures.fixtureNetworkName("ledgerA_manifest-node0-genesis-network.json.gz", DigestType.SHA_384));
+        assertNull(TssFixtures.fixtureNetworkName("ledgerA-sha256-genesis-network.json.gz", DigestType.SHA_384));
+
+        // SHA-256 view: accept the tagged variant (stripping the tag), reject bare
+        assertEquals(
+                "ledgerA",
+                TssFixtures.fixtureNetworkName("ledgerA-sha256-genesis-network.json.gz", DigestType.SHA_256));
+        assertEquals(
+                "ledgerA_manifest",
+                TssFixtures.fixtureNetworkName("ledgerA_manifest-sha256-genesis-network.json.gz", DigestType.SHA_256));
+        assertNull(TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json.gz", DigestType.SHA_256));
     }
 
     @Test
