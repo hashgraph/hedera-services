@@ -733,8 +733,9 @@ def main():
     parser.add_argument("--tolerance", type=float, default=0.01, help="warmup tolerance (default 0.01)")
     parser.add_argument("--warmup", type=int, help="warmup iterations to drop, instead of the detected value")
     parser.add_argument("--benchmark", help="only parameter sets whose key contains this text")
-    parser.add_argument("--samples", type=float, default=1.5e6,
-                        help="samples per iteration the recommendation aims for (default 1.5 M)")
+    # p99.99 needs 10^6 samples per iteration; the buffer keeps a night that is 20% slower above that
+    parser.add_argument("--samples", type=float, default=1.25e6,
+                        help="samples per iteration the recommendation aims for (default 1.25 M)")
     parser.add_argument("--warmup-buffer", type=float, default=2.0,
                         help="factor on the measured warmup time (default 2)")
     parser.add_argument("--gain", type=float, default=0.10,
