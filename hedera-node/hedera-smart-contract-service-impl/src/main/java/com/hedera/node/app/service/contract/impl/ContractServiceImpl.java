@@ -132,6 +132,7 @@ public class ContractServiceImpl implements ContractService {
         contractMetrics.createContractPrimaryMetrics();
         contractMetrics.createContractSecondaryMetrics();
     }
+
     /**
      * @return all contract transaction handlers
      */
