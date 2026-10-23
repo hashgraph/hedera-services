@@ -21,10 +21,6 @@ import org.apache.logging.log4j.Logger;
  *     <li>Sequence Number: A unique number assigned to the connection that is unique to the connection type for the
  *     lifespan of the JVM</li>
  * </ul>
- * Since the sequence number restarts whenever the JVM restarts, correlation IDs derived from a connection ID (see
- * {@link #correlationId()}) are suffixed with a JVM instance token ({@link #jvmId()}) to distinguish connections made by
- * different JVMs (e.g. after a restart, or by two processes running with the same node ID). If the token cannot be
- * created, it is omitted and correlation IDs fall back to the format without it.
  */
 public class ConnectionId {
     private static final Logger logger = LogManager.getLogger(ConnectionId.class);
