@@ -82,7 +82,7 @@ class ScheduledEvmTraceTest {
                 word(101));
         final var usages = List.of(
                 usage(1035, read(word(1), 1), read(hashedSlot.key(), 0)),
-                usage(1037, read(Bytes.EMPTY, 1035), read(word(1), 1), read(word(2), 101)),
+                usage(1037, read(Bytes.EMPTY, 1035), read(word(1), 1), read(word(2), 101), read(POINTER_ONLY.key(), 7)),
                 usage(1041, read(word(0), 0)));
         trace(scheduled, usages, writes.keySet());
         writes.forEach((key, value) -> storage(scheduled).put(key, new SlotValue(value, Bytes.EMPTY, Bytes.EMPTY)));
@@ -119,14 +119,41 @@ class ScheduledEvmTraceTest {
                 final var expectedRead = expectedUsage.slotReads().get(j);
                 final var actualRead = actualUsage.slotReads().get(j);
                 assertThat(actualRead.readValue()).isEqualTo(expectedRead.readValue());
-                if (expectedRead.keyOrThrow().equals(Bytes.EMPTY)) {
-                    assertThat(actualRead).isEqualTo(expectedRead);
-                } else {
+                if (writes.containsKey(new SlotKey(expectedUsage.contractIdOrThrow(), expectedRead.keyOrThrow()))) {
                     assertThat(actualRead.hasIndex()).isTrue();
                     assertThat(writtenKeys.get(actualRead.indexOrThrow())).isEqualTo(expectedRead.keyOrThrow());
+                } else {
+                    final var expectedKey =
+                            expectedRead.keyOrThrow().equals(POINTER_ONLY.key()) ? minimal(3) : Bytes.EMPTY;
+                    assertThat(actualRead)
+                            .isEqualTo(
+                                    expectedRead.copyBuilder().key(expectedKey).build());
                 }
             }
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("schedulingModes")
+    void normalizesScheduledReadKeysWithoutCommittedWrites(
+            final StreamMode mode, final HederaFunctionality schedulingFunction) {
+        final var fixture = fixture(mode, schedulingFunction);
+        final var scheduled = scheduledIn(fixture.root(), mode);
+        // A zero-into-empty write has no state update, and pointer maintenance has no logical value change.
+        trace(scheduled, List.of(usage(1037, read(word(0), 0), read(POINTER_ONLY.key(), 7))), Set.of());
+        storage(scheduled).put(POINTER_ONLY, new SlotValue(word(7), word(1), Bytes.EMPTY));
+        scheduled.commitFullStack();
+        fixture.root().commitFullStack();
+
+        assertThat(fixture.root().getBaseBuilder(StreamBuilder.class).getStateChanges())
+                .singleElement()
+                .satisfies(change ->
+                        assertThat(change.mapUpdateOrThrow().identical()).isTrue());
+        final var usage =
+                traces(items(fixture.root())).getFirst().contractSlotUsages().getFirst();
+        assertThat(usage.hasWrittenSlotKeys()).isFalse();
+        // In particular, the zero slot must still have the KEY discriminator with an empty value.
+        assertThat(usage.slotReads()).containsExactly(read(Bytes.EMPTY, 0), read(minimal(3), 7));
     }
 
     @ParameterizedTest

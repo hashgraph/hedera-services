@@ -65,6 +65,11 @@ message ContractSlotUsage {
 }
 
 message WrittenSlotKeys {
+    /**
+     * The written slot keys, each represented with minimal bytes (no leading
+     * zeros). The zero key is represented by an empty byte sequence. A stream
+     * consumer can left-pad each key with zeros to form a 32-byte EVM slot key.
+     */
     repeated bytes keys = 1;
 }
 
@@ -92,7 +97,8 @@ message SlotRead {
         /**
         * If this slot was only read, its key represented with minimal bytes
         * (no leading zeros); a stream consumer can left-pad this field with
-        * zeros to form a 32-byte EVM slot key.
+        * zeros to form a 32-byte EVM slot key. The zero key is represented by
+        * an empty byte sequence.
         */
         bytes key = 2;
     }

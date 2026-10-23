@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_EVM_HOOK_STORAGE;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_STORAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
@@ -10,6 +12,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockItemsTranslator.BLOCK_ITEMS_TRANSLATOR;
+import static com.hedera.node.app.service.token.HookDispatchUtils.HTS_HOOKS_CONTRACT_NUM;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.SignedTxCustomizer.NOOP_SIGNED_TX_CUSTOMIZER;
@@ -18,6 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.MapChangeKey;
+import com.hedera.hapi.block.stream.output.MapChangeValue;
+import com.hedera.hapi.block.stream.output.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.trace.ContractSlotUsage;
 import com.hedera.hapi.block.stream.trace.EvmTraceData;
 import com.hedera.hapi.block.stream.trace.EvmTransactionLog;
@@ -28,6 +35,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.HookId;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenAssociation;
@@ -35,6 +43,9 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.EvmTransactionResult;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.state.hooks.EvmHookSlotKey;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -49,10 +60,13 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -175,6 +189,104 @@ public class BlockStreamBuilderTest {
 
         assertThat(trace.contractSlotUsages()).containsExactly(usage);
         assertThat(builder.hasExplicitContractSlotWrites()).isTrue();
+    }
+
+    @ParameterizedTest(name = "hookStorage={0}, stateChanges={1}")
+    @MethodSource("implicitSlotReadScenarios")
+    void successfulImplicitReadsUseMinimalKeysAfterWriteLookup(
+            final boolean hookStorage, final ImplicitWriteContext writeContext) throws Exception {
+        final var contractId = ContractID.newBuilder()
+                .contractNum(hookStorage ? HTS_HOOKS_CONTRACT_NUM : 1037)
+                .build();
+        final var zeroWord = Bytes.fromHex("00".repeat(32));
+        final var paddedOne = Bytes.fromHex("00".repeat(31) + "01");
+        final var paddedTwo = Bytes.fromHex("00".repeat(31) + "02");
+        final var highBitWord = Bytes.fromHex("80" + "00".repeat(31));
+        final var reads = List.of(
+                SlotRead.newBuilder()
+                        .key(zeroWord)
+                        .readValue(Bytes.fromHex("11"))
+                        .build(),
+                SlotRead.newBuilder()
+                        .key(paddedOne)
+                        .readValue(Bytes.fromHex("22"))
+                        .build(),
+                SlotRead.newBuilder()
+                        .key(highBitWord)
+                        .readValue(Bytes.fromHex("33"))
+                        .build(),
+                SlotRead.newBuilder()
+                        .key(paddedTwo)
+                        .readValue(Bytes.fromHex("44"))
+                        .build(),
+                SlotRead.newBuilder()
+                        .key(Bytes.EMPTY)
+                        .readValue(Bytes.fromHex("55"))
+                        .build(),
+                SlotRead.newBuilder()
+                        .key(Bytes.fromHex("03"))
+                        .readValue(Bytes.EMPTY)
+                        .build());
+        final var builder = createBaseBuilder()
+                .functionality(CONTRACT_CALL)
+                .status(SUCCESS)
+                .evmCallTransactionResult(EvmTransactionResult.DEFAULT)
+                .addContractSlotUsages(List.of(new ContractSlotUsage(contractId, null, reads)));
+        builder.testForIdenticalKeys(_ -> false);
+        if (writeContext != ImplicitWriteContext.NO_CHANGES) {
+            final var key = hookStorage
+                    ? MapChangeKey.newBuilder()
+                            .evmHookSlotKey(new EvmHookSlotKey(HookId.DEFAULT, Bytes.fromHex("02")))
+                            .build()
+                    : MapChangeKey.newBuilder()
+                            .slotKeyKey(new SlotKey(contractId, paddedTwo))
+                            .build();
+            builder.stateChanges(List.of(StateChange.newBuilder()
+                    .stateId((hookStorage ? STATE_ID_EVM_HOOK_STORAGE : STATE_ID_STORAGE).protoOrdinal())
+                    .mapUpdate(MapUpdateChange.newBuilder()
+                            .key(key)
+                            .value(MapChangeValue.newBuilder().slotValueValue(SlotValue.DEFAULT))
+                            .identical(writeContext == ImplicitWriteContext.IDENTICAL_UPDATE_ONLY))
+                    .build()));
+        }
+
+        final var trace = builder.build(false, null).blockItems().stream()
+                .filter(BlockItem::hasTraceData)
+                .findFirst()
+                .orElseThrow()
+                .traceDataOrThrow()
+                .evmTraceDataOrThrow();
+        // The empty bytes used for slot zero must retain the KEY oneof even after serialization.
+        final var usage = EvmTraceData.PROTOBUF
+                .parseStrict(EvmTraceData.PROTOBUF.toBytes(trace).toReadableSequentialData())
+                .contractSlotUsages()
+                .getFirst();
+        final var matchingRead = writeContext == ImplicitWriteContext.NON_IDENTICAL_WRITE
+                ? reads.get(3).copyBuilder().index(0).build()
+                : reads.get(3).copyBuilder().key(Bytes.fromHex("02")).build();
+        assertThat(usage.contractId()).isEqualTo(contractId);
+        assertThat(usage.hasWrittenSlotKeys()).isFalse();
+        assertThat(usage.slotReads())
+                .containsExactly(
+                        reads.get(0).copyBuilder().key(Bytes.EMPTY).build(),
+                        reads.get(1).copyBuilder().key(Bytes.fromHex("01")).build(),
+                        reads.get(2),
+                        matchingRead,
+                        reads.get(4),
+                        reads.get(5));
+        assertThat(usage.slotReads().getFirst().hasKey()).isTrue();
+        assertThat(usage.slotReads().getFirst().hasIndex()).isFalse();
+    }
+
+    private static Stream<Arguments> implicitSlotReadScenarios() {
+        return Stream.of(false, true).flatMap(hookStorage -> Stream.of(ImplicitWriteContext.values())
+                .map(writeContext -> Arguments.of(hookStorage, writeContext)));
+    }
+
+    private enum ImplicitWriteContext {
+        NON_IDENTICAL_WRITE,
+        IDENTICAL_UPDATE_ONLY,
+        NO_CHANGES
     }
 
     @Test

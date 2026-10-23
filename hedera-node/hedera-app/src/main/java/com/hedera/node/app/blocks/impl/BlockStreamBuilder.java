@@ -753,25 +753,25 @@ public class BlockStreamBuilder
                                 contractId = ContractID.DEFAULT;
                             }
                             final var writeIndexes = implicitWriteIndexes.get(contractId);
-                            if (writeIndexes != null) {
-                                final List<SlotRead> indexedReads = new ArrayList<>(reads.size());
-                                for (final var read : reads) {
-                                    var key = read.keyOrThrow();
-                                    if (contractId == ContractID.DEFAULT) {
-                                        key = WritableEvmHookStore.minimalKey(key);
-                                    }
-                                    final var index = writeIndexes.get(key);
-                                    if (index != null) {
-                                        indexedReads.add(new SlotRead(new OneOf<>(INDEX, index), read.readValue()));
-                                    } else {
-                                        indexedReads.add(read);
-                                    }
+                            final List<SlotRead> indexedReads = new ArrayList<>(reads.size());
+                            for (final var read : reads) {
+                                var key = read.keyOrThrow();
+                                if (contractId == ContractID.DEFAULT) {
+                                    key = WritableEvmHookStore.minimalKey(key);
                                 }
-                                indexedSlotUsages.add(
-                                        new ContractSlotUsage(slotUsage.contractIdOrThrow(), null, indexedReads));
-                            } else {
-                                indexedSlotUsages.add(slotUsage);
+                                final var index = writeIndexes == null ? null : writeIndexes.get(key);
+                                if (index != null) {
+                                    indexedReads.add(new SlotRead(new OneOf<>(INDEX, index), read.readValue()));
+                                } else {
+                                    // Implicit write placeholders use full keys for lookup. If no committed write
+                                    // remains, externalize the key with the same minimal encoding as read-only slots.
+                                    indexedReads.add(read.copyBuilder()
+                                            .key(minimalRepresentationOf(read.keyOrThrow()))
+                                            .build());
+                                }
                             }
+                            indexedSlotUsages.add(
+                                    new ContractSlotUsage(slotUsage.contractIdOrThrow(), null, indexedReads));
                         }
                     }
                     builder.contractSlotUsages(indexedSlotUsages);
