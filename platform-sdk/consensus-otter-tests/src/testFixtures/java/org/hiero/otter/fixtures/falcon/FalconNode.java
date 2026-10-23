@@ -60,6 +60,9 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
     @Nullable
     private FalconWiring wiring;
 
+    @NonNull
+    private EventWindow latestEventWindow = EventWindow.getGenesisEventWindow();
+
     /**
      * Constructor for {@code FalconNode}.
      *
@@ -161,11 +164,10 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
             event.setSenderId(selfId);
             networkConnectivity.submitEvent(event);
         });
-        wiring.eventWindowOutputWire()
-                .solderTo(
-                        "EventWindowSubmitter_" + selfId,
-                        "event window",
-                        eventWindow -> networkConnectivity.updateEventWindow(selfId, eventWindow));
+        wiring.eventWindowOutputWire().solderTo("EventWindowSubmitter_" + selfId, "event window", eventWindow -> {
+            latestEventWindow = eventWindow;
+            networkConnectivity.updateEventWindow(selfId, eventWindow);
+        });
         wiring.consensusRoundOutputWire()
                 .solderTo("ResultsCollector", "consensus round", resultsCollector::addConsensusRound);
         wiring.platformStatusOutputWire()
@@ -329,6 +331,15 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
     @Override
     public boolean isAlive() {
         return lifeCycle == RUNNING;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public EventWindow latestEventWindow() {
+        return latestEventWindow;
     }
 
     /**
