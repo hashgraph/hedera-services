@@ -262,6 +262,9 @@ class StateChangesValidatorTest {
                 new Hash(PREV_BLOCK_ROOT_HASH, org.hiero.base.crypto.DigestType.SHA_384));
         setField(validator, "expectedRootHash", endHashes.getLast());
         setField(validator, "entityChanges", Map.of());
+        // Mockito skips field initializers, so seed the cross-block hashing state the constructor would have set
+        setField(validator, "digestType", org.hiero.base.crypto.DigestType.SHA_384);
+        setField(validator, "preFoldIntermediateState", List.of());
         return new ReplayFixture(validator, lifecycle);
     }
 
