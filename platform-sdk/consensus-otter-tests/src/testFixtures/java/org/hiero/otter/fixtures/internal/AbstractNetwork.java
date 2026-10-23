@@ -1016,7 +1016,7 @@ public abstract class AbstractNetwork implements Network {
      */
     @Override
     public boolean nodeIsBehindByNodeWeight(@NonNull final MiniNode maybeBehindNode) {
-        final Set<MiniNode> otherNodes = nodes().stream()
+        final Set<MiniNode> otherNodes = allNodes().stream()
                 .filter(n -> !n.selfId().equals(maybeBehindNode.selfId()))
                 .collect(Collectors.toSet());
 
@@ -1027,9 +1027,9 @@ public abstract class AbstractNetwork implements Network {
         for (final MiniNode maybeAheadNode : otherNodes) {
             final EventWindow peerEventWindow = maybeAheadNode.latestEventWindow();
 
-            // If any peer in the required list says the "self" node is not behind, the node is not behind.
+            // If the peer says the "self" node is behind, the peer is ahead, so add its weight
             if (FallenBehindStatus.getStatus(selfEventWindow, peerEventWindow)
-                    != FallenBehindStatus.SELF_FALLEN_BEHIND) {
+                    == FallenBehindStatus.SELF_FALLEN_BEHIND) {
                 weightOfAheadNodes += maybeAheadNode.weight();
             }
         }

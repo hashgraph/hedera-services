@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 import org.hiero.consensus.gossip.impl.gossip.sync.protocol.SyncStatusChecker;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
@@ -160,14 +161,16 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
         final SecureRandom secureRandom = new SecureRandomBuilder(random.nextLong()).get();
 
         wiring = new FalconWiring(currentConfiguration, time, selfId, roster(), secureRandom);
-        wiring.sentGossipEventsOutputWire().solderTo("EventSubmitter_" + selfId, "event", event -> {
+        final Consumer<PlatformEvent> eventSubmitter = event -> {
             event.setSenderId(selfId);
             networkConnectivity.submitEvent(event);
-        });
-        wiring.eventWindowOutputWire().solderTo("EventWindowSubmitter_" + selfId, "event window", eventWindow -> {
+        };
+        wiring.sentGossipEventsOutputWire().solderTo("EventSubmitter_" + selfId, "event", eventSubmitter);
+        final Consumer<EventWindow> eventWindowSubmitter = eventWindow -> {
             latestEventWindow = eventWindow;
             networkConnectivity.updateEventWindow(selfId, eventWindow);
-        });
+        };
+        wiring.eventWindowOutputWire().solderTo("EventWindowSubmitter_" + selfId, "event window", eventWindowSubmitter);
         wiring.consensusRoundOutputWire()
                 .solderTo("ResultsCollector", "consensus round", resultsCollector::addConsensusRound);
         wiring.platformStatusOutputWire()
