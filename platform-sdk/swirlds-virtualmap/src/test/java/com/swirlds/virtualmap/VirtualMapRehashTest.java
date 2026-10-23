@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -96,8 +97,11 @@ class VirtualMapRehashTest extends VirtualTestBase {
         assertEquals(correctHash2, vm.getRecords().findHash(2), "Hash for leaf 2 should be corrected");
 
         // Internal node (path 0) should also be hashed
+        final WritableMessageDigest digestWriter =
+                new WritableMessageDigest(Cryptography.DEFAULT_DIGEST_TYPE.buildDigest());
         assertEquals(
-                new MerkleHasher().internalNodeHash(correctHash, correctHash2),
+                MerkleHasher.internalNodeHash(
+                        correctHash, correctHash2, digestWriter, Cryptography.DEFAULT_DIGEST_TYPE),
                 vm.getRecords().rootHash(),
                 "Root hash should be computed");
 
