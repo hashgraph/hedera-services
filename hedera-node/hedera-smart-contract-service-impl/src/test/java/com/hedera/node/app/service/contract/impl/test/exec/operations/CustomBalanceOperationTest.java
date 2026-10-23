@@ -6,7 +6,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -67,7 +66,6 @@ class CustomBalanceOperationTest {
     void catchesUnderflowWhenStackIsEmpty() {
         setupWarmGasCost();
         given(frame.getStackItem(0)).willThrow(UnderflowException.class);
-        given(frame.getRemainingGas()).willReturn(3L);
         final var expected = new Operation.OperationResult(1L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
@@ -82,41 +80,63 @@ class CustomBalanceOperationTest {
         final var expected = new Operation.OperationResult(1L, null);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
+        verify(frame).warmUpAddress(SYSTEM_ADDRESS);
         verify(frame).popStackItem();
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void coinbaseBalanceChargedAtWarmCostOnlyWhenWarm(final boolean coinbaseIsWarm) {
+    void systemAccountChargedAtWarmCostOnlyWhenWarm(final boolean isWarm) {
         setupWarmGasCost();
-        if (coinbaseIsWarm) {
+        if (isWarm) {
             given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        } else {
+            given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
         }
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2601L);
+        // Exactly the priced cost remains, so a warm access must not be halted for lacking the cold cost
+        given(frame.getRemainingGas()).willReturn(isWarm ? 101L : 2601L);
+        given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS.getBytes());
+        given(frame.isAddressWarm(SYSTEM_ADDRESS)).willReturn(isWarm);
+        given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
+        final var expected = new Operation.OperationResult(isWarm ? 101L : 2601L, null);
+        final var actual = subject.execute(frame, evm);
+        assertSameResult(expected, actual);
+        verify(frame).warmUpAddress(SYSTEM_ADDRESS);
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
+    void precompileIsAlwaysWarm() {
+        setupWarmGasCost();
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        given(gasCalculator.isPrecompile(SYSTEM_ADDRESS)).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(101L);
         given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS.getBytes());
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
-        given(frame.getMiningBeneficiary()).willReturn(SYSTEM_ADDRESS);
-        given(frame.isAddressWarm(SYSTEM_ADDRESS)).willReturn(coinbaseIsWarm);
-        final var expected = new Operation.OperationResult(coinbaseIsWarm ? 101L : 2601L, null);
+        final var expected = new Operation.OperationResult(101L, null);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
     @Test
-    void systemAccountOtherThanCoinbaseChargedAtColdCost() {
-        setupWarmGasCost();
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2601L);
-        given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS.getBytes());
-        given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
-        given(frame.getMiningBeneficiary()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
-        final var expected = new Operation.OperationResult(2601L, null);
-        final var actual = subject.execute(frame, evm);
-        assertSameResult(expected, actual);
-        verify(frame, never()).isAddressWarm(SYSTEM_ADDRESS);
+    void warmUserAddressIsNotHaltedForLackingColdAccessCost() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            setupWarmGasCost();
+            given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+            given(frame.getRemainingGas()).willReturn(101L);
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS.getBytes());
+            given(frame.isAddressWarm(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            given(frame.popStackItem()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS.getBytes());
+            given(frame.warmUpAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+            given(frame.getWorldUpdater()).willReturn(updater);
+            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            given(updater.get(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
+            final var expected = new Operation.OperationResult(101L, null);
+            final var actual = subject.execute(frame, evm);
+            assertSameResult(expected, actual);
+        }
     }
 
     @Test
@@ -140,6 +160,7 @@ class CustomBalanceOperationTest {
     void delegatesToSuperIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
+            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS.getBytes());
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(1L, ExceptionalHaltReason.INSUFFICIENT_GAS);
             final var actual = subject.execute(frame, evm);

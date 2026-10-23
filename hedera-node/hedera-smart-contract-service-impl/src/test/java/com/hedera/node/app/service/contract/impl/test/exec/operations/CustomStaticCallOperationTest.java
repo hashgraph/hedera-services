@@ -117,23 +117,35 @@ class CustomStaticCallOperationTest {
     }
 
     @Test
-    void coinbaseIsPricedWarmInGasPreCheck() {
-        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
-            given(frame.getRemainingGas()).willReturn(0L);
-            frameUtils
-                    .when(() -> FrameUtils.isWarmCoinbase(frame, SYSTEM_ADDRESS))
-                    .thenReturn(true);
-            given(gasCalculator.callOperationGasCost(
-                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(),
-                            eq(true)))
-                    .willReturn(REQUIRED_GAS);
-            final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
-            assertSameResult(expected, subject.execute(frame, evm));
-            verify(gasCalculator)
-                    .callOperationStaticGasCost(
-                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), eq(true));
-        }
+    void warmTargetIsPricedWarmInGasPreCheck() {
+        givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
+        given(frame.getRemainingGas()).willReturn(0L);
+        given(frame.isAddressWarm(SYSTEM_ADDRESS)).willReturn(true);
+        given(gasCalculator.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(),
+                        eq(true)))
+                .willReturn(REQUIRED_GAS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(gasCalculator)
+                .callOperationStaticGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), eq(true));
+    }
+
+    @Test
+    void precompileTargetIsPricedWarmInGasPreCheck() {
+        givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
+        given(frame.getRemainingGas()).willReturn(0L);
+        given(gasCalculator.isPrecompile(SYSTEM_ADDRESS)).willReturn(true);
+        given(gasCalculator.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(),
+                        eq(true)))
+                .willReturn(REQUIRED_GAS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(gasCalculator)
+                .callOperationStaticGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), eq(true));
     }
 
     private void givenWellKnownFrameWithNoGasCalc(final long value, final Address to, final long gas) {

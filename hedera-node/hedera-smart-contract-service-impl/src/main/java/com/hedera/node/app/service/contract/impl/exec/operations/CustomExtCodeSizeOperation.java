@@ -3,7 +3,6 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isWarmCoinbase;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -48,17 +47,22 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
-            final long cost = cost(false);
+            final var address = Words.toAddress(frame.getStackItem(0));
+            // Price the access warm or cold as per EIP-2929 before any Hedera-specific checks, so
+            // that an already warm address is never halted for lacking the cold access cost
+            final boolean accountIsWarm =
+                    frame.isAddressWarm(address) || gasCalculator().isPrecompile(address);
+            final long cost = cost(accountIsWarm);
             if (isDeficientGas(frame, cost)) {
                 return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
-            final var address = Words.toAddress(frame.getStackItem(0));
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {
+                // The access still warms the address for the rest of the transaction (EIP-2929)
+                frame.warmUpAddress(address);
                 frame.popStackItem();
                 frame.pushStackItem(UInt256.ZERO);
-                // The coinbase is warm from the start of the transaction (EIP-3651)
-                return new OperationResult(isWarmCoinbase(frame, address) ? cost(true) : cost, null);
+                return new OperationResult(cost, null);
             }
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
                 FrameUtils.invalidAddressContext(frame).set(address, InvalidAddressType.NON_CALL_TARGET);

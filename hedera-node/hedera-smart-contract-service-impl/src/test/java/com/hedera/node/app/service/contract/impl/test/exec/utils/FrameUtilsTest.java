@@ -379,20 +379,9 @@ class FrameUtilsTest {
     }
 
     @Test
-    void warmCoinbaseRequiresBothCoinbaseAndWarmth() {
-        final var coinbase = Address.fromHexString("0x62");
-        given(frame.getMiningBeneficiary()).willReturn(coinbase);
-        given(frame.isAddressWarm(coinbase)).willReturn(true, false);
-        assertTrue(FrameUtils.isWarmCoinbase(frame, coinbase));
-        assertFalse(FrameUtils.isWarmCoinbase(frame, coinbase));
-        assertFalse(FrameUtils.isWarmCoinbase(frame, NON_SYSTEM_LONG_ZERO_ADDRESS));
-    }
-
-    @Test
     void noAddressIsTheCoinbaseOfAFrameWithoutOne() {
         final var coinbase = Address.fromHexString("0x62");
         assertFalse(FrameUtils.isCoinbase(frame, coinbase));
-        assertFalse(FrameUtils.isWarmCoinbase(frame, coinbase));
     }
 
     @Test

@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -120,34 +119,36 @@ class CustomExtCodeCopyOperationTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void coinbaseChargedAtWarmCostOnlyWhenWarm(final boolean coinbaseIsWarm) {
-        final var coinbase = Address.fromHexString("0x62");
-        given(addressChecks.isNonUserAccount(coinbase)).willReturn(true);
+    void nonUserAccountChargedAtWarmCostOnlyWhenWarm(final boolean isWarm) {
+        given(addressChecks.isNonUserAccount(HEX_ADDRESS)).willReturn(true);
         given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        givenWellKnownFrameWith(coinbase);
-        if (coinbaseIsWarm) {
+        givenWellKnownFrameWith(HEX_ADDRESS);
+        if (isWarm) {
             given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        } else {
+            given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
         }
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2723L);
-        given(frame.getMiningBeneficiary()).willReturn(coinbase);
-        given(frame.isAddressWarm(coinbase)).willReturn(coinbaseIsWarm);
-        final var expected = new Operation.OperationResult(coinbaseIsWarm ? 223L : 2723L, null);
+        // Exactly the priced cost remains, so a warm access must not be halted for lacking the cold cost
+        given(frame.getRemainingGas()).willReturn(isWarm ? 223L : 2723L);
+        given(frame.isAddressWarm(HEX_ADDRESS)).willReturn(isWarm);
+        final var expected = new Operation.OperationResult(isWarm ? 223L : 2723L, null);
         assertSameResult(expected, subject.execute(frame, evm));
+        verify(frame).warmUpAddress(HEX_ADDRESS);
         verify(frame).popStackItems(4);
     }
 
     @Test
-    void nonUserAccountOtherThanCoinbaseChargedAtColdCost() {
-        given(addressChecks.isNonUserAccount(HEX_ADDRESS)).willReturn(true);
+    void precompileIsAlwaysWarm() {
+        final var precompile = Address.fromHexString("0x09");
+        given(addressChecks.isNonUserAccount(precompile)).willReturn(true);
         given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
-        givenWellKnownFrameWith(HEX_ADDRESS);
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2723L);
-        given(frame.getMiningBeneficiary()).willReturn(Address.fromHexString("0x62"));
-        final var expected = new Operation.OperationResult(2723L, null);
+        givenWellKnownFrameWith(precompile);
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        given(gasCalculator.isPrecompile(precompile)).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(223L);
+        final var expected = new Operation.OperationResult(223L, null);
         assertSameResult(expected, subject.execute(frame, evm));
-        verify(frame, never()).isAddressWarm(HEX_ADDRESS);
+        verify(frame).popStackItems(4);
     }
 
     @Test

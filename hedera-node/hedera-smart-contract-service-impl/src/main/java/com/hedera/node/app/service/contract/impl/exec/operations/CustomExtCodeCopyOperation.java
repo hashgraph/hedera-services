@@ -2,7 +2,6 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isWarmCoinbase;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -54,18 +53,22 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             final var memOffset = clampedToLong(frame.getStackItem(1));
             final var sourceOffset = clampedToLong(frame.getStackItem(2));
             final var numBytes = clampedToLong(frame.getStackItem(3));
-            final long cost = cost(frame, memOffset, numBytes, false);
+            // Price the access warm or cold as per EIP-2929 before any Hedera-specific checks, so
+            // that an already warm address is never halted for lacking the cold access cost
+            final boolean accountIsWarm =
+                    frame.isAddressWarm(address) || gasCalculator().isPrecompile(address);
+            final long cost = cost(frame, memOffset, numBytes, accountIsWarm);
             if (isDeficientGas(frame, cost)) {
                 return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
 
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {
+                // The access still warms the address for the rest of the transaction (EIP-2929)
+                frame.warmUpAddress(address);
                 frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
                 frame.popStackItems(4);
-                // The coinbase is warm from the start of the transaction (EIP-3651)
-                return new OperationResult(
-                        isWarmCoinbase(frame, address) ? cost(frame, memOffset, numBytes, true) : cost, null);
+                return new OperationResult(cost, null);
             }
             // Otherwise the address must be present
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {

@@ -1025,9 +1025,9 @@ class BEVM {
         var address = popAddress();
         AddressChecks adrChk = _top._bonneville._adrChk;
         boolean isSystem = adrChk!=null && adrChk.isSystemAccount(address);
-        // System accounts are charged cold, except the coinbase which is warm from the start (EIP-3651)
+        // Every address, system accounts included, is priced warm or cold as per EIP-2929
         long gas = _gasCalc.getBalanceOperationGasCost() +
-            (((!isSystem || address.equals(_frame.getMiningBeneficiary())) && _top.isWarm(address))
+            (_top.isWarm(address)
              ? _gasCalc.getWarmStorageReadCost()
              : _gasCalc.getColdAccountAccessCost());
         var halt = useGas(gas);

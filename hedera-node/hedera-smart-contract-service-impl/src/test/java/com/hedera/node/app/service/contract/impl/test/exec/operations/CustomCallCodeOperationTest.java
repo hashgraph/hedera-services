@@ -117,13 +117,12 @@ class CustomCallCodeOperationTest {
     }
 
     @Test
-    void coinbaseIsPricedWarmInGasPreCheck() {
+    void warmTargetIsPricedWarmInGasPreCheck() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            frameUtils.when(() -> FrameUtils.isHookExecution(frame)).thenReturn(false);
             givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
             given(frame.getRemainingGas()).willReturn(0L);
-            frameUtils
-                    .when(() -> FrameUtils.isWarmCoinbase(frame, SYSTEM_ADDRESS))
-                    .thenReturn(true);
+            given(frame.isAddressWarm(SYSTEM_ADDRESS)).willReturn(true);
             given(gasCalculator.callOperationGasCost(
                             any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(),
                             eq(true)))

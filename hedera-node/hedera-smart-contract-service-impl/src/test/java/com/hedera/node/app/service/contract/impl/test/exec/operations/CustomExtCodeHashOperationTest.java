@@ -6,7 +6,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertS
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -88,6 +87,8 @@ class CustomExtCodeHashOperationTest {
     void deletesToParentIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith();
+            given(frame.getStackItem(0))
+                    .willReturn(Address.fromHexString("0x123").getBytes());
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
@@ -108,41 +109,45 @@ class CustomExtCodeHashOperationTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void coinbaseChargedAtWarmCostOnlyWhenWarm(final boolean coinbaseIsWarm) {
-        final var coinbase = Address.fromHexString("0x62");
-        given(frame.getStackItem(0)).willReturn(coinbase.getBytes());
-        given(addressChecks.isNonUserAccount(coinbase)).willReturn(true);
-        givenWellKnownFrameWith();
-        if (coinbaseIsWarm) {
-            given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
-        }
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2723L);
-        given(frame.getMiningBeneficiary()).willReturn(coinbase);
-        given(frame.isAddressWarm(coinbase)).willReturn(coinbaseIsWarm);
-        final var expected = new Operation.OperationResult(coinbaseIsWarm ? 223L : 2723L, null);
-        assertSameResult(expected, subject.execute(frame, evm));
-        verify(frame).pushStackItem(UInt256.ZERO);
-    }
-
-    @Test
-    void nonUserAccountOtherThanCoinbaseChargedAtColdCost() {
+    void nonUserAccountChargedAtWarmCostOnlyWhenWarm(final boolean isWarm) {
         final var address = Address.fromHexString("0x123");
         given(frame.getStackItem(0)).willReturn(address.getBytes());
         given(addressChecks.isNonUserAccount(address)).willReturn(true);
         givenWellKnownFrameWith();
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
-        given(frame.getRemainingGas()).willReturn(2723L);
-        given(frame.getMiningBeneficiary()).willReturn(Address.fromHexString("0x62"));
-        final var expected = new Operation.OperationResult(2723L, null);
+        if (isWarm) {
+            given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        } else {
+            given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
+        }
+        // Exactly the priced cost remains, so a warm access must not be halted for lacking the cold cost
+        given(frame.getRemainingGas()).willReturn(isWarm ? 223L : 2723L);
+        given(frame.isAddressWarm(address)).willReturn(isWarm);
+        final var expected = new Operation.OperationResult(isWarm ? 223L : 2723L, null);
         assertSameResult(expected, subject.execute(frame, evm));
-        verify(frame, never()).isAddressWarm(address);
+        verify(frame).warmUpAddress(address);
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
+    void precompileIsAlwaysWarm() {
+        final var precompile = Address.fromHexString("0x09");
+        given(frame.getStackItem(0)).willReturn(precompile.getBytes());
+        given(addressChecks.isNonUserAccount(precompile)).willReturn(true);
+        givenWellKnownFrameWith();
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        given(gasCalculator.isPrecompile(precompile)).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(223L);
+        final var expected = new Operation.OperationResult(223L, null);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(frame).pushStackItem(UInt256.ZERO);
     }
 
     @Test
     void delegatesForPresentAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith();
+            given(frame.getStackItem(0))
+                    .willReturn(Address.fromHexString("0x123").getBytes());
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
