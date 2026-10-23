@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+name: "906: [CRON] Block Node Version Matrix"
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    name: Placeholder
+    runs-on: hl-cn-default-lin-sm
+    steps:
+      - name: Placeholder
+        run: echo "Placeholder so the workflow can be dispatched by name; the real definition lives on the feature branch."
