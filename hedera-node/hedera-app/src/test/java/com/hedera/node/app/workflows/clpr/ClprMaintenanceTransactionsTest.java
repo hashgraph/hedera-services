@@ -218,7 +218,7 @@ class ClprMaintenanceTransactionsTest {
                         HederaTestConfigBuilder.create()
                                 .withValue("blockStream.streamMode", mode)
                                 .withValue("accounts.systemAdmin", 50)
-                                .withValue("clpr.chainId", "test-chain")
+                                .withValue("contracts.chainId", 299)
                                 .getOrCreateConfig(),
                         1));
     }
