@@ -96,13 +96,19 @@ class TssFixturesTest {
     @Test
     @DisplayName("Fixture file names map to their network, keyed off node0 for legacy per-node files")
     void fixtureNetworkNameParsesFileNames() {
-        assertEquals("ledgerA", TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json.gz"));
-        assertEquals("ledgerA", TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json"));
-        assertEquals("ledgerA_manifest", TssFixtures.fixtureNetworkName("ledgerA_manifest-genesis-network.json.gz"));
+        // Use the explicit-digest overload so the test is stable regardless of DEFAULT_DIGEST_TYPE.
+        // Bare names are SHA-384 fixtures; the SHA-256 variants are covered by fixtureNetworkNameIsDigestAware.
+        assertEquals("ledgerA", TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json.gz", DigestType.SHA_384));
+        assertEquals("ledgerA", TssFixtures.fixtureNetworkName("ledgerA-genesis-network.json", DigestType.SHA_384));
         assertEquals(
-                "ledgerA_manifest", TssFixtures.fixtureNetworkName("ledgerA_manifest-node0-genesis-network.json.gz"));
-        assertNull(TssFixtures.fixtureNetworkName("ledgerA_manifest-node1-genesis-network.json.gz"));
-        assertNull(TssFixtures.fixtureNetworkName("README.md"));
+                "ledgerA_manifest",
+                TssFixtures.fixtureNetworkName("ledgerA_manifest-genesis-network.json.gz", DigestType.SHA_384));
+        assertEquals(
+                "ledgerA_manifest",
+                TssFixtures.fixtureNetworkName("ledgerA_manifest-node0-genesis-network.json.gz", DigestType.SHA_384));
+        assertNull(
+                TssFixtures.fixtureNetworkName("ledgerA_manifest-node1-genesis-network.json.gz", DigestType.SHA_384));
+        assertNull(TssFixtures.fixtureNetworkName("README.md", DigestType.SHA_384));
     }
 
     @Test
