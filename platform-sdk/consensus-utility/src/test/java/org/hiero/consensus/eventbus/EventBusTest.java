@@ -177,7 +177,9 @@ class EventBusTest {
         bus1.shutdown();
 
         EventBus bus2 = EventBus.getInstance(NodeId.of(3));
-        assertThat(bus2).isNotSameAs(bus1).as("After shutdown, getInstance should return a new instance");
+        assertThat(bus2)
+                .as("After shutdown, getInstance should return a new instance")
+                .isNotSameAs(bus1);
     }
 
     @Test
@@ -239,7 +241,9 @@ class EventBusTest {
         eventBus.subscribe(TEST_CHANNEL, callback);
         eventBus.publish(TEST_CHANNEL, TEST_MESSAGE);
 
-        assertThat(counter.get()).isEqualTo(2).as("Same callback added twice should be called twice");
+        assertThat(counter.get())
+                .as("Same callback added twice should be called twice")
+                .isEqualTo(2);
     }
 
     @Test
