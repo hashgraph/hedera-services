@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -40,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -175,6 +177,98 @@ public class IdentityScopedSignatureRequirementsTest {
                         childRecordsCheck(
                                 "authorizedMint", SUCCESS, recordWith().status(SUCCESS)),
                         getTokenInfo("token").hasTotalSupply(11))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> sharedAdminKeyDoesNotAuthorizeTokenWipe() {
+        final var contract = "WipeTokenAccount";
+        return hapiTest(
+                newKeyNamed("shared"),
+                cryptoCreate("caller").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("treasury"),
+                cryptoCreate("holder").maxAutomaticTokenAssociations(10),
+                tokenCreate("token")
+                        .treasury("treasury")
+                        .initialSupply(10)
+                        .adminKey("shared")
+                        .wipeKey("shared"),
+                cryptoTransfer(moving(5, "token").between("treasury", "holder")),
+                uploadInitCode(contract),
+                contractCreate(contract).adminKey("shared"),
+                withOpContext((spec, log) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        contract,
+                                        "wipeFungibleToken",
+                                        idAsHeadlongAddress(spec.registry().getTokenID("token")),
+                                        idAsHeadlongAddress(spec.registry().getAccountID("holder")),
+                                        5L)
+                                .payingWith("caller")
+                                .signedBy("caller")
+                                .refusingEthConversion()
+                                .gas(1_000_000)
+                                .via("unsignedWipe")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        childRecordsCheck(
+                                "unsignedWipe",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_SIGNATURE)),
+                        getAccountBalance("holder").hasTokenBalance("token", 5),
+                        // A wipe key naming the contract authorizes the same wipe by execution alone.
+                        newKeyNamed("contractWipeKey").shape(CONTRACT.signedWith(contract)),
+                        tokenUpdate("token").wipeKey("contractWipeKey").signedBy(GENESIS, "shared"),
+                        contractCall(
+                                        contract,
+                                        "wipeFungibleToken",
+                                        idAsHeadlongAddress(spec.registry().getTokenID("token")),
+                                        idAsHeadlongAddress(spec.registry().getAccountID("holder")),
+                                        5L)
+                                .payingWith("caller")
+                                .signedBy("caller")
+                                .refusingEthConversion()
+                                .gas(1_000_000)
+                                .via("authorizedWipe"),
+                        childRecordsCheck(
+                                "authorizedWipe", SUCCESS, recordWith().status(SUCCESS)),
+                        getAccountBalance("holder").hasTokenBalance("token", 0))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> sharedAdminKeyDoesNotAuthorizeTokenReject() {
+        final var contract = "TokenReject";
+        return hapiTest(
+                newKeyNamed("shared"),
+                cryptoCreate("caller").balance(ONE_HUNDRED_HBARS),
+                cryptoCreate("treasury"),
+                // The holder's own account key equals the acting contract's key; its tokens must not be
+                // rejectable by anyone but the holder, despite the shared key value.
+                cryptoCreate("holder").key("shared").maxAutomaticTokenAssociations(10),
+                tokenCreate("token").treasury("treasury").initialSupply(10).adminKey("shared"),
+                cryptoTransfer(moving(5, "token").between("treasury", "holder")),
+                uploadInitCode(contract),
+                contractCreate(contract).adminKey("shared"),
+                withOpContext((spec, log) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        contract,
+                                        "rejectTokens",
+                                        idAsHeadlongAddress(spec.registry().getAccountID("holder")),
+                                        new Address[] {
+                                            idAsHeadlongAddress(spec.registry().getTokenID("token"))
+                                        },
+                                        new Address[] {})
+                                .payingWith("caller")
+                                .signedBy("caller")
+                                .refusingEthConversion()
+                                .gas(1_000_000)
+                                .via("unsignedReject")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        childRecordsCheck(
+                                "unsignedReject",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        // The holder keeps every token; nothing was rejected back to treasury.
+                        getAccountBalance("holder").hasTokenBalance("token", 5))));
     }
 
     @HapiTest
