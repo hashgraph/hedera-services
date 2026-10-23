@@ -171,21 +171,29 @@ final class EventCreationRecording {
     }
 
     /**
-     * Runs the simulation until node 0 has made at least the given numbers of creation attempts and peer registrations,
-     * and returns node 0's steps.
+     * Runs the simulation until node 0 has taken the given number of steps of one kind, and returns node 0's steps up
+     * to and including the last of them.
      *
-     * @param seed              the seed of the roster and of every node's random numbers
-     * @param numNodes          the number of nodes, at most the size of {@link RealisticPingSamples#MAINNET}
-     * @param creationAttempts  the minimum number of {@link Kind#CREATE} steps
-     * @param peerRegistrations the minimum number of {@link Kind#REGISTER_PEER} steps
+     * @param seed     the seed of the roster and of every node's random numbers
+     * @param numNodes the number of nodes, at most the size of {@link RealisticPingSamples#MAINNET}
+     * @param kind     the kind of step to count, {@link Kind#CREATE} or {@link Kind#REGISTER_PEER}
+     * @param count    the number of steps of that kind
      * @return node 0's steps, in order
      */
     @NonNull
-    static List<Step> record(
-            final long seed, final int numNodes, final int creationAttempts, final int peerRegistrations) {
+    static List<Step> record(final long seed, final int numNodes, @NonNull final Kind kind, final int count) {
+        if (kind != Kind.CREATE && kind != Kind.REGISTER_PEER) {
+            throw new IllegalArgumentException("Cannot count steps of kind " + kind);
+        }
         final EventCreationRecording recording = new EventCreationRecording(seed, numNodes);
-        recording.run(creationAttempts, peerRegistrations);
-        return recording.steps;
+        recording.run(kind, count);
+        int seen = 0;
+        for (int i = 0; i < recording.steps.size(); i++) {
+            if (recording.steps.get(i).kind() == kind && ++seen == count) {
+                return List.copyOf(recording.steps.subList(0, i + 1));
+            }
+        }
+        throw new IllegalStateException("The recording has only %d steps of kind %s".formatted(seen, kind));
     }
 
     /** The configuration of every node: the defaults of all configuration types. */
@@ -251,12 +259,10 @@ final class EventCreationRecording {
         return manager;
     }
 
-    private void run(final int targetCreationAttempts, final int targetPeerRegistrations) {
+    private void run(final Kind kind, final int count) {
         final long periodTicks =
                 configuration.getConfigData(EventCreationConfig.class).period().dividedBy(TICK);
-        for (long tick = 0;
-                creationAttempts < targetCreationAttempts || peerRegistrations < targetPeerRegistrations;
-                tick++) {
+        for (long tick = 0; (kind == Kind.CREATE ? creationAttempts : peerRegistrations) < count; tick++) {
             if (time.elapsed().compareTo(MAX_SIMULATED_TIME) > 0) {
                 throw new IllegalStateException("Node 0 made only %d creation attempts and %d peer registrations in %s"
                         .formatted(creationAttempts, peerRegistrations, MAX_SIMULATED_TIME));

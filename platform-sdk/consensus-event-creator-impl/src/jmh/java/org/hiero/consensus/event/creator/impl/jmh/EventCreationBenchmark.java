@@ -38,6 +38,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.BenchmarkParams;
 
 /**
  * Measures the latency of event creation on one node, without signing: the calls of
@@ -48,10 +49,11 @@ import org.openjdk.jmh.annotations.Warmup;
  * <p>The two kinds of calls alternate in production: a node registers every event it receives and creates its own
  * events in between. The benchmark therefore replays what node 0 of a simulated network did, recorded once per trial by
  * {@link EventCreationRecording}: which peer events it registered, when it tried to create an event, when its own
- * events came back from its intake, and when it received a new event window. Every step runs at the time of the
- * recording on a fake clock, so the replay creates exactly the events of the recording, with the same hashes, which
- * the peer events in the recording refer to as parents. Each invocation replays into a new event creation manager,
- * created outside the measured region.
+ * events came back from its intake, and when it received a new event window. The recording ends with the last call the
+ * benchmark method measures, so every invocation replays all of it. Every step runs at the time of the recording on a
+ * fake clock, so the replay creates exactly the events of the recording, with the same hashes, which the peer events in
+ * the recording refer to as parents. Each invocation replays into a new event creation manager, created outside the
+ * measured region.
  *
  * <p>Each benchmark method times one kind of call and runs the other steps of the replay paused
  * ({@link LatencyRecorder#pause()}), so they count neither in its latencies nor in its allocation:
@@ -74,7 +76,7 @@ import org.openjdk.jmh.annotations.Warmup;
  *
  * <p>The manager updates the production metrics implementation, {@link DefaultPlatformMetrics}, so the benchmark
  * measures the cost of the metric updates. The metrics are not started: in production, their periodic updaters and
- * snapshots run on other threads.
+ * snapshots run on other threads. Their executor only announces each new metric, while the setup creates the manager.
  *
  * <p>{@link LatencyProfiler} reports the mean, the percentiles, and the allocation per measured call. JMH's primary
  * score divides the time of the whole pass, paused steps included, by the number of measured calls, so it is not the
@@ -110,16 +112,10 @@ public class EventCreationBenchmark {
     /** The roster of the simulated network. */
     private RosterWrapper roster;
 
-    /** The recorded steps of node 0. */
+    /** The recorded steps of node 0, up to the last call the benchmark method measures. */
     private Step[] steps;
 
-    /** The number of steps that {@link #createEvent()} replays: up to its last measured call. */
-    private int createEventSteps;
-
-    /** The number of steps that {@link #registerEvent()} replays: up to its last measured call. */
-    private int registerEventSteps;
-
-    /** The executor the metrics require. It stays idle, because the metrics are not started. */
+    /** The executor the metrics require. It only announces new metrics, because the metrics are not started. */
     private ScheduledExecutorService metricsExecutor;
 
     /** The fake clock of the replay. */
@@ -140,36 +136,49 @@ public class EventCreationBenchmark {
     /** The number of creation attempts in the invocation. */
     private int attempts;
 
-    /** The number of steps replayed in the invocation. */
-    private int replayedSteps;
-
     /** The latency recorder of the invocation. */
     private LatencyRecorder recorder;
 
     /**
-     * Records node 0's steps and checks that the recording is the expected one. This method is called once per trial.
+     * Records node 0's steps up to the last call the benchmark method measures, and checks that the recording is the
+     * expected one. This method is called once per trial.
+     *
+     * @param params the parameters of the trial, which name the benchmark method
      */
     @Setup(Level.Trial)
-    public void recordSteps() {
+    public void recordSteps(final BenchmarkParams params) {
         configuration = EventCreationRecording.configuration();
         roster = EventCreationRecording.roster(SEED, numNodes);
+        final String method =
+                params.getBenchmark().substring(params.getBenchmark().lastIndexOf('.') + 1);
         final List<Step> recording =
-                EventCreationRecording.record(SEED, numNodes, CREATION_ATTEMPTS, PEER_REGISTRATIONS);
+                switch (method) {
+                    case "createEvent" -> EventCreationRecording.record(SEED, numNodes, Kind.CREATE, CREATION_ATTEMPTS);
+                    case "registerEvent" ->
+                        EventCreationRecording.record(SEED, numNodes, Kind.REGISTER_PEER, PEER_REGISTRATIONS);
+                    default -> throw new IllegalArgumentException("No recording for the benchmark method " + method);
+                };
         steps = recording.toArray(new Step[0]);
-        createEventSteps = stepsUpTo(Kind.CREATE, CREATION_ATTEMPTS);
-        registerEventSteps = stepsUpTo(Kind.REGISTER_PEER, PEER_REGISTRATIONS);
-        created = new PlatformEvent[count(Kind.CREATE, steps.length)];
+        created = new PlatformEvent[count(Kind.CREATE)];
 
         final String summary = summarize();
         final String expected =
-                switch (numNodes) {
-                    case 10 ->
+                switch (method + " " + numNodes) {
+                    case "createEvent 10" ->
+                        "11151 steps, 8978 peer registrations, 1000 creation attempts (0 without event),"
+                                + " 174 event windows, 50.0 s, last cc984c6e8eba40781795e875a1af534b";
+                    case "createEvent 32" ->
+                        "33087 steps, 30932 peer registrations, 1000 creation attempts (0 without event),"
+                                + " 156 event windows, 50.0 s, last 77e68494ead3f3974e46968d53b2c310";
+                    case "registerEvent 10" ->
                         "37255 steps, 30000 peer registrations, 3335 creation attempts (0 without event),"
                                 + " 585 event windows, 166.7 s, last 9fb13b49d1ff41e5518cd7c6693afead";
-                    case 32 ->
-                        "33088 steps, 30932 peer registrations, 1000 creation attempts (0 without event),"
-                                + " 156 event windows, 50.0 s, last 77e68494ead3f3974e46968d53b2c310";
-                    default -> throw new IllegalArgumentException("No expected recording for numNodes=" + numNodes);
+                    case "registerEvent 32" ->
+                        "32090 steps, 30000 peer registrations, 969 creation attempts (0 without event),"
+                                + " 152 event windows, 48.4 s, last d429a9aa862d3cb0a2e3f00a1fd05a71";
+                    default ->
+                        throw new IllegalArgumentException(
+                                "No expected recording for %s with numNodes=%d".formatted(method, numNodes));
                 };
         if (!summary.equals(expected)) {
             throw new IllegalStateException("Expected the recording %s, but got %s".formatted(expected, summary));
@@ -205,7 +214,6 @@ public class EventCreationBenchmark {
         manager = EventCreationRecording.newManager(configuration, metrics, time, roster, 0, creator);
         Arrays.fill(created, null);
         attempts = 0;
-        replayedSteps = 0;
         recorder = LatencyProfiler.recorder();
 
         // Collect the garbage of the setup and of the previous invocation now, so that it is not collected during the
@@ -220,9 +228,9 @@ public class EventCreationBenchmark {
     @TearDown(Level.Invocation)
     public void verifyInvocation() {
         int attempt = 0;
-        for (int i = 0; i < replayedSteps; i++) {
-            if (steps[i].kind() == Kind.CREATE) {
-                final Hash expected = steps[i].expectedHash();
+        for (final Step step : steps) {
+            if (step.kind() == Kind.CREATE) {
+                final Hash expected = step.expectedHash();
                 final Hash actual = created[attempt] == null ? null : created[attempt].getHash();
                 if (!Objects.equals(expected, actual)) {
                     throw new IllegalStateException(
@@ -239,40 +247,37 @@ public class EventCreationBenchmark {
     }
 
     /**
-     * Replays the recording up to the last measured creation attempt and records the latency of each attempt.
+     * Replays the recording and records the latency of each creation attempt.
      */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     @OperationsPerInvocation(CREATION_ATTEMPTS)
     public void createEvent() {
-        replay(Kind.CREATE, createEventSteps);
+        replay(Kind.CREATE);
     }
 
     /**
-     * Replays the recording up to the last measured peer registration and records the latency of each registration.
+     * Replays the recording and records the latency of each peer registration.
      */
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     @OperationsPerInvocation(PEER_REGISTRATIONS)
     public void registerEvent() {
-        replay(Kind.REGISTER_PEER, registerEventSteps);
+        replay(Kind.REGISTER_PEER);
     }
 
     /**
-     * Replays the first steps of the recording, times the steps of the measured kind, and pauses the recorder for the
-     * others.
+     * Replays the recording, times the steps of the measured kind, and pauses the recorder for the others.
      *
-     * @param measured  the kind of step to time
-     * @param stepCount the number of steps to replay
+     * @param measured the kind of step to time
      */
-    private void replay(final Kind measured, final int stepCount) {
+    private void replay(final Kind measured) {
         recorder.startMeasurement();
         recorder.pause();
         boolean paused = true;
-        for (int i = 0; i < stepCount; i++) {
-            final Step step = steps[i];
+        for (final Step step : steps) {
             if (step.kind() == measured) {
                 // While not paused, advancing the clock counts in the latency; it is a single addition.
                 advanceTime(step);
@@ -295,7 +300,6 @@ public class EventCreationBenchmark {
             recorder.resume();
         }
         recorder.stopMeasurement();
-        replayedSteps = stepCount;
     }
 
     /** Sets the fake clock to the time of the step. */
@@ -322,22 +326,11 @@ public class EventCreationBenchmark {
         }
     }
 
-    /** Returns the number of steps up to and including the given occurrence of a kind of step. */
-    private int stepsUpTo(final Kind kind, final int occurrence) {
-        int seen = 0;
-        for (int i = 0; i < steps.length; i++) {
-            if (steps[i].kind() == kind && ++seen == occurrence) {
-                return i + 1;
-            }
-        }
-        throw new IllegalStateException("The recording has only %d steps of kind %s".formatted(seen, kind));
-    }
-
-    /** Returns the number of steps of a kind among the first steps. */
-    private int count(final Kind kind, final int stepCount) {
+    /** Returns the number of steps of a kind in the recording. */
+    private int count(final Kind kind) {
         int count = 0;
-        for (int i = 0; i < stepCount; i++) {
-            if (steps[i].kind() == kind) {
+        for (final Step step : steps) {
+            if (step.kind() == kind) {
                 count++;
             }
         }
@@ -360,10 +353,10 @@ public class EventCreationBenchmark {
         return "%d steps, %d peer registrations, %d creation attempts (%d without event), %d event windows, %.1f s, last %s"
                 .formatted(
                         steps.length,
-                        count(Kind.REGISTER_PEER, steps.length),
-                        count(Kind.CREATE, steps.length),
+                        count(Kind.REGISTER_PEER),
+                        count(Kind.CREATE),
                         withoutEvent,
-                        count(Kind.SET_EVENT_WINDOW, steps.length),
+                        count(Kind.SET_EVENT_WINDOW),
                         steps[steps.length - 1].elapsedNanos() / 1e9,
                         lastCreated == null ? "none" : lastCreated.toHex(16));
     }
