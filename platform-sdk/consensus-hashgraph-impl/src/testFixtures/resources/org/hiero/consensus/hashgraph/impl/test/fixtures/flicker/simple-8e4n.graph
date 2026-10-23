@@ -1,0 +1,23 @@
+# Ported from SimpleGraphs.graph8e4n. Its shape is two components that never touch, so an event's
+# ancestry says nothing at all about the other half of the graph.
+#
+#   a2   b1           c1
+#    |  /|            |  \
+#   a1   |           c0   d0
+#    | \ |
+#   a0   b0
+#
+# The names are the port's: the format reads an event's creator off the first letter of its name,
+# so e0..e7 became a0, b0, a1, a2, b1, c0, d0, c1.
+
+roster four  a=1 b=1 c=1 d=1
+
+#  name  self  other-parents
+   c1    c0    d0
+   b1    b0    a1
+   a2    a1    -
+   a1    a0    b0
+   d0    -     -
+   c0    -     -
+   b0    -     -
+   a0    -     -
