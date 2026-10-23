@@ -57,7 +57,7 @@ docstring describes the method.
 
 - **Each iteration records enough calls for the highest reported percentile.** p99.99 is the time that only 0.01% of
   the calls exceed. With about 10⁶ calls per iteration, it rests on the 100 slowest calls (the script's `--samples`).
-  If that makes the run too long, the benchmark does not report p99.99.
+  If that makes the run too long, `LatencyProfiler` skips p99.99 ([writing.md](writing.md#reporting)).
 - **Make the iterations longer rather than combining the histograms of several iterations.** Longer iterations need no
   change to `LatencyProfiler`.
 - **More iterations help only if the iterations of a fork differ more than the forks do.** If the forks differ more,
