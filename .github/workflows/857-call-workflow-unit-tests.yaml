@@ -39,3 +39,17 @@ jobs:
 
       - name: Test Ref Resolution
         run: bash ./.github/workflows/support/tests/test-resolve-ref.sh
+
+  test-resolve-cn-configs:
+    name: Validate Consensus Node Config Resolution
+    runs-on: hl-cn-default-lin-sm
+    steps:
+      - name: Initialize GitHub Job
+        uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
+        with:
+          checkout: "true"
+          checkout-token: "${{ secrets.GITHUB_TOKEN }}"
+          setup-jq: "true"
+
+      - name: Test Consensus Node Config Resolution
+        run: bash ./.github/workflows/support/tests/test-resolve-cn-configs.sh
