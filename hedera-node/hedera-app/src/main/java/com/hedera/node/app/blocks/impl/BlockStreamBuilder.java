@@ -9,6 +9,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALRE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hapi.utils.contracts.HookUtils.minimalRepresentationOf;
 import static com.hedera.node.app.service.token.HookDispatchUtils.HTS_HOOKS_CONTRACT_NUM;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.PENDING_AIRDROP_ID_COMPARATOR;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.BATCH_INNER;
@@ -660,28 +661,23 @@ public class BlockStreamBuilder
             final var builder = EvmTraceData.newBuilder();
             if (slotUsages != null) {
                 final boolean traceExplicitWrites = logicallyIdentical == null;
-                if (traceExplicitWrites) {
-                    // When writes are traced explicitly in ContractSlotUsage#writtenSlotKeys, we index the reads
-                    // to their corresponding writes; so in the case of a reverted transaction, we need to swap
-                    // the indexes back to the original keys before output
+                if (traceExplicitWrites || status == REVERTED_SUCCESS) {
+                    // Reverted executions have no committed writes. Restore explicit indexes to keys, and keep
+                    // implicit placeholders from being indexed against a surviving sibling's writes to the same slot.
                     if (status == REVERTED_SUCCESS) {
                         slotUsages = slotUsages.stream()
                                 .map(usage -> {
                                     final var writtenKeys = usage.writtenSlotKeysOrElse(WrittenSlotKeys.DEFAULT)
                                             .keys();
-                                    var reads = usage.slotReads();
-                                    if (!writtenKeys.isEmpty()) {
-                                        final List<SlotRead> explicitReads = new ArrayList<>(reads.size());
-                                        for (final var read : reads) {
-                                            if (read.hasIndex()) {
-                                                explicitReads.add(read.copyBuilder()
-                                                        .key(writtenKeys.get(read.indexOrThrow()))
-                                                        .build());
-                                            } else {
-                                                explicitReads.add(read);
-                                            }
-                                        }
-                                        reads = explicitReads;
+                                    final List<SlotRead> reads =
+                                            new ArrayList<>(usage.slotReads().size());
+                                    for (final var read : usage.slotReads()) {
+                                        final var key = read.hasIndex()
+                                                ? writtenKeys.get(read.indexOrThrow())
+                                                : read.keyOrThrow();
+                                        reads.add(read.copyBuilder()
+                                                .key(minimalRepresentationOf(key))
+                                                .build());
                                     }
                                     return usage.copyBuilder()
                                             .slotReads(reads)
@@ -690,7 +686,7 @@ public class BlockStreamBuilder
                                 })
                                 .toList();
                     }
-                    // Nothing else to do if these slot usages already traced their written keys explicitly
+                    // Explicit writes are already indexed, and reverted executions now contain only reads.
                     builder.contractSlotUsages(slotUsages);
                 } else {
                     // If writes are implicit as the non-identical slot updates in the state changes list,
@@ -840,6 +836,17 @@ public class BlockStreamBuilder
     @Override
     public @Nullable Predicate<Object> logicallyIdenticalValueTest() {
         return logicallyIdentical;
+    }
+
+    /**
+     * Returns whether this builder traces any written storage keys explicitly, without an identical-value test.
+     */
+    public boolean hasExplicitContractSlotWrites() {
+        return logicallyIdentical == null
+                && slotUsages != null
+                && slotUsages.stream().anyMatch(usage -> !usage.writtenSlotKeysOrElse(WrittenSlotKeys.DEFAULT)
+                        .keys()
+                        .isEmpty());
     }
 
     @Override

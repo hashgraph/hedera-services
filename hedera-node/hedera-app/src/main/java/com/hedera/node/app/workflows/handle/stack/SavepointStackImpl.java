@@ -4,6 +4,8 @@ package com.hedera.node.app.workflows.handle.stack;
 import static com.hedera.hapi.node.base.HederaFunctionality.ATOMIC_BATCH;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_SUBMIT_BUNDLE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HOOK_DISPATCH;
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.RECURSIVE_SCHEDULING_LIMIT_REACHED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
@@ -63,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.hiero.base.crypto.Hash;
 
 /**
@@ -306,7 +309,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
     public void commitTransaction(@NonNull final StreamBuilder builder) {
         requireNonNull(builder);
         if (streamMode != RECORDS && immediateStateChangeListener != null) {
-            immediateStateChangeListener.reset(builder.logicallyIdenticalValueTest());
+            immediateStateChangeListener.reset(logicallyIdenticalValueTestFor(builder));
         }
         while (!stack.isEmpty()) {
             final var savepoint = stack.pop();
@@ -320,6 +323,38 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             builder.stateChanges(immediateStateChangeListener.getStateChanges());
         }
         setupFirstSavepoint(baseBuilder.category());
+    }
+
+    /**
+     * Includes the tests of immediately scheduled dispatches when their writes reach the scheduling parent's root
+     * listener. Other transaction types retain their own predicate and tracing policy. A key is identical only if
+     * none of the successful implicit traces changed its logical value; if explicit writes are also present, their
+     * tests are unavailable, so conservatively leave all updates non-identical.
+     */
+    private @Nullable Predicate<Object> logicallyIdenticalValueTestFor(@NonNull final StreamBuilder builder) {
+        var test = builder.logicallyIdenticalValueTest();
+        if (builder.functionality() != SCHEDULE_CREATE && builder.functionality() != SCHEDULE_SIGN) {
+            return test;
+        }
+        // Only inspect pending savepoints: builders in the root sink have already had their state changes committed.
+        final List<StreamBuilder> pendingBuilders = new ArrayList<>();
+        for (final var savepoint : stack) {
+            savepoint.forEachOtherBuilder(pendingBuilders::add, StreamBuilder.class, builder);
+        }
+        for (final var other : pendingBuilders) {
+            if (!SUCCESSES.contains(other.status())) {
+                continue;
+            }
+            final var otherTest = other.logicallyIdenticalValueTest();
+            if (otherTest != null) {
+                test = test == null ? otherTest : test.and(otherTest);
+            } else if (other instanceof BlockStreamBuilder blockBuilder && blockBuilder.hasExplicitContractSlotWrites()
+                    || other instanceof PairedStreamBuilder pairedBuilder
+                            && pairedBuilder.blockStreamBuilder().hasExplicitContractSlotWrites()) {
+                return null;
+            }
+        }
+        return test;
     }
 
     /**
@@ -640,7 +675,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         var parentConsensusTime = consensusTime;
         for (int i = 0; i < n; i++) {
             final var builder = builders.get(i);
-            grouped |= builder.functionality() == HOOK_DISPATCH;
+            // Immediately triggered scheduled dispatches commit their writes with the scheduling parent, just as
+            // group members do. Their implicit slot-write indexes must refer to that shared state-change list.
+            grouped |= builder.functionality() == HOOK_DISPATCH || builder.category() == SCHEDULED;
             final var nonceOffset =
                     switch (builder.category()) {
                         case USER, SCHEDULED, NODE, BATCH_INNER -> 0;

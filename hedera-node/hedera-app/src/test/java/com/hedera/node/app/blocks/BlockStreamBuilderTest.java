@@ -3,8 +3,11 @@ package com.hedera.node.app.blocks;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockItemsTranslator.BLOCK_ITEMS_TRANSLATOR;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
@@ -152,6 +155,105 @@ public class BlockStreamBuilderTest {
         assertTrue(trace.hasEvmTraceData());
         final var evmTrace = trace.evmTraceDataOrThrow();
         assertEquals(usages, evmTrace.contractSlotUsages());
+    }
+
+    @Test
+    void successfulExplicitSlotWritesRemainIndexed() {
+        final var usage = explicitSlotUsage();
+        final var builder = createBaseBuilder()
+                .functionality(CONTRACT_CALL)
+                .status(SUCCESS)
+                .evmCallTransactionResult(EvmTransactionResult.DEFAULT)
+                .addContractSlotUsages(List.of(usage));
+
+        final var trace = builder.build(false, null).blockItems().stream()
+                .filter(BlockItem::hasTraceData)
+                .findFirst()
+                .orElseThrow()
+                .traceDataOrThrow()
+                .evmTraceDataOrThrow();
+
+        assertThat(trace.contractSlotUsages()).containsExactly(usage);
+        assertThat(builder.hasExplicitContractSlotWrites()).isTrue();
+    }
+
+    @Test
+    void revertedExplicitSlotWritesBecomeMinimalReadKeys() {
+        final var builder = createBaseBuilder()
+                .functionality(CONTRACT_CALL)
+                .status(REVERTED_SUCCESS)
+                .evmCallTransactionResult(EvmTransactionResult.DEFAULT)
+                .addContractSlotUsages(List.of(explicitSlotUsage()));
+
+        final var trace = builder.build(false, null).blockItems().stream()
+                .filter(BlockItem::hasTraceData)
+                .findFirst()
+                .orElseThrow()
+                .traceDataOrThrow()
+                .evmTraceDataOrThrow();
+        final var usage = trace.contractSlotUsages().getFirst();
+
+        assertThat(usage.hasWrittenSlotKeys()).isFalse();
+        assertThat(usage.slotReads())
+                .containsExactly(
+                        SlotRead.newBuilder()
+                                .key(Bytes.EMPTY)
+                                .readValue(Bytes.fromHex("0a"))
+                                .build(),
+                        SlotRead.newBuilder()
+                                .key(Bytes.fromHex("01"))
+                                .readValue(Bytes.fromHex("0b"))
+                                .build(),
+                        SlotRead.newBuilder()
+                                .key(Bytes.fromHex("02"))
+                                .readValue(Bytes.fromHex("0c"))
+                                .build());
+        assertThat(builder.hasExplicitContractSlotWrites()).isFalse();
+    }
+
+    @Test
+    void detectsExplicitWritesWithoutMistakingSyntheticCreationOrReadOnlyTraceForWrites() {
+        final var builder = createBaseBuilder().functionality(CONTRACT_CREATE);
+        builder.evmCreateTransactionResult(EvmTransactionResult.DEFAULT);
+        assertThat(builder.hasContractResult()).isTrue();
+        assertThat(builder.hasExplicitContractSlotWrites()).isFalse();
+
+        builder.addContractSlotUsages(List.of(new ContractSlotUsage(
+                ContractID.DEFAULT,
+                WrittenSlotKeys.DEFAULT,
+                List.of(SlotRead.newBuilder().key(Bytes.EMPTY).build()))));
+        assertThat(builder.hasExplicitContractSlotWrites()).isFalse();
+
+        builder.addContractSlotUsages(List.of(explicitSlotUsage()));
+        assertThat(builder.hasExplicitContractSlotWrites()).isTrue();
+
+        builder.addContractSlotUsages(List.of(new ContractSlotUsage(
+                ContractID.DEFAULT,
+                null,
+                List.of(SlotRead.newBuilder()
+                        .key(Bytes.fromHex("00".repeat(32)))
+                        .build()))));
+        builder.testForIdenticalKeys(_ -> false);
+        assertThat(builder.hasExplicitContractSlotWrites()).isFalse();
+    }
+
+    private static ContractSlotUsage explicitSlotUsage() {
+        return new ContractSlotUsage(
+                ContractID.DEFAULT,
+                new WrittenSlotKeys(List.of(Bytes.fromHex("00".repeat(32)), Bytes.fromHex("00".repeat(31) + "01"))),
+                List.of(
+                        SlotRead.newBuilder()
+                                .index(0)
+                                .readValue(Bytes.fromHex("0a"))
+                                .build(),
+                        SlotRead.newBuilder()
+                                .index(1)
+                                .readValue(Bytes.fromHex("0b"))
+                                .build(),
+                        SlotRead.newBuilder()
+                                .key(Bytes.fromHex("02"))
+                                .readValue(Bytes.fromHex("0c"))
+                                .build()));
     }
 
     @Test

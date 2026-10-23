@@ -47,7 +47,7 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             final var contractId = evmResult.contractId();
                             final var isHook = contractId != null && contractId.contractNumOrElse(0L) == 365;
                             if (parts.status() == SUCCESS
-                                    && (isHook || parts.isTopLevel() || parts.isInnerBatchTxn())) {
+                                    && (isHook || parts.hasEnrichedLegacyRecord() || parts.isInnerBatchTxn())) {
                                 if (needsClippedTraceBloomFallback(parts)) {
                                     // This fixture clips the only bloom-implying trace data, leaving implied bloom.
                                     derivedBuilder.logInfo(List.of()).bloom(bloomForAll(List.of()));
