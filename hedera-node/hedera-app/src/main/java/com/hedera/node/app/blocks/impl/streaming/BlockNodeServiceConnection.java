@@ -123,7 +123,7 @@ public class BlockNodeServiceConnection extends AbstractBlockNodeConnection {
             final BlockNodeServiceClient client = clientFactory.createServiceClient(
                     configuration(),
                     timeout,
-                    connectionId().toString(),
+                    connectionId().correlationId(),
                     bncConfig().grpcCompressionType());
             if (clientRef.compareAndSet(null, new BlockNodeServiceConnection.ServiceClientHolder(clientId, client))) {
                 // unlike the streaming connection, these connections don't really have an intermediate state between
@@ -290,7 +290,7 @@ public class BlockNodeServiceConnection extends AbstractBlockNodeConnection {
 
         GetBlockNodeStatusTask(@NonNull final BlockNodeServiceClient client) {
             this.client = requireNonNull(client, "client is required");
-            this.correlationId = connectionId().toString();
+            this.correlationId = connectionId().correlationId();
         }
 
         @Override
