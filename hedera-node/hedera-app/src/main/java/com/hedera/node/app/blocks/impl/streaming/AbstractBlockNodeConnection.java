@@ -181,10 +181,10 @@ public abstract class AbstractBlockNodeConnection implements AutoCloseable {
      * Builds a correlation ID for the specified connection request.
      *
      * @param connectionRequestNumber the connection-level request number
-     * @return correlation ID in the format of N#-[STR|SVC]#-CRN#
+     * @return correlation ID in the format of N#-[STR|SVC]#-CRN#-JVM&lt;token&gt;
      */
     final @NonNull String buildRequestCorrelationId(final long connectionRequestNumber) {
-        return connectionId + "-CRN" + connectionRequestNumber;
+        return connectionId + "-CRN" + connectionRequestNumber + ConnectionId.JVM_SUFFIX;
     }
 
     /**
@@ -194,7 +194,7 @@ public abstract class AbstractBlockNodeConnection implements AutoCloseable {
      * @param blockNumber the block number
      * @param blockRequestNumber the block-level request number
      * @param blockAttemptNumber number of times this block has been attempted on this connection
-     * @return correlation ID in the format of N#-[STR|SVC]#-BLK#-BAN#-REQ#-CRN#
+     * @return correlation ID in the format of N#-[STR|SVC]#-BLK#-BAN#-REQ#-CRN#-JVM&lt;token&gt;
      */
     final @NonNull String buildRequestCorrelationId(
             final long connectionRequestNumber,
@@ -202,13 +202,13 @@ public abstract class AbstractBlockNodeConnection implements AutoCloseable {
             final int blockRequestNumber,
             final int blockAttemptNumber) {
         return connectionId + "-BLK" + blockNumber + "-BAN" + blockAttemptNumber + "-REQ" + blockRequestNumber + "-CRN"
-                + connectionRequestNumber;
+                + connectionRequestNumber + ConnectionId.JVM_SUFFIX;
     }
 
     /**
      * Formats a connection context string using either a supplied correlation ID or this connection's base ID.
      *
-     * @param correlationId correlation ID to display in the context, or null to use base connection ID
+     * @param correlationId correlation ID to display in the context, or null to use the connection-level correlation ID
      * @return formatted context string in the form {@code [ID/host:port/STATE]}
      */
     final @NonNull String connectionContext(@Nullable final String correlationId) {
@@ -218,7 +218,7 @@ public abstract class AbstractBlockNodeConnection implements AutoCloseable {
                     case SERVER_STATUS -> configuration.servicePort();
                 };
         final String idToDisplay =
-                (correlationId == null || correlationId.isBlank()) ? connectionId.toString() : correlationId;
+                (correlationId == null || correlationId.isBlank()) ? connectionId.correlationId() : correlationId;
         return "[" + idToDisplay + "/" + configuration.address() + ":" + port + "/" + stateRef.get() + "]";
     }
 
