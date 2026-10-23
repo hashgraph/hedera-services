@@ -41,8 +41,9 @@ class LearningSynchronizerTest {
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        streams.close();
+    void tearDown() {
+        // Not close(): it flushes buffered data, which fails if a test has already closed the sockets
+        streams.disconnect();
     }
 
     @Test

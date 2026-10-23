@@ -82,8 +82,9 @@ class ReconnectStateLearnerTest {
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        pairedStreams.close();
+    void tearDown() {
+        // Not close(): it flushes buffered data, which fails if a test has already closed the sockets
+        pairedStreams.disconnect();
     }
 
     @Test
