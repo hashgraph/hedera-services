@@ -168,8 +168,9 @@ Where:
 - `JVM<token>` is a JVM instance token: exactly 8 random base-36 characters (`[0-9a-z]{8}`), generated once per JVM
   start and shared by every connection in that JVM. It tells apart connections with the same sequence number that were
   made by different JVMs (e.g. after a restart, or by two processes running with the same node ID). The token is logged
-  once at startup (`Starting block node connection manager (jvmId: <token>)...`), and that line's timestamp gives the
-  JVM start time. If the token cannot be created, a warning is logged and the `-JVM<token>` part is omitted.
+  each time the block node connection manager starts (`Starting block node connection manager (jvmId: <token>)...`).
+  This is not necessarily when the JVM started: the manager may start later, or be stopped and started again, which
+  logs the same token again. If the token cannot be created, a warning is logged and the `-JVM<token>` part is omitted.
 
 Block request IDs (streaming requests only, CN logs only):
 

@@ -9,6 +9,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +57,7 @@ public class ConnectionId {
      * Random token that identifies this JVM instance, made of exactly {@link #JVM_ID_LENGTH} base-36 characters. Empty
      * if the token could not be created.
      */
-    private static final String JVM_ID = buildJvmId(new SecureRandom());
+    private static final String JVM_ID = buildJvmId(SecureRandom::new);
 
     /**
      * Suffix appended to the end of every correlation ID, in the format of {@code -JVM<token>}. Empty if the JVM
@@ -161,14 +162,15 @@ public class ConnectionId {
 
     /**
      * Builds a random JVM instance token. This is called from a static initializer, so it must never throw: if the
-     * token cannot be created, a single warning is logged and an empty string is returned.
+     * source of randomness cannot be created or used, a single warning is logged and an empty string is returned.
      *
-     * @param random source of randomness
+     * @param randomSupplier supplies the source of randomness; it is called inside the failure handling so that errors
+     *     creating the source (e.g. a misconfigured security provider) are also handled
      * @return the JVM instance token, or an empty string if it could not be created
      */
-    static @NonNull String buildJvmId(@NonNull final RandomGenerator random) {
+    static @NonNull String buildJvmId(@NonNull final Supplier<? extends RandomGenerator> randomSupplier) {
         try {
-            return formatJvmId(random.nextLong(JVM_ID_BOUND));
+            return formatJvmId(randomSupplier.get().nextLong(JVM_ID_BOUND));
         } catch (final RuntimeException e) {
             logger.warn("Unable to create JVM instance ID; correlation IDs will not include it", e);
             return "";

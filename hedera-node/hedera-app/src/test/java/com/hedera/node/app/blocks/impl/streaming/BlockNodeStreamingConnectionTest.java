@@ -234,7 +234,7 @@ class BlockNodeStreamingConnectionTest extends BlockNodeCommunicationTestBase {
                         any(Duration.class),
                         eq(connection.connectionId().correlationId()),
                         any(BlockStreamGrpcCompressionType.class));
-        assertThat(connection.connectionId().correlationId()).endsWith(ConnectionId.JVM_SUFFIX);
+        assertThat(connection.connectionId().correlationId()).matches("N\\d+-STR\\d+-JVM[0-9a-z]{8}");
     }
 
     @Test
@@ -247,7 +247,7 @@ class BlockNodeStreamingConnectionTest extends BlockNodeCommunicationTestBase {
         assertThat(workerThread).isNotNull();
         assertThat(workerThread.getName())
                 .isEqualTo("bn-conn-worker-" + connection.connectionId().correlationId())
-                .endsWith(ConnectionId.JVM_SUFFIX);
+                .matches("bn-conn-worker-N\\d+-STR\\d+-JVM[0-9a-z]{8}");
     }
 
     @Test

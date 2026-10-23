@@ -3,10 +3,10 @@ package com.hedera.node.app.blocks.impl.streaming;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.hedera.node.app.blocks.impl.streaming.ConnectionId.ConnectionType;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import java.security.ProviderException;
 import java.security.SecureRandom;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
@@ -21,6 +21,12 @@ class ConnectionIdTest {
     private static final String JVM_ID_PATTERN = "[0-9a-z]{8}";
 
     /**
+     * The JVM suffix appended to every correlation ID. Tests assert against this literal pattern rather than
+     * {@link ConnectionId#JVM_SUFFIX} so that they fail if the JVM instance token is missing.
+     */
+    private static final String JVM_SUFFIX_PATTERN = "-JVM" + JVM_ID_PATTERN;
+
+    /**
      * Maximum length of the correlation ID header accepted by block nodes.
      */
     private static final int MAX_CORRELATION_ID_HEADER_LENGTH = 64;
@@ -28,10 +34,9 @@ class ConnectionIdTest {
     @Test
     void testJvmIdFormat() {
         final String jvmId = ConnectionId.jvmId();
-        assumeTrue(!jvmId.isEmpty(), "JVM instance ID could not be created on this platform");
 
-        assertThat(jvmId).matches(JVM_ID_PATTERN);
-        assertThat(ConnectionId.JVM_SUFFIX).isEqualTo("-JVM" + jvmId);
+        assertThat(jvmId).isNotEmpty().matches(JVM_ID_PATTERN);
+        assertThat(ConnectionId.JVM_SUFFIX).matches(JVM_SUFFIX_PATTERN).isEqualTo("-JVM" + jvmId);
     }
 
     @Test
@@ -66,7 +71,7 @@ class ConnectionIdTest {
     void testBuildJvmId_usesSuppliedRandom() {
         final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
         try {
-            assertThat(ConnectionId.buildJvmId(() -> 0L)).isEqualTo("00000000");
+            assertThat(ConnectionId.buildJvmId(() -> () -> 0L)).isEqualTo("00000000");
             assertThat(logCaptor.warnLogs()).isEmpty();
         } finally {
             logCaptor.stopCapture();
@@ -77,17 +82,33 @@ class ConnectionIdTest {
     void testBuildJvmId_differsBetweenCalls() {
         final SecureRandom random = new SecureRandom();
 
-        assertThat(ConnectionId.buildJvmId(random))
+        assertThat(ConnectionId.buildJvmId(() -> random))
                 .matches(JVM_ID_PATTERN)
-                .isNotEqualTo(ConnectionId.buildJvmId(random));
+                .isNotEqualTo(ConnectionId.buildJvmId(() -> random));
     }
 
     @Test
     void testBuildJvmId_randomThrowsReturnsEmpty() {
         final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
         try {
-            final String jvmId = ConnectionId.buildJvmId(() -> {
+            final String jvmId = ConnectionId.buildJvmId(() -> () -> {
                 throw new UnsupportedOperationException("not supported");
+            });
+
+            assertThat(jvmId).isEmpty();
+            assertThat(logCaptor.warnLogs()).singleElement().asString().contains("Unable to create JVM instance ID");
+        } finally {
+            logCaptor.stopCapture();
+        }
+    }
+
+    @Test
+    void testBuildJvmId_randomCreationThrowsReturnsEmpty() {
+        final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(ConnectionId.class));
+        try {
+            // e.g. SecureRandom construction failing due to a misconfigured security provider
+            final String jvmId = ConnectionId.buildJvmId(() -> {
+                throw new ProviderException("no provider");
             });
 
             assertThat(jvmId).isEmpty();
@@ -103,9 +124,13 @@ class ConnectionIdTest {
         final ConnectionId serviceId = new ConnectionId(37, ConnectionType.SERVER_STATUS, 41);
 
         assertThat(streamingId).hasToString("N37-STR6");
-        assertThat(streamingId.correlationId()).isEqualTo("N37-STR6" + ConnectionId.JVM_SUFFIX);
+        assertThat(streamingId.correlationId())
+                .matches("N37-STR6" + JVM_SUFFIX_PATTERN)
+                .isEqualTo("N37-STR6" + ConnectionId.JVM_SUFFIX);
         assertThat(serviceId).hasToString("N37-SVC41");
-        assertThat(serviceId.correlationId()).isEqualTo("N37-SVC41" + ConnectionId.JVM_SUFFIX);
+        assertThat(serviceId.correlationId())
+                .matches("N37-SVC41" + JVM_SUFFIX_PATTERN)
+                .isEqualTo("N37-SVC41" + ConnectionId.JVM_SUFFIX);
     }
 
     @Test
@@ -113,8 +138,10 @@ class ConnectionIdTest {
         final ConnectionId first = ConnectionId.newConnectionId(1, ConnectionType.BLOCK_STREAMING);
         final ConnectionId second = ConnectionId.newConnectionId(2, ConnectionType.SERVER_STATUS);
 
-        assertThat(first.correlationId()).endsWith(ConnectionId.JVM_SUFFIX);
-        assertThat(second.correlationId()).endsWith(ConnectionId.JVM_SUFFIX);
+        assertThat(first.correlationId()).matches("N1-STR\\d+" + JVM_SUFFIX_PATTERN);
+        assertThat(second.correlationId()).matches("N2-SVC\\d+" + JVM_SUFFIX_PATTERN);
+        assertThat(first.correlationId().substring(first.toString().length()))
+                .isEqualTo(second.correlationId().substring(second.toString().length()));
     }
 
     @Test
