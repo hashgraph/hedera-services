@@ -71,9 +71,9 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>Parameter sets: signingSchema=ED25519 / signingSchema=RSA</li>
  *   <li>Steady state after: 0 s / 0 s</li>
  *   <li>Noise (latency.mean, CV): 0.19% / 0.17% per 5 s iteration, 0.02% / 0.15% between forks, - / - between runs (1 of 1 / 1 of 1 runs quiet)</li>
- *   <li>Expected detectable regression: 0.09% / 0.30% (95 % CI half-width of one run)</li>
- *   <li>Samples per iteration: 1.3 M / 1.1 M; expected stable: mean, p50, p90, p99, p99.9 / mean, p50, p90, p99, p99.9</li>
- *   <li>Runtime: 2.0 / 2.6 min per parameter set</li>
+ *   <li>Expected detectable regression: 0.08% / 0.30% (95 % CI half-width of one run)</li>
+ *   <li>Samples per iteration: 1.5 M / 1.3 M; expected stable: mean, p50, p90, p99, p99.9 / mean, p50, p90, p99, p99.9</li>
+ *   <li>Runtime: 2.4 / 3.0 min per parameter set</li>
  *   <li>Raw data: https://github.com/hiero-ledger/hiero-consensus-node/actions/runs/39719427212</li>
  * </ul>
  */
@@ -82,7 +82,7 @@ import org.openjdk.jmh.infra.Blackhole;
         value = 1,
         jvmArgsAppend = {"-Xms2g", "-Xmx2g", "-XX:+AlwaysPreTouch"})
 @Warmup(iterations = 1, time = 5)
-@Measurement(iterations = 2, time = 60)
+@Measurement(iterations = 2, time = 70)
 public class EventSignatureValidatorBenchmark {
 
     /** The seed of the random number generators. The same seed produces the same keys and events. */
