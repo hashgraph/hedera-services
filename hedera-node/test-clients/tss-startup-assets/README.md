@@ -15,6 +15,25 @@ tests load at startup. Two things live here:
 There is **one fixture per network**, regardless of size, named
 `<network>-genesis-network.json.gz` (e.g. `ledgerA_manifest-genesis-network.json.gz`).
 
+### Digest-type variants
+
+The `tssMetadata.wrapsProvingKeyHash` baked into a fixture is a block-root digest, so a fixture is
+only valid for the digest the network was captured under. Two sets therefore coexist here, selected
+by `Cryptography.DEFAULT_DIGEST_TYPE` (`TssFixtures` reads it on the harness side, before any node
+forks):
+
+- **SHA-384 (current):** bare name, e.g. `ledgerA-genesis-network.json.gz` — a 48-byte
+  `wrapsProvingKeyHash`.
+- **SHA-256:** `-sha256-` infix, e.g. `ledgerA-sha256-genesis-network.json.gz` — a 32-byte
+  `wrapsProvingKeyHash`.
+
+Both loading (`resolveCachedFixturePath`) and regeneration (`generateNetworkFixture`) flow through
+`TssFixtures.fixtureFileName`, so the active digest picks the right variant automatically. The
+port-reservation scan (`fixtureNetworkName`) is digest-aware too: it only sees the active digest's
+fixtures, so the inactive set never shadows a network's reserved ports. A SHA-256 fixture can only be
+**generated** on a build whose `DEFAULT_DIGEST_TYPE` is `SHA_256`; until that set is produced, SHA-256
+runs find no fixture and take the cold path.
+
 A `genesis-network.json` carries each node's TSS private key in `nodeTssMetadata`, and a node
 can only export *its own* secret. So on export the per-node freeze exports are **merged** into one
 file whose `nodeTssMetadata` holds every node's private-key entry (see

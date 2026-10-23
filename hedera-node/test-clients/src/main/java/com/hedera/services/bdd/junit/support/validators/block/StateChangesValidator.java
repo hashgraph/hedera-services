@@ -35,6 +35,7 @@ import com.hedera.hapi.block.stream.output.BlockFooter;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateIdentifier;
+import com.hedera.hapi.node.base.BlockHashAlgorithm;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -113,11 +114,17 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final SplittableRandom RANDOM = new SplittableRandom(System.currentTimeMillis());
     public static final AtomicBoolean AT_LEAST_ONE_WRAPS_ASSERTION_ENABLED = new AtomicBoolean(true);
     public static final AtomicBoolean ADAPTIVE_SIGNATURE_CHECKS_ENABLED = new AtomicBoolean(false);
+    /** Length of a mock block signature, which is a SHA-384 hash of the block hash. */
+    private static final int MOCK_SIGNATURE_LENGTH = 48;
 
     // The saved-state root hash in the state-metadata file is the platform signed-state Merkle root, hashed with the
-    // platform digest Cryptography.DEFAULT_DIGEST_TYPE (NOT BlockStreamConfig.digestType). Tracking the platform digest
-    // length directly means this auto-adjusts (48 -> 32) if/when that digest flips to SHA-256, without coupling to the
-    // block-stream flag, which moves on a different (though related) switch.
+    // platform digest Cryptography.DEFAULT_DIGEST_TYPE. That is a distinct knob from the block-stream digest
+    // (BlockStreamConfig.digestType): the SHA-384 -> SHA-256 cutover flips BOTH together in production (two coupled
+    // changes: the DEFAULT_DIGEST_TYPE constant and the blockStream.digestType property), so keying off
+    // DEFAULT_DIGEST_TYPE here tracks the state-hash length (48 -> 32) in lockstep with that rollout. The two can also
+    // be set independently for testing (e.g. hapiTestBlockHashingSha256 runs SHA-256 blocks over SHA-384 state); this
+    // field correctly follows the platform/state digest regardless, since it sizes the state-metadata hash, not a
+    // block hash.
     private static final int HASH_SIZE = Cryptography.DEFAULT_DIGEST_TYPE.digestLength();
     private static final int HINTS_VERIFICATION_KEY_LENGTH = 1096;
     private static final int AGGREGATE_SCHNORR_SIGNATURE_LENGTH = 192;
@@ -139,7 +146,19 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
     private final long hintsThresholdDenominator;
-    private final DigestType digestType;
+    // The digest in effect for the block currently being validated. Starts at the configured value but switches
+    // when a block header declares a different hash algorithm (e.g. SHA-384 -> SHA-256), mirroring the node.
+    private DigestType digestType;
+
+    // Snapshot of the cross-block "all previous blocks" tree as it stood just before the most recent block hash was
+    // folded in, plus that hash. On a digest switch this lets the validator mirror the node: the node restores the
+    // persisted intermediate tree (which EXCLUDES the last block) and re-folds the last block's hash under the NEW
+    // digest (BlockStreamManagerImpl.init). Reseeding from the already-folded state instead would compute a
+    // sibling-pair fold at an odd insertion under the OLD digest and diverge from the producer.
+    private List<Bytes> preFoldIntermediateState = List.of();
+    private long preFoldLeafCount = 0;
+    private Bytes lastFoldedBlockHash = null;
+
     private final boolean assertAtLeastOneWraps;
     private final Hash initializedGenesisStateHash;
     private final Path pathToNode0SwirldsLog;
@@ -372,7 +391,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         this.historyLibrary = (historyEnabled == HistoryEnabled.YES) ? new HistoryLibraryImpl() : null;
         this.wrapsEnabled = wrapsEnabled;
         this.proofSeqFactory = (stateProofsEnabled == StateProofsEnabled.YES)
-                ? () -> new IndirectProofSequenceValidator(digestType)
+                ? () -> new IndirectProofSequenceValidator(this.digestType)
                 : () -> null;
 
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
@@ -393,6 +412,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.info("Read {} preview blocks", previewBlocks.size());
 
             for (final var block : previewBlocks) {
+                // A preview block may be the SHA-384 -> SHA-256 transition block; adopt its declared digest.
+                // The preview loop folds every footer-bearing block, so its transition predecessor is always folded.
+                incrementalBlockHashes = withBlockDigest(block, incrementalBlockHashes, false);
                 // Apply state changes from preview blocks to build up state
                 long eventNodeId = -1;
                 for (final var item : block.items()) {
@@ -465,7 +487,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                 previewStateChangesHash,
                                 previewTraceDataHasher);
                         previousBlockHash = previewRootAndSiblings.blockRootHash();
-                        incrementalBlockHashes.addNodeByHash(previousBlockHash.toByteArray());
+                        foldBlockHash(incrementalBlockHashes, previousBlockHash);
                         logger.info("Preview block #{}: hash verified", blockNum);
                     }
                 }
@@ -494,15 +516,16 @@ public class StateChangesValidator implements BlockStreamValidator {
                         blockInfo.wrappedIntermediatePreviousBlockRootHashes().size(),
                         blockInfo.wrappedIntermediateBlockRootsLeafCount());
                 previousBlockHash = blockInfo.previousWrappedRecordBlockRootHash();
-                // Rebuild the incremental block hashes tree from wrapped intermediate hashes
+                // Rebuild the incremental block hashes tree from wrapped intermediate hashes, using the digest the
+                // first post-cutover block declares (the digest may have changed during the preview blocks).
+                digestType = blockDigestOf(firstPostCutoverBlock);
                 incrementalBlockHashes = new IncrementalStreamingHasher(
                         digest(),
                         blockInfo.wrappedIntermediatePreviousBlockRootHashes().stream()
                                 .map(Bytes::toByteArray)
                                 .toList(),
                         blockInfo.wrappedIntermediateBlockRootsLeafCount());
-                incrementalBlockHashes.addNodeByHash(
-                        blockInfo.previousWrappedRecordBlockRootHash().toByteArray());
+                foldBlockHash(incrementalBlockHashes, blockInfo.previousWrappedRecordBlockRootHash());
             } else {
                 throw new AssertionError(
                         "Cutover enabled but first post-cutover block has no BlockInfo with wrapped hashes");
@@ -525,6 +548,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         boolean hashChainBroken = false;
         for (int i = 0; i < n; i++) {
             final var block = blocks.get(i);
+            // Adopt the digest this block declares, in case its hash algorithm differs from the previous block's.
+            incrementalBlockHashes = withBlockDigest(block, incrementalBlockHashes, hashChainBroken);
             var shouldVerifyProof = i == 0
                     || i == lastVerifiableIndex
                     || indirectProofSeq != null
@@ -611,7 +636,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     // hasher so the chain stays in sync for future proof verifications, and skip
                     // proof verification for this block since we don't have its expected predecessor.
                     final var skippedBlockHash = footer.blockFooterOrThrow().previousBlockRootHash();
-                    incrementalBlockHashes.addNodeByHash(skippedBlockHash.toByteArray());
+                    foldBlockHash(incrementalBlockHashes, skippedBlockHash);
                     shouldVerifyProof = false;
                     hashChainBroken = false;
                 } else {
@@ -674,7 +699,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     }
                 }
 
-                incrementalBlockHashes.addNodeByHash(previousBlockHash.toByteArray());
+                foldBlockHash(incrementalBlockHashes, previousBlockHash);
             } else if (i <= lastVerifiableIndex) {
                 logger.warn("Skipping proof verification for incomplete block #{} at index {}", blockNumber, i);
                 hashChainBroken = true;
@@ -825,6 +850,90 @@ public class StateChangesValidator implements BlockStreamValidator {
         return digestType == DigestType.SHA_256 ? sha256DigestOrThrow() : sha384DigestOrThrow();
     }
 
+    /**
+     * Returns the digest declared by a block's header ({@code hash_algorithm}), defaulting to SHA-384 when the
+     * block has no header or an unrecognized algorithm.
+     */
+    private static DigestType blockDigestOf(@NonNull final Block block) {
+        return block.items().stream()
+                .filter(BlockItem::hasBlockHeader)
+                .findFirst()
+                .map(item -> item.blockHeaderOrThrow().hashAlgorithm() == BlockHashAlgorithm.SHA2_256
+                        ? DigestType.SHA_256
+                        : DigestType.SHA_384)
+                .orElse(DigestType.SHA_384);
+    }
+
+    /**
+     * Switches {@link #digestType} to the digest declared by {@code block}'s header when it differs from the digest
+     * currently in effect (e.g. at the SHA-384 -&gt; SHA-256 transition block). When it changes, the cross-block
+     * "all previous blocks" tree must continue under the new digest, so it is re-seeded — mirroring how the node
+     * rebuilds its previous-block hasher after the switch. Returns the hasher to use going forward (the same
+     * instance if nothing changed).
+     *
+     * <p>How the node restores at a restart (BlockStreamManagerImpl.init, non-cutover branch) depends on whether the
+     * transition predecessor block was folded into the cross-block tree:
+     * <ul>
+     *   <li><b>predecessor folded</b> (the switch follows a complete block N): the node restores N's persisted
+     *       intermediate tree, which EXCLUDES N itself, then re-folds N's own hash under the NEW digest. We mirror
+     *       that from the {@code preFold*} snapshot plus a replay of {@link #lastFoldedBlockHash}.</li>
+     *   <li><b>predecessor skipped</b> ({@code transitionPredecessorSkipped}; the final pre-switch block was
+     *       incomplete, so it set {@code hashChainBroken} without being folded): the node restores that block's
+     *       persisted tree — which still EXCLUDES the block's own hash — and folds the recovered hash under the NEW
+     *       digest. Because we never folded that block either, our current (already-excluding) state is byte-identical
+     *       to the node's restored tree, so we reseed from it verbatim with NO replay; the {@code hashChainBroken}
+     *       branch in {@link #validateBlocks} folds the recovered predecessor hash next. Replaying
+     *       {@link #lastFoldedBlockHash} here would instead recompute an earlier, already-committed subtree under the
+     *       new digest and diverge from the producer's stream.</li>
+     * </ul>
+     */
+    private IncrementalStreamingHasher withBlockDigest(
+            @NonNull final Block block,
+            @NonNull final IncrementalStreamingHasher incrementalBlockHashes,
+            final boolean transitionPredecessorSkipped) {
+        final var blockDigestType = blockDigestOf(block);
+        if (blockDigestType == digestType) {
+            return incrementalBlockHashes;
+        }
+        digestType = blockDigestType;
+        if (transitionPredecessorSkipped) {
+            // The pre-switch block was not folded; our current state already excludes it, matching the tree the node
+            // restores. Carry it over under the new digest with no replay — the hashChainBroken branch folds the
+            // recovered predecessor hash next.
+            return new IncrementalStreamingHasher(
+                    digest(),
+                    incrementalBlockHashes.intermediateHashingState().stream()
+                            .map(Bytes::toByteArray)
+                            .toList(),
+                    incrementalBlockHashes.leafCount());
+        }
+        // Mirror the node (BlockStreamManagerImpl.init): restore the persisted intermediate tree, which EXCLUDES the
+        // last folded block, then re-fold the last block's hash under the NEW digest. Reseeding from the current
+        // (already-folded) state would compute a sibling-pair fold at an odd insertion under the OLD digest and
+        // diverge from the producer's stream.
+        final var reseeded = new IncrementalStreamingHasher(
+                digest(),
+                preFoldIntermediateState.stream().map(Bytes::toByteArray).toList(),
+                preFoldLeafCount);
+        if (lastFoldedBlockHash != null) {
+            reseeded.addNodeByHash(lastFoldedBlockHash.toByteArray());
+        }
+        return reseeded;
+    }
+
+    /**
+     * Folds {@code blockHash} into the cross-block "all previous blocks" tree, first snapshotting the tree's
+     * pre-fold intermediate state and the hash itself so a later digest switch can replay this fold under the new
+     * digest exactly as the node does. All block-hash folds must go through this method so the snapshot stays current.
+     */
+    private void foldBlockHash(
+            @NonNull final IncrementalStreamingHasher incrementalBlockHashes, @NonNull final Bytes blockHash) {
+        preFoldIntermediateState = incrementalBlockHashes.intermediateHashingState();
+        preFoldLeafCount = incrementalBlockHashes.leafCount();
+        lastFoldedBlockHash = blockHash;
+        incrementalBlockHashes.addNodeByHash(blockHash.toByteArray());
+    }
+
     private Bytes hashLeaf(final Bytes leafData) {
         final var digest = digest();
         digest.update(BlockImplUtils.LEAF_PREFIX);
@@ -897,6 +1006,31 @@ public class StateChangesValidator implements BlockStreamValidator {
         return indirectProofSeq != null && indirectProofSeq.containsIndirectProofs();
     }
 
+    /**
+     * Whether a signature on block {@code blockNumber} is verified by the hinTS library alone, rather than with
+     * {@code TSS.verifyTSS()} (which assumes the target address book hash is always the ledger id).
+     */
+    private boolean verifiesWithHintsOnly(final long blockNumber) {
+        return historyLibrary == null || (!wrapsEnabled && blockNumber > 0);
+    }
+
+    /**
+     * Whether {@code signature} is a valid signature on {@code blockHash}, by the checks used for block
+     * {@code blockNumber}'s own signed proof.
+     */
+    private boolean isValidBlockSignature(
+            final long blockNumber, @NonNull final Bytes signature, @NonNull final Bytes blockHash) {
+        if (verifiesWithHintsOnly(blockNumber)) {
+            // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
+            // convenience API directly here since we don't have a chain-of-trust proof
+            final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
+            final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
+            return requireNonNull(hintsLibrary).verifyAggregate(sig, blockHash, vk, 1, hintsThresholdDenominator);
+        }
+        return TSS.verifyTSS(
+                requireNonNull(ledgerIdFromState).toByteArray(), signature.toByteArray(), blockHash.toByteArray());
+    }
+
     private void validateBlockProof(
             final long blockNumber,
             final long firstRound,
@@ -952,29 +1086,19 @@ public class StateChangesValidator implements BlockStreamValidator {
         // If hints are enabled, verify the signature using the hints library
         if (hintsLibrary != null) {
             final var signature = proof.signedBlockProofOrThrow().blockSignature();
-            if (ADAPTIVE_SIGNATURE_CHECKS_ENABLED.get() && signature.length() == 48) {
+            if (ADAPTIVE_SIGNATURE_CHECKS_ENABLED.get() && signature.length() == MOCK_SIGNATURE_LENGTH) {
                 assertMockSignature(proof, expectedBlockHash);
                 return;
             }
-            // TSS.verifyTSS() assumes target address book hash is always ledger id
-            if (historyLibrary == null || (!wrapsEnabled && proof.block() > 0)) {
-                // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
-                // convenience API directly here since we don't have a chain-of-trust proof
-                final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
-                final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
-                final boolean valid =
-                        hintsLibrary.verifyAggregate(sig, expectedBlockHash, vk, 1, hintsThresholdDenominator);
+            final boolean valid = isValidBlockSignature(blockNumber, signature, expectedBlockHash);
+            if (verifiesWithHintsOnly(blockNumber)) {
                 if (!valid) {
                     Assertions.fail(() -> "Invalid signature in proof (start round #" + firstRound + ") - " + proof);
                 } else {
                     logger.info("Verified signature on #{}", proof.block());
                 }
             } else {
-                requireNonNull(ledgerIdFromState);
                 final var usedCompressedWrapsProof = hasCompressedWrapsProof(signature);
-                // Use convenience API to verify signature
-                final var valid = TSS.verifyTSS(
-                        ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
                 if (!valid) {
                     final var details = invalidSigDetails(
                             ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
@@ -986,11 +1110,26 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             if (indirectProofsNeedVerification()) {
                 logger.info("Verifying contiguous indirect proofs prior to block {}", blockNumber);
-                requireNonNull(indirectProofSeq).verify();
+                requireNonNull(indirectProofSeq)
+                        .verify(embeddedSignature ->
+                                isValidBlockSignature(blockNumber, embeddedSignature, expectedBlockHash));
                 indirectProofSeq = null; // Clear out the indirect proof sequence after verification
             }
         } else {
-            assertMockSignature(proof, expectedBlockHash);
+            // Without a hints library there is nothing to verify a real signature against, so only a
+            // mock signature can be checked here; asserting one against a TSS signature just reports
+            // a spurious mismatch.
+            final var signature = proof.signedBlockProofOrThrow().blockSignature();
+            if (signature.length() == MOCK_SIGNATURE_LENGTH) {
+                assertMockSignature(proof, expectedBlockHash);
+            } else {
+                logger.warn(
+                        "Skipping signature check on #{}; hints are disabled for this validator but the "
+                                + "proof carries a {}-byte signature, not a {}-byte mock",
+                        proof.block(),
+                        signature.length(),
+                        MOCK_SIGNATURE_LENGTH);
+            }
         }
     }
 

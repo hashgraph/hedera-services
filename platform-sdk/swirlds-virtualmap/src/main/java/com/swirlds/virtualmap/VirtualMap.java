@@ -452,7 +452,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
                             firstLeafPath);
                     return;
                 }
-                final Hash recaclulatedHash = new MerkleHasher().leafNodeHash(virtualLeafBytes);
+                final Hash recaclulatedHash = MerkleHasher.leafNodeHash(virtualLeafBytes);
                 if (loadedHash.equals(recaclulatedHash)) {
                     logger.info(
                             STARTUP.getMarker(),
@@ -1162,7 +1162,7 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
 
         if (virtualHash == null) {
             final Hash rootHash = (metadata.getSize() == 0) ? null : records.rootHash();
-            virtualHash = (rootHash != null) ? rootHash : MerkleHasher.emptyRootHash(Cryptography.DEFAULT_DIGEST_TYPE);
+            virtualHash = (rootHash != null) ? rootHash : MerkleHasher.emptyRootHash();
         }
 
         // There are no remaining changes to be made to the cache, so we can seal it.
