@@ -136,9 +136,9 @@ public class HgcaaLogValidator {
                 // When warm-started, the WRAPS artifacts dir mapped for cold bootstraps is never provisioned
                 List.of("WRAPS enabled but this node cannot build recursive proofs", "contents=<path does not exist>"),
                 // Multi-network tests restart CLPR peer networks and rotate their mTLS ports, so syncs to a peer
-                // fail while it is unreachable. (The cause is only on the following exception line, so this
-                // ignores every streaming sync failure, not just unreachable peers.)
-                List.of("ClprStreamingSynchronizer", "Streaming sync failed for channel"),
+                // fail as UNAVAILABLE while it is unreachable; any other sync failure (e.g. TLS or protocol) is
+                // still a problem
+                List.of("ClprStreamingSynchronizer", "Streaming sync failed for channel", "with status UNAVAILABLE"),
                 List.of("ClprPeerSelector", "circuit breaker opened"),
                 // The server side of the same churn: a peer cancels its sync stream when it fails or restarts
                 List.of("ClprStreamingSyncMethod", "stream aborted by peer"));

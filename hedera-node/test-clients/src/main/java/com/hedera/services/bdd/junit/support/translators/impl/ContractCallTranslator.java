@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.trace.TraceData;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HookId;
 import com.hedera.hapi.node.contract.EvmTransactionResult;
@@ -25,6 +26,7 @@ import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Translates a contract call transaction into a {@link SingleTransactionRecord}.
@@ -96,7 +98,8 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             final var reachedTarget = !clprDispatch
                                     || reached(
                                             parts.body().contractCallOrThrow().contractIDOrThrow(),
-                                            result.contractIDOrElse(ContractID.DEFAULT));
+                                            result.contractIDOrElse(ContractID.DEFAULT),
+                                            baseTranslator.getAliases());
                             if ((parts.transactionIdOrThrow().nonce() == 0 || isDispatched)
                                     && result.gasUsed() > 0L
                                     && reachedTarget) {
@@ -124,14 +127,31 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
 
     /**
      * Whether a call to the given target reached the given contract, comparing by number when the target
-     * has one, or by the long-zero EVM address of the contract otherwise.
+     * has one, or otherwise by the EVM address of the target, which may be either an alias of the contract
+     * (e.g. a CLPR callback to a CREATE2 application) or its long-zero address.
+     *
+     * @param target the contract the call was addressed to
+     * @param called the contract the call's result reports
+     * @param aliases the EVM address aliases known so far, by alias
+     * @return whether the call reached its target
      */
-    private static boolean reached(@NonNull final ContractID target, @NonNull final ContractID called) {
+    static boolean reached(
+            @NonNull final ContractID target,
+            @NonNull final ContractID called,
+            @NonNull final Map<Bytes, AccountID> aliases) {
         final long calledNum = called.contractNumOrElse(0L);
         if (target.hasContractNum()) {
             return target.contractNumOrThrow() == calledNum;
         }
-        return target.hasEvmAddress() && target.evmAddressOrThrow().equals(Bytes.wrap(asEvmAddress(calledNum)));
+        if (!target.hasEvmAddress()) {
+            return false;
+        }
+        final var address = target.evmAddressOrThrow();
+        final var aliased = aliases.get(address);
+        if (aliased != null) {
+            return aliased.accountNumOrElse(0L) == calledNum;
+        }
+        return address.equals(Bytes.wrap(asEvmAddress(calledNum)));
     }
 
     private static boolean needsClippedTraceBloomFallback(@NonNull final BlockTransactionParts parts) {

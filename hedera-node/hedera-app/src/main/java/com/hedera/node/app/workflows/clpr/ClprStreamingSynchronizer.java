@@ -170,7 +170,8 @@ public final class ClprStreamingSynchronizer implements ClprSynchronizer {
                 peerSelector.recordFailure(peerId);
             }
         } catch (final ClprSyncException | ClientException e) {
-            if (Status.fromThrowable(e).getCode() == Status.Code.NOT_FOUND) {
+            final var code = Status.fromThrowable(e).getCode();
+            if (code == Status.Code.NOT_FOUND) {
                 // The peer is reachable but has not registered or completed this channel yet, which is expected
                 // while the two ledgers set the channel up; retry next cycle without counting a peer failure
                 logger.debug("Peer {} does not have channel {} yet: {}", peerId, channelId, e.getMessage());
@@ -179,7 +180,8 @@ public final class ClprStreamingSynchronizer implements ClprSynchronizer {
             // ClprSyncException: stream failure. ClientException: mTLS channel could not be built (e.g. malformed
             // peer certificate). Both are peer-level failures for the breaker.
             peerSelector.recordFailure(peerId);
-            logger.error("Streaming sync failed for channel {} via peer {}", channelId, peerId, e);
+            // The status is in the message (not only in the stack trace) so failures can be told apart per line
+            logger.error("Streaming sync failed for channel {} via peer {} with status {}", channelId, peerId, code, e);
         }
     }
 
