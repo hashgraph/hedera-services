@@ -2,21 +2,20 @@
 package com.hedera.node.app.service.clpr.impl.verifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * Call-site evidence that the unbounded RLP recursion reported in issue #27747 reaches the real
+ * Call-site evidence that the RLP recursion reported in issue #27747 reaches the real
  * {@link BesuQbftVerifier#verifyBundle(byte[], byte[])} decode guard, and that the depth cap added in
  * PR #27748 makes that guard fail closed.
  *
  * <p>The bundle payload is decoded by {@link Rlp#decodeOne(byte[])} inside {@code verifyBundle}, wrapped
  * in {@code catch (RuntimeException e)}. A {@link StackOverflowError} is an {@link Error}, not a
- * {@link RuntimeException}, so before the fix it escaped that guard (and every {@code catch(Exception)}
- * scope above it on the handle path). These tests pin both facts down.</p>
+ * {@link RuntimeException}, so without the cap it escaped that guard (and every {@code catch(Exception)}
+ * scope above it on the handle path). All tests below drive the production {@link Rlp} decoder.</p>
  */
 class BesuQbftVerifierRlpRecursionTest {
 
@@ -27,9 +26,9 @@ class BesuQbftVerifierRlpRecursionTest {
     private static final byte[] VALID_TRUST_ANCHOR = BesuQbftVerifier.encodeValidatorSet(List.of(new byte[20]));
 
     /**
-     * Builds the nested-list bomb as a <em>class of input</em>: {@code depth} bytes of {@code 0xc1}
-     * (each the RLP header of a one-item list) followed by a single {@code 0x00} terminal item. This
-     * drives one decode recursion level per byte with no weaponized bundle content.
+     * Nested-list bomb: {@code depth} bytes of {@code 0xc1} (each the RLP header of a one-byte list)
+     * followed by a single {@code 0x00}. Not well-formed RLP beyond the first level, but each header is
+     * entered (one decode recursion level per byte) before any length check can reject it.
      */
     private static byte[] nestedListBomb(final int depth) {
         final byte[] out = new byte[depth + 1];
@@ -40,6 +39,15 @@ class BesuQbftVerifierRlpRecursionTest {
         return out;
     }
 
+    /** Well-formed RLP: an empty byte string wrapped in {@code depth} single-item lists. */
+    private static byte[] validNesting(final int depth) {
+        byte[] item = Rlp.encodeBytes(new byte[0]);
+        for (int i = 0; i < depth; i++) {
+            item = Rlp.encodeList(List.of(item));
+        }
+        return item;
+    }
+
     @Test
     void fixRejectsDeeplyNestedBundleCleanlyAtRealCallSite() {
         // ~256 KB of nested single-item lists — far past any legitimate bundle nesting.
@@ -47,90 +55,59 @@ class BesuQbftVerifierRlpRecursionTest {
 
         final Throwable thrown = catchThrowable(() -> SUBJECT.verifyBundle(bomb, VALID_TRUST_ANCHOR));
 
-        // With the depth cap, the real call site fails closed: the IllegalArgumentException thrown by
-        // Rlp is a RuntimeException, so verifyBundle's catch(RuntimeException) converts it to a
-        // ProofException. Crucially it is NOT a StackOverflowError / Error any more.
         assertThat(thrown).isInstanceOf(ProofException.class);
-        assertThat(thrown).isNotInstanceOf(StackOverflowError.class);
         assertThat(thrown).isNotInstanceOf(Error.class);
         assertThat(thrown.getMessage()).contains("nesting exceeds maximum depth");
     }
 
     @Test
+    void wellFormedNestingBeyondTheCapIsRejectedForDepthAtRealCallSite() {
+        final byte[] tooDeep = validNesting(Rlp.MAX_RECURSION_DEPTH + 1);
+
+        final Throwable thrown = catchThrowable(() -> SUBJECT.verifyBundle(tooDeep, VALID_TRUST_ANCHOR));
+
+        assertThat(thrown).isInstanceOf(ProofException.class);
+        assertThat(thrown.getMessage()).contains("nesting exceeds maximum depth");
+    }
+
+    @Test
     void nestingAtTheCapStillDecodesThroughTheRealCallSite() {
-        // A list nested exactly at the cap is structurally valid RLP; it must not trip the depth guard,
-        // so verifyBundle proceeds past the decode and fails later on bundle structure, never on depth.
-        final byte[] atCap = nestedListBomb(Rlp.MAX_RECURSION_DEPTH);
+        // Well-formed RLP nested exactly at the cap must decode; verifyBundle then fails later on bundle
+        // structure, never on depth or RLP framing.
+        final byte[] atCap = validNesting(Rlp.MAX_RECURSION_DEPTH);
+        assertThat(Rlp.decodeOne(atCap).isList()).isTrue();
 
         final Throwable thrown = catchThrowable(() -> SUBJECT.verifyBundle(atCap, VALID_TRUST_ANCHOR));
 
         assertThat(thrown).isInstanceOf(ProofException.class);
-        assertThat(thrown.getMessage()).doesNotContain("nesting exceeds maximum depth");
-    }
-
-    /**
-     * Demonstrates the escape semantics that made this a network-halt bug before the cap: the pre-fix
-     * decode recursion (reproduced verbatim below, with no depth guard) throws a StackOverflowError on
-     * the same nested-list input, and that Error slips straight through the exact
-     * {@code catch (RuntimeException e)} shape used at every RLP decode site in
-     * {@link BesuQbftVerifier} (verifyBundle, verifyConfigPayload, decodeValidatorSet, ...).
-     */
-    @Test
-    void stackOverflowErrorEscapesTheRuntimeExceptionDecodeGuard() {
-        final byte[] bomb = nestedListBomb(2_000_000);
-
-        final Throwable escaped = catchThrowable(() -> {
-            try {
-                // Same guard the verifier wraps every Rlp.decodeOne call in.
-                preFixUnboundedDecode(bomb, 0);
-            } catch (final RuntimeException e) {
-                throw new AssertionError("decode-site catch(RuntimeException) should NOT have caught this", e);
-            }
-        });
-
-        assertThat(escaped).isInstanceOf(StackOverflowError.class);
-        assertThat(escaped).isInstanceOf(Error.class);
-        assertThat(escaped).isNotInstanceOf(RuntimeException.class);
+        assertThat(thrown.getMessage())
+                .doesNotContain("nesting exceeds maximum depth")
+                .doesNotContain("length mismatch");
     }
 
     @Test
-    void stackOverflowErrorIsNotCaughtByHandlerExceptionScopes() {
-        // The handler / dispatch / workflow layers guard with catch(Exception). Exception does not cover
-        // Error, so the same StackOverflowError escapes those scopes too — which is why one bundle could
-        // halt the node once clpr.enabled is set.
+    void productionDecoderFailureIsCaughtByTheRuntimeExceptionDecodeGuard() {
+        // The exact catch(RuntimeException) shape used at every Rlp.decodeOne site in BesuQbftVerifier now
+        // catches the over-deep input; before the cap the same input produced a StackOverflowError instead.
         final byte[] bomb = nestedListBomb(2_000_000);
 
-        final Throwable escaped = catchThrowable(() -> {
-            try {
-                preFixUnboundedDecode(bomb, 0);
-            } catch (final Exception e) {
-                throw new AssertionError("handler catch(Exception) should NOT have caught this", e);
-            }
-        });
+        RuntimeException caught = null;
+        try {
+            Rlp.decodeOne(bomb);
+        } catch (final RuntimeException e) {
+            caught = e;
+        }
 
-        assertThat(escaped).isInstanceOf(StackOverflowError.class);
+        assertThat(caught).isInstanceOf(IllegalArgumentException.class);
+        assertThat(caught.getMessage()).contains("nesting exceeds maximum depth");
     }
 
-    /**
-     * Verbatim shape of the pre-fix {@code Rlp.decode}/{@code decodeList} list recursion: one stack frame
-     * per nesting level, no depth cap. Only the branches exercised by the nested-list bomb (single byte +
-     * short list) are reproduced; this is exactly the code path PR #27748 adds the {@code MAX_RECURSION_DEPTH}
-     * guard to.
-     */
-    private static int preFixUnboundedDecode(final byte[] in, final int off) {
-        final int prefix = in[off] & 0xff;
-        if (prefix < 0x80) {
-            return off + 1; // single byte item
-        }
-        if (prefix >= 0xc0 && prefix <= 0xf7) {
-            final int len = prefix - 0xc0;
-            int p = off + 1;
-            final int end = p + len;
-            while (p < end) {
-                p = preFixUnboundedDecode(in, p); // unbounded recursion per child
-            }
-            return end;
-        }
-        throw new IllegalArgumentException("unexpected prefix in bomb fixture: " + prefix);
+    @Test
+    void stackOverflowErrorIsNotCoveredByRuntimeExceptionOrExceptionGuards() {
+        // JVM semantics the fix relies on: StackOverflowError is neither a RuntimeException nor an Exception,
+        // so the decode-site and handler-level guards could not have contained an uncapped recursion.
+        assertThat(RuntimeException.class.isAssignableFrom(StackOverflowError.class))
+                .isFalse();
+        assertThat(Exception.class.isAssignableFrom(StackOverflowError.class)).isFalse();
     }
 }
