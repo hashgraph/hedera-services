@@ -36,6 +36,7 @@ public final class EthereumBlsVerifiers {
         try {
             allowInsecure = configOf(frame).getConfigData(ClprConfig.class).allowInsecureBlsVerifier();
         } catch (final RuntimeException e) {
+            log.warn("[EthereumVerifier] Unable to read ClprConfig; failing closed on BLS verification", e);
             return FailClosedBlsSignatureVerifier.INSTANCE;
         }
         if (allowInsecure) {
