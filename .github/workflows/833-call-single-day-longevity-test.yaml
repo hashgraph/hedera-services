@@ -199,7 +199,7 @@ jobs:
           ref: ${{ inputs.bnref }}
 
       - name: Checkout Solo Code
-        if: false
+        if: true
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: hiero-ledger/solo
@@ -379,6 +379,7 @@ jobs:
           wait: 120s
 
       - name: Install Solo
+        if: false
         env:
           SOLO_VERSION: ${{ inputs.solo-version || 'latest' }}
         run: |
@@ -387,8 +388,8 @@ jobs:
           # verify the installation
           solo --version
 
-      - name: Build Solo
-        if: false
+      - name: Hack and Build Solo
+        if: true
         run: |
           set +x
           set +e
@@ -410,6 +411,10 @@ jobs:
           sudo mv "${HOME}"/solo /usr/bin/solo
 
           cd "${{ github.workspace}}"/solo
+
+          cat src/core/helpers.ts | \
+          perl -pne '~s/streamWrappedRecordBlocksEnabled: boolean = false/streamWrappedRecordBlocksEnabled: boolean = true/g; ~s/\x27blockStream.streamWrappedRecordBlocks\x27, \x27false\x27/\x27blockStream.streamWrappedRecordBlocks\x27, \x27true\x27/g' >/tmp/fix$$
+          mv /tmp/fix$$ src/core/helpers.ts
 
           task build:compile
           #npm run build
