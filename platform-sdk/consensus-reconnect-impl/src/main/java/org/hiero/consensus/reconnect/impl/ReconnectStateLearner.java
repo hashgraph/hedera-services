@@ -186,16 +186,20 @@ public class ReconnectStateLearner {
     @NonNull
     public ReservedSignedState execute() throws ReconnectStateException {
         increaseSocketTimeout();
-        // Copying the learner's data source takes long for large states, and it depends only on the learner's
-        // own state, which doesn't change during the reconnect. Start it now, so that it runs while the teacher
-        // prepares its state and sends the signatures
-        final CompletableFuture<VirtualMapLearner> learnerFuture = createLearnerAsync();
+        CompletableFuture<VirtualMapLearner> learnerFuture = null;
         boolean learnerHandedOver = false;
         ReservedSignedState reservedSignedState = null;
         try {
+            // Copying the learner's data source takes long for large states, and it depends only on the learner's
+            // own state, which doesn't change during the reconnect. Start it now, so that it runs while the teacher
+            // prepares its state and sends the signatures
+            learnerFuture = createLearnerAsync();
             receiveSignatures();
+            statistics.incrementReceiverStartTimes();
+            connection.getDis().byteCounter().getAndReset();
             final VirtualMapLearner learner = awaitLearner(learnerFuture);
-            // From here, the synchronizer owns the learner and aborts it if the synchronization fails
+            // From here, the synchronizer owns the learner and aborts it if the synchronization fails. Nothing
+            // that can fail runs between this line and the synchronizer taking the learner over
             learnerHandedOver = true;
             reservedSignedState = reconnect(learner);
             endReconnectHandshake(connection);
@@ -212,7 +216,11 @@ public class ReconnectStateLearner {
             Thread.currentThread().interrupt();
             throw new ReconnectStateException("interrupted while attempting to reconnect", e);
         } finally {
-            if (!learnerHandedOver) {
+            if ((learnerFuture != null) && !learnerHandedOver) {
+                // The reconnect failed before the synchronization started. Disconnect first: the teacher may be
+                // waiting for requests, holding its state and its own data source copy, while this method waits
+                // for the learner's copy to finish
+                connection.disconnect();
                 discardLearner(learnerFuture);
             }
             resetSocketTimeout();
@@ -286,18 +294,15 @@ public class ReconnectStateLearner {
     /**
      * Receive and reconstruct the state from the teacher.
      *
-     * @param learner the learner for the current state, created by {@link #createLearnerAsync()}
+     * @param learner the learner for the current state, created by {@link #createLearnerAsync()}. This method
+     *     passes it to the synchronizer before anything else can fail, so the synchronizer owns it
      * @return the signed state received from the teacher
      * @throws InterruptedException if the current thread is interrupted
      */
     @NonNull
     private ReservedSignedState reconnect(@NonNull final VirtualMapLearner learner) throws InterruptedException {
-        statistics.incrementReceiverStartTimes();
-
         final DataInputStream in = new DataInputStream(connection.getDis());
         final DataOutputStream out = new DataOutputStream(connection.getDos());
-
-        connection.getDis().byteCounter().getAndReset();
         VirtualMap syncedVirtualMap;
 
         final long syncStartTime = System.currentTimeMillis();

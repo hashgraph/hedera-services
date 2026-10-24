@@ -8,9 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 /**
  * Tests how {@link ReconnectStateLearner} creates the learner, which copies the learner's data source, while it waits
@@ -53,6 +58,8 @@ class ReconnectStateLearnerTest {
 
     private PairedStreams pairedStreams;
     private DummyConnection teacherConnection;
+    private DummyConnection learnerConnection;
+    private VirtualMapState currentState;
     private LearningSynchronizer synchronizer;
     private VirtualMapLearner learner;
     private ReconnectStateLearner reconnectLearner;
@@ -62,10 +69,12 @@ class ReconnectStateLearnerTest {
         pairedStreams = new PairedStreams();
         teacherConnection =
                 new DummyConnection(configuration, pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput());
+        learnerConnection = spy(
+                new DummyConnection(configuration, pairedStreams.getLearnerInput(), pairedStreams.getLearnerOutput()));
         synchronizer = mock(LearningSynchronizer.class);
         learner = mock(VirtualMapLearner.class);
 
-        final VirtualMapState currentState = mock(VirtualMapState.class);
+        currentState = mock(VirtualMapState.class);
         when(currentState.getRoot()).thenReturn(mock(VirtualMap.class));
         @SuppressWarnings("unchecked")
         final StateLifecycleManager<VirtualMapState, VirtualMap> stateLifecycleManager =
@@ -73,7 +82,7 @@ class ReconnectStateLearnerTest {
         reconnectLearner = new ReconnectStateLearner(
                 configuration,
                 getStaticThreadManager(),
-                new DummyConnection(configuration, pairedStreams.getLearnerInput(), pairedStreams.getLearnerOutput()),
+                learnerConnection,
                 currentState,
                 RECONNECT_SOCKET_TIMEOUT,
                 mock(ReconnectMetrics.class),
@@ -85,6 +94,20 @@ class ReconnectStateLearnerTest {
     void tearDown() {
         // Not close(): it flushes buffered data, which fails if a test has already closed the sockets
         pairedStreams.disconnect();
+    }
+
+    @Test
+    @DisplayName("The socket timeout is restored if the learner can't be started")
+    void socketTimeoutRestoredIfLearnerCantBeStarted() throws Exception {
+        final RuntimeException startFailure = new RuntimeException("test failure");
+        when(currentState.getRoot()).thenThrow(startFailure);
+
+        final RuntimeException e = assertThrows(RuntimeException.class, reconnectLearner::execute);
+
+        assertSame(startFailure, e, "the reconnect should fail with the start failure");
+        // Once to increase the timeout for the reconnect, and once to restore it
+        verify(learnerConnection, times(2)).setTimeout(anyLong());
+        verify(synchronizer, never()).createLearner(any());
     }
 
     @Test
@@ -101,7 +124,7 @@ class ReconnectStateLearnerTest {
     }
 
     @Test
-    @DisplayName("If the signatures fail, the learner is closed once it's created")
+    @DisplayName("If the signatures fail, the learner disconnects and closes the learner once it's created")
     void signatureFailureClosesLearnerOnceCreated() throws Exception {
         final CountDownLatch creationAllowed = new CountDownLatch(1);
         when(synchronizer.createLearner(any())).thenAnswer(invocation -> {
@@ -112,15 +135,18 @@ class ReconnectStateLearnerTest {
         pairedStreams.disconnectTeacher();
 
         final Thread reconnectThread = startReconnect(new AtomicReference<>());
-        // The reconnect waits for the learner, so that a retry doesn't create a second one
-        reconnectThread.join(200);
-        assertTrue(reconnectThread.isAlive(), "the reconnect should wait for the learner");
+        // The reconnect disconnects right away, so that a healthy teacher doesn't wait for requests, and then waits
+        // for the learner, so that a retry doesn't create a second one
+        verify(learnerConnection, timeout(TIMEOUT_MILLIS)).disconnect();
+        awaitWaiting(reconnectThread);
         verify(learner, never()).abortOnException();
 
         creationAllowed.countDown();
         reconnectThread.join(TIMEOUT_MILLIS);
         assertFalse(reconnectThread.isAlive(), "the reconnect should fail once the learner is created");
-        verify(learner).abortOnException();
+        final InOrder inOrder = inOrder(learnerConnection, learner);
+        inOrder.verify(learnerConnection).disconnect();
+        inOrder.verify(learner).abortOnException();
         verifyNotSynchronized();
     }
 
@@ -145,6 +171,7 @@ class ReconnectStateLearnerTest {
         reconnectThread.join(TIMEOUT_MILLIS);
         assertFalse(reconnectThread.isAlive(), "the reconnect should fail without waiting for the learner");
         assertInstanceOf(ReconnectStateException.class, failure.get());
+        verify(learnerConnection).disconnect();
         verify(learner, never()).abortOnException();
 
         // The learner is closed when it's ready
@@ -175,6 +202,19 @@ class ReconnectStateLearnerTest {
         });
         thread.start();
         return thread;
+    }
+
+    /**
+     * Waits until the thread is parked waiting for something, e.g. the learner.
+     *
+     * @param thread the thread
+     */
+    private static void awaitWaiting(final Thread thread) throws InterruptedException {
+        final long deadline = System.currentTimeMillis() + TIMEOUT_MILLIS;
+        while (thread.getState() != Thread.State.WAITING) {
+            assertTrue(System.currentTimeMillis() < deadline, "the thread should wait, but is " + thread.getState());
+            Thread.sleep(10);
+        }
     }
 
     private void verifyNotSynchronized() throws InterruptedException {

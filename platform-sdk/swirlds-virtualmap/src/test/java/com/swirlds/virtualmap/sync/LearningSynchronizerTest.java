@@ -4,6 +4,7 @@ package com.swirlds.virtualmap.sync;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.DEFAULT_CONFIGURATION;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.DEFAULT_VIRTUAL_MAP_CONFIG;
 import static org.hiero.base.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -70,6 +71,22 @@ class LearningSynchronizerTest {
                 () -> synchronizer.synchronize(
                         learner, streams.getLearnerInput(), streams.getLearnerOutput(), streams::disconnect));
 
+        verify(learner).abortOnException();
+    }
+
+    @Test
+    @DisplayName("The learner is aborted if an error prevents the synchronization from starting")
+    void learnerAbortedIfErrorPreventsSynchronization() {
+        final VirtualMapLearner learner = mock(VirtualMapLearner.class);
+        final AssertionError error = new AssertionError("test error");
+        when(learner.getVirtualMapConfig()).thenThrow(error);
+
+        final AssertionError thrown = assertThrows(
+                AssertionError.class,
+                () -> synchronizer.synchronize(
+                        learner, streams.getLearnerInput(), streams.getLearnerOutput(), streams::disconnect));
+
+        assertSame(error, thrown, "the error should be rethrown");
         verify(learner).abortOnException();
     }
 

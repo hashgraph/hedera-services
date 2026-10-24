@@ -122,9 +122,8 @@ public class LearningSynchronizer {
             @NonNull final DataOutputStream out,
             @NonNull final Runnable breakConnection)
             throws InterruptedException {
-        Objects.requireNonNull(in, "input stream cannot be null");
-        Objects.requireNonNull(out, "output stream cannot be null");
-        Objects.requireNonNull(breakConnection, "break connection action cannot be null");
+        // Checked before the learner is created, so that invalid arguments don't cost a data source copy
+        requireConnection(in, out, breakConnection);
         return synchronize(createLearner(originalMap), in, out, breakConnection);
     }
 
@@ -150,19 +149,17 @@ public class LearningSynchronizer {
             throws InterruptedException {
 
         Objects.requireNonNull(vmapLearner, "vmapLearner cannot be null");
-        Objects.requireNonNull(in, "input stream cannot be null");
-        Objects.requireNonNull(out, "output stream cannot be null");
-        Objects.requireNonNull(breakConnection, "break connection action cannot be null");
+        requireConnection(in, out, breakConnection);
 
         final LearnerSyncMetrics syncMetrics;
         final LearnerTreeExchanger exchanger;
         try {
             syncMetrics = new LearnerSyncMetrics(metrics);
             exchanger = buildLearnerExchanger(vmapLearner, syncMetrics);
-        } catch (final RuntimeException e) {
+        } catch (final Throwable t) {
             // E.g. an unsupported reconnect mode. Close the learner's data source copy, or every attempt leaks one
             vmapLearner.abortOnException();
-            throw e;
+            throw t;
         }
 
         try (final StandardWorkGroup workGroup = createStandardWorkGroup(threadManager, breakConnection)) {
@@ -243,6 +240,13 @@ public class LearningSynchronizer {
             exchanger.abortOnException();
             throw new MerkleSynchronizationException("Failed to finish synchronization", t);
         }
+    }
+
+    private static void requireConnection(
+            final DataInputStream in, final DataOutputStream out, final Runnable breakConnection) {
+        Objects.requireNonNull(in, "input stream cannot be null");
+        Objects.requireNonNull(out, "output stream cannot be null");
+        Objects.requireNonNull(breakConnection, "break connection action cannot be null");
     }
 
     private void throwCause(Throwable ex) throws MerkleSynchronizationException {
