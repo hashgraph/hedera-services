@@ -187,6 +187,43 @@ class PrivilegesVerifierTest {
                 verifier.hasPrivileges(foreignTreasury, HederaFunctionality.CRYPTO_UPDATE, body));
     }
 
+    @ParameterizedTest
+    @MethodSource("foreignShardOrRealmPayers")
+    void systemAccountNumberOnForeignShardOrRealmIsNotASystemTarget(final long shard, final long realm) {
+        final var verifier =
+                new PrivilegesVerifier(() -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1L));
+        final var localSystemAdmin = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .accountNum(SYSTEM_ADMIN)
+                .build();
+        final var ordinaryPayer = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .accountNum(1001L)
+                .build();
+        // A foreign-shard/realm "treasury" target must not get treasury protection or system-account handling
+        final var foreignTreasuryTarget = updateOf(foreignPayer(shard, realm, TREASURY));
+        assertEquals(
+                SystemPrivilege.UNNECESSARY,
+                verifier.hasPrivileges(ordinaryPayer, HederaFunctionality.CRYPTO_UPDATE, foreignTreasuryTarget));
+        assertEquals(
+                SystemPrivilege.UNNECESSARY,
+                verifier.hasPrivileges(localSystemAdmin, HederaFunctionality.CRYPTO_UPDATE, foreignTreasuryTarget));
+        // Sanity: the same number on the local shard/realm is still protected
+        final var localTreasuryTarget = updateOf(com.hedera.hapi.node.base.AccountID.newBuilder()
+                .accountNum(TREASURY)
+                .build());
+        assertEquals(
+                SystemPrivilege.UNAUTHORIZED,
+                verifier.hasPrivileges(localSystemAdmin, HederaFunctionality.CRYPTO_UPDATE, localTreasuryTarget));
+    }
+
+    private static com.hedera.hapi.node.transaction.TransactionBody updateOf(
+            final com.hedera.hapi.node.base.AccountID target) {
+        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+                .cryptoUpdateAccount(com.hedera.hapi.node.token.CryptoUpdateTransactionBody.newBuilder()
+                        .accountIDToUpdate(target)
+                        .build())
+                .build();
+    }
+
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testConstructorWithIllegalParameters() {

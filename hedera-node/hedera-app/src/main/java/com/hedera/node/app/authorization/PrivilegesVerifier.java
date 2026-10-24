@@ -101,7 +101,7 @@ public class PrivilegesVerifier {
     }
 
     private boolean isTreasury(@NonNull final AccountID accountID) {
-        return effectiveNumber(accountID) == accountsConfig.treasury();
+        return localNumber(accountID) == accountsConfig.treasury();
     }
 
     private boolean hasSoftwareUpdatePrivilege(@NonNull final AccountID accountID) {
@@ -187,7 +187,7 @@ public class PrivilegesVerifier {
             @NonNull final AccountID payerId, @NonNull final CryptoUpdateTransactionBody op) {
         // When dispatching a hollow account finalization, the target account id is set to DEFAULT
         final var targetId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
-        final long targetNum = effectiveNumber(targetId);
+        final long targetNum = localNumber(targetId);
         if (!isSystemEntity(targetNum)) {
             return UNNECESSARY;
         } else {
@@ -263,6 +263,17 @@ public class PrivilegesVerifier {
             return 0L;
         }
         return effectiveNumber(accountID);
+    }
+
+    /**
+     * Given a target account id, returns the effective number for privileges checks, or {@code 0} (which is never a
+     * system entity) if the account is not on this node's configured shard and realm, so e.g. {@code 1.0.2} is never
+     * treated as the local treasury or as a local system account.
+     * @param accountID the target {@link AccountID} to check
+     * @return the effective number for privileges checks
+     */
+    private long localNumber(@NonNull final AccountID accountID) {
+        return payerNumber(accountID);
     }
 
     private long effectiveNumber(@NonNull final ContractID contractID) {
