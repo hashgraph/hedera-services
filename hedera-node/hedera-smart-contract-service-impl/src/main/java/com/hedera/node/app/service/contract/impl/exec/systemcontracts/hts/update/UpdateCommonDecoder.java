@@ -165,19 +165,20 @@ public abstract class UpdateCommonDecoder {
     protected static final int UPDATE_KEYS_SUPPORTED_MASK_16C = 0xFF;
 
     /**
-     * True iff the raw key list is non-empty, every keyType is a positive value within {@code supportedMask}
-     * (checked on the full uint256, before any int narrowing), no two entries address the same key slot, and no
-     * entry asks to inherit the account key. {@code inheritAccountKey} has no meaning for an update (the inherited key
-     * is only resolved when a token is created), so such an entry would produce a key-less
-     * {@code TokenUpdateTransactionBody} that changes nothing yet reports SUCCESS.
-     * Anything else would dispatch an update that changes nothing yet reports SUCCESS, or silently drop
-     * conflicting key material (GHSA-q776-f4m7-g642).
+     * True iff the raw key list is non-empty and every entry is meaningful: its keyType is a positive value that fits
+     * in an int (checked on the full uint256, before any int narrowing), it selects at least one key slot within
+     * {@code supportedMask}, and it does not ask to inherit the account key. {@code inheritAccountKey} has no meaning
+     * for an update (the inherited key is only resolved when a token is created). Anything else would dispatch an
+     * update that changes nothing yet reports SUCCESS (GHSA-q776-f4m7-g642).
+     *
+     * <p>For compatibility with existing callers, bits outside {@code supportedMask} are ignored as long as at least
+     * one supported bit is set (e.g. {@code 0xFF} at 0x167), and entries addressing the same slot are applied in
+     * order, so the last one wins.
      */
     protected static boolean isMeaningfulKeyUpdate(@NonNull final Tuple[] tokenKeysTuples, final int supportedMask) {
         if (tokenKeysTuples.length == 0) {
             return false;
         }
-        int slotsInUse = 0;
         for (final var tokenKeyTuple : tokenKeysTuples) {
             final var rawKeyType = (BigInteger) tokenKeyTuple.get(KEY_TYPE);
             if (rawKeyType.signum() <= 0 || rawKeyType.bitLength() > 31) {
@@ -188,10 +189,9 @@ public abstract class UpdateCommonDecoder {
                 return false;
             }
             final int keyType = rawKeyType.intValue();
-            if ((keyType & ~supportedMask) != 0 || (slotsInUse & keyType) != 0) {
+            if ((keyType & supportedMask) == 0) {
                 return false;
             }
-            slotsInUse |= keyType;
         }
         return true;
     }

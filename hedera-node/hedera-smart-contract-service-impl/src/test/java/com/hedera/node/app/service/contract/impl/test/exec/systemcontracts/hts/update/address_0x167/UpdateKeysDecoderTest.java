@@ -4,6 +4,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.entityIdFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.lenient;
@@ -80,6 +81,21 @@ class UpdateKeysDecoderTest {
                 Tuple.of(Boolean.FALSE, ZERO_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
     }
 
+    private static Tuple ed25519Key(final long keyType, final byte fill) {
+        final var raw = new byte[32];
+        java.util.Arrays.fill(raw, fill);
+        return Tuple.of(
+                BigInteger.valueOf(keyType), Tuple.of(Boolean.FALSE, ZERO_ADDRESS, raw, new byte[0], ZERO_ADDRESS));
+    }
+
+    private static com.hedera.hapi.node.base.Key ed25519(final byte fill) {
+        final var raw = new byte[32];
+        java.util.Arrays.fill(raw, fill);
+        return com.hedera.hapi.node.base.Key.newBuilder()
+                .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(raw))
+                .build();
+    }
+
     private TransactionBody decode(final Tuple... tokenKeys) {
         final var encoded = Bytes.wrapByteBuffer(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_FUNCTION.encodeCallWithArgs(
                 FUNGIBLE_TOKEN_HEADLONG_ADDRESS, tokenKeys));
@@ -109,13 +125,30 @@ class UpdateKeysDecoderTest {
     }
 
     @Test
-    void duplicateKeyTypesAreRejected() {
-        assertNull(decode(tokenKey(0x01), tokenKey(0x01)));
+    void duplicateKeyTypesApplyLastWinsLikeMain() {
+        final var body = decode(ed25519Key(0x01, (byte) 1), ed25519Key(0x01, (byte) 2));
+        assertNotNull(body);
+        assertEquals(ed25519((byte) 2), body.tokenUpdateOrThrow().adminKey());
     }
 
     @Test
-    void overlappingKeyTypesAreRejected() {
-        assertNull(decode(tokenKey(0x03), tokenKey(0x02)));
+    void overlappingKeyTypesApplyLastWinsLikeMain() {
+        final var body = decode(ed25519Key(0x03, (byte) 1), ed25519Key(0x02, (byte) 2));
+        assertNotNull(body);
+        final var op = body.tokenUpdateOrThrow();
+        assertEquals(ed25519((byte) 1), op.adminKey());
+        assertEquals(ed25519((byte) 2), op.kycKey());
+    }
+
+    @Test
+    void allBitsMaskIsAcceptedAt0x167LikeMain() {
+        // callers that pass 0xFF (including the metadata bit, which 0x167 never applies) worked on main
+        final var body = decode(tokenKey(0xFF));
+        assertNotNull(body);
+        final var op = body.tokenUpdateOrThrow();
+        assertNotNull(op.adminKey());
+        assertNotNull(op.pauseKey());
+        assertNull(op.metadataKey());
     }
 
     @Test
